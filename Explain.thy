@@ -251,7 +251,7 @@ lemma rep_of_domain: "rep_of_dom (l, i) \<Longrightarrow> l ! i \<noteq> i \<Lon
 lemma ufe_union_uf_list: "ufa_invar (uf_list ufe) \<Longrightarrow> x < length (uf_list ufe) \<Longrightarrow> uf_list (ufe_union ufe x y) = ufa_union (uf_list ufe) x y"
 proof (cases "rep_of (uf_list ufe) x = rep_of (uf_list ufe) y")
   case True
-  assume invar:"ufa_invar (uf_list ufe)" "x < length (uf_list ufe)"
+  assume invar: "ufa_invar (uf_list ufe)" "x < length (uf_list ufe)"
   from True invar rep_of_root have "(uf_list ufe) ! rep_of (uf_list ufe) x = rep_of (uf_list ufe) y" 
     by metis
   with True have "ufa_union (uf_list ufe) x y = uf_list ufe" 

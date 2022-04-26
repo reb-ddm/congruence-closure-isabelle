@@ -308,7 +308,7 @@ qed
 
 lemma explain_case_x_rep_of_ax_bx:
   assumes "ufe_invar ufe_before"
-    and "\<lparr>uf_list = l, unions = u, au = a\<rparr> =  ufe_before"
+    and "ufe_before = \<lparr>uf_list = l, unions = u, au = a\<rparr>"
     and "lca = lowest_common_ancestor l x y"
     and "x < length l" and "y < length l"
     and "x2 < length l" and "y2 < length l"
@@ -915,6 +915,235 @@ proof-
     "rep_of (uf_list ufe_before) bx = rep_of (uf_list ufe_before) y" by simp_all
 qed
 
+paragraph \<open>The order of the parameters in explain can be switched.\<close>
+
+
+lemma explain_symmetric_domain:
+  assumes "explain_dom (ufe, x, y)"
+    and "ufe_invar ufe"
+    and "x < length (uf_list ufe)" and "y < length (uf_list ufe)"
+  shows "explain_dom (ufe, y, x)"
+  using assms proof(induction ufe x y rule: explain.pinduct)
+  case (1 l u a x y)
+  then have invar: "ufa_invar l"
+    by (metis ufe_data_structure.select_convs(1) ufe_invar_imp_ufa_invar)
+  define lca' newest_index_x' newest_index_y' axbx' ayby' 
+    where defs1: "lca' = lowest_common_ancestor l y x"
+      "newest_index_x' = find_newest_on_path l a y lca'"
+      "newest_index_y' = find_newest_on_path l a x lca'"
+      "axbx' = u ! the (newest_index_x')" 
+      "ayby' = u ! the (newest_index_y')"
+  obtain ax' bx' ay' by' where defs2: "(ax', bx') = axbx'"
+    "(ay', by') = ayby'" by (metis prod.exhaust_sel)
+  note defs = defs1 defs2
+  then show ?case 
+  proof(cases rule: explain_cases[of l u a x y])
+    case base
+    then show ?thesis using explain_empty_domain by auto
+  next
+    case (case_x ufe lca newest_index_x newest_index_y ax bx ay "by")
+    with defs lowest_common_ancestor_symmetric have "lca = lca'" 
+      using lowest_common_ancestor.domintros by presburger
+    then have "newest_index_x' = newest_index_y" 
+      and  "newest_index_y' = newest_index_x"
+      by (auto simp add: case_x defs)
+    then have equalities: "ax' = ay"  "ay' = ax"  "bx' = by"  "by' = bx"
+      by (metis Pair_inject case_x defs)+
+    from lowest_common_ancestor_correct case_x "1.prems" invar 
+    obtain p where  p: "path l lca p x" 
+      by (metis ufe_data_structure.select_convs(1))
+    obtain k_x where k_x: "newest_index_x = Some k_x \<and> k_x < length u" "ax < length l" "bx < length l"
+      using case_x explain_case_x_newest_index_x_Some 
+      by (metis "1.prems" ufe_data_structure.select_convs(1))
+    have *: "explain_dom (ufe, x, ax)" "explain_dom (ufe, bx, y)"
+      using "1.hyps" case_x explain_domain_cases(1,2) by metis+
+    from explain_index_neq case_x "1.prems" have "\<not> newest_index_y' \<le> newest_index_x'" 
+      by (metis  \<open>newest_index_x' = newest_index_y\<close> \<open>newest_index_y' = newest_index_x\<close> dual_order.eq_iff ufe_data_structure.select_convs(1))
+    then have "explain_dom (ufe, x, ay')" "explain_dom (ufe, by', y)"
+      by (auto simp add: "*" equalities)
+    with 1 case_x k_x show ?thesis 
+      by (metis  \<open>\<not> newest_index_y' \<le> newest_index_x'\<close>  \<open>lca = lca'\<close> \<open>newest_index_x' = newest_index_y\<close> \<open>newest_index_y' = newest_index_x\<close> defs1(1) explain_case_y_domain option.sel ufe_data_structure.select_convs(1))
+  next
+    case (case_y ufe lca newest_index_x newest_index_y ax bx ay "by")
+    with defs lowest_common_ancestor_symmetric have "lca = lca'" 
+      using lowest_common_ancestor.domintros by presburger
+    then have "newest_index_x' = newest_index_y" 
+      and  "newest_index_y' = newest_index_x"
+      by (auto simp add: case_y defs)
+    then have equalities: "ax' = ay"  "ay' = ax"  "bx' = by"  "by' = bx"
+      by (metis Pair_inject case_y defs)+
+    from lowest_common_ancestor_correct case_y "1.prems" invar 
+    obtain p where  p:"path l lca p y" 
+      by (metis ufe_data_structure.select_convs(1))
+    with find_newest_x_neq_None_or_find_newest_y_neq_None case_y "1.prems"
+    obtain k_y' where "newest_index_y = Some k_y'" 
+      by (metis less_eq_option_None option.exhaust_sel)
+    with find_newest_on_path_if_Some have "y ~= lca" 
+      by (metis case_y(4) find_newest_on_path.domintros invar p path_nodes_lt_length_l)
+    with find_newest_on_path_Some[OF p "1.prems"(1)] "1.prems" case_y 
+    obtain k_y where k_y: "newest_index_y = Some k_y \<and> k_y < length u" 
+      by blast
+    with "1.prems" have "fst (u ! k_y) < length l" "snd (u ! k_y) < length l"
+      by auto
+    then have "ay < length l" "by < length l"
+      by (metis k_y case_y(6) fst_conv snd_conv option.sel)+
+    have "newest_index_y' \<le> newest_index_x'" 
+      using \<open>newest_index_x' = newest_index_y\<close> \<open>newest_index_y' = newest_index_x\<close> case_y(8) by auto
+    have *: "explain_dom (ufe, x, by)" "explain_dom (ufe, ay, y)"
+      using "1.hyps" case_y explain_domain_cases(3,4) by metis+
+    then have "explain_dom (ufe, x, bx')" "explain_dom (ufe, ax', y)"
+      by (auto simp add: "*" equalities)
+    with 1 case_y show ?thesis 
+      by (metis \<open>ay < length l\<close> \<open>by < length l\<close> \<open>lca = lca'\<close> \<open>newest_index_x' = newest_index_y\<close> \<open>newest_index_y' = newest_index_x\<close> \<open>newest_index_y' \<le> newest_index_x'\<close> defs1(1) explain_case_x_domain ufe_data_structure.select_convs(1))
+  qed
+qed
+
+lemma explain_symmetric:
+  assumes "explain_dom (ufe, x, y)"
+    and "ufe_invar ufe"
+    and "x < length (uf_list ufe)" and "y < length (uf_list ufe)"
+  shows "explain ufe x y = explain ufe y x"
+  using assms proof(induction ufe x y rule: explain.pinduct)
+  case (1 l u a x y)
+  then have invar: "ufa_invar l"
+    by (metis ufe_data_structure.select_convs(1) ufe_invar_imp_ufa_invar)
+  define lca' newest_index_x' newest_index_y' axbx' ayby' 
+    where defs1: "lca' = lowest_common_ancestor l y x"
+      "newest_index_x' = find_newest_on_path l a y lca'"
+      "newest_index_y' = find_newest_on_path l a x lca'"
+      "axbx' = u ! the (newest_index_x')" 
+      "ayby' = u ! the (newest_index_y')"
+  obtain ax' bx' ay' by' where defs2: "(ax', bx') = axbx'"
+    "(ay', by') = ayby'" by (metis prod.exhaust_sel)
+  note defs = defs1 defs2
+  then show ?case 
+  proof(cases rule: explain_cases[of l u a x y])
+    case base
+    then show ?thesis by auto
+  next
+    case (case_x ufe lca newest_index_x newest_index_y ax bx ay "by")
+    with defs lowest_common_ancestor_symmetric have "lca = lca'" 
+      using lowest_common_ancestor.domintros by presburger
+    then have "newest_index_x' = newest_index_y" 
+      and  "newest_index_y' = newest_index_x"
+      by (auto simp add: case_x defs)
+    then have equalities: "ax' = ay"  "ay' = ax"  "bx' = by"  "by' = bx"
+      by (metis Pair_inject case_x defs)+
+    obtain k_x where k_x: "newest_index_x = Some k_x \<and> k_x < length u" "ax < length l" "bx < length l"
+      using case_x explain_case_x_newest_index_x_Some 
+      by (metis "1.prems" ufe_data_structure.select_convs(1))
+    have *: "explain ufe x y = {(ax, bx)} \<union> explain ufe x ax \<union> explain ufe bx y"
+      using "1.hyps" case_x explain_case_x by presburger
+    from explain_index_neq case_x "1.prems" have "\<not> newest_index_y' \<le> newest_index_x'" 
+      by (metis "1.hyps" \<open>newest_index_x' = newest_index_y\<close> \<open>newest_index_y' = newest_index_x\<close> dual_order.eq_iff ufe_data_structure.select_convs(1))
+    with explain_case_y have "explain ufe y x = {(ay', by')} \<union> explain ufe y by' \<union> explain ufe ay' x" 
+      using case_x "1.hyps" "1.IH"(1,2) defs  explain_symmetric_domain 
+      by (metis "1.prems")
+    also have "...= {(ax, bx)} \<union> explain ufe x ax \<union> explain ufe bx y"
+      using "1.hyps" case_x explain_case_y equalities "1.IH"(1,2)
+      using "1.prems" k_x by auto
+    finally show ?thesis by (metis "*" case_x(1))
+  next
+    case (case_y ufe lca newest_index_x newest_index_y ax bx ay "by")
+    with defs lowest_common_ancestor_symmetric have "lca = lca'" 
+      using lowest_common_ancestor.domintros by presburger
+    then have "newest_index_x' = newest_index_y" 
+      and  "newest_index_y' = newest_index_x"
+      by (auto simp add: case_y defs)
+    then have equalities: "ax' = ay"  "ay' = ax"  "bx' = by"  "by' = bx"
+      by (metis Pair_inject case_y defs)+
+    from lowest_common_ancestor_correct case_y "1.prems" invar
+    obtain p where p: "path l lca p y" 
+      by (metis ufe_data_structure.select_convs(1))
+    with find_newest_x_neq_None_or_find_newest_y_neq_None case_y "1.prems"
+    obtain k_y' where "newest_index_y = Some k_y'" 
+      by (metis less_eq_option_None option.exhaust_sel)
+    with find_newest_on_path_if_Some have "y ~= lca" 
+      by (metis case_y(4) find_newest_on_path.domintros invar p path_nodes_lt_length_l)
+    with find_newest_on_path_Some[OF p "1.prems"(1)] "1.prems" case_y 
+    obtain k_y where k_y: "newest_index_y = Some k_y \<and> k_y < length u" 
+      by blast
+    with "1.prems" have "fst (u ! k_y) < length l" "snd (u ! k_y) < length l"
+      by auto
+    then have "ay < length l" "by < length l"
+      by (metis k_y case_y(6) fst_conv snd_conv option.sel)+
+    have *: "explain ufe x y = {(ay, by)} \<union> explain ufe x by \<union> explain ufe ay y" 
+      using "1.hyps" case_y explain_case_y by presburger
+    have "newest_index_y' \<le> newest_index_x'" 
+      using \<open>newest_index_x' = newest_index_y\<close> \<open>newest_index_y' = newest_index_x\<close> case_y(8) by auto 
+    then have "explain ufe y x = {(ax', bx')} \<union> explain ufe y ax' \<union> explain ufe bx' x"
+      using case_y 1 defs explain_case_x
+      by (metis explain_symmetric_domain)
+    also have "...= {(ay, by)} \<union> explain ufe x by \<union> explain ufe ay y" 
+      using "1.hyps" "1.IH"(3) "1.IH"(4) case_y explain_case_x equalities 
+      using "1.prems" \<open>ay < length l\<close> \<open>by < length l\<close> by auto
+    then show ?thesis 
+      by (metis "*" calculation case_y(1))
+  qed
+qed
+print_statement explain.pinduct
+
+lemma explain_cases_simple[consumes 3, case_names base case_x case_y]:
+  assumes "ufe_invar \<lparr>uf_list = l, unions = u, au = a\<rparr>"
+    and "x < length l" and "y < length l"
+    and "\<And> x y ufe . ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr> 
+\<Longrightarrow> ufe_invar ufe
+\<Longrightarrow> x < length l \<Longrightarrow> y < length l
+\<Longrightarrow> x = y \<or> rep_of l x \<noteq> rep_of l y \<Longrightarrow> P x y"
+    and "\<And> ufe lca newest_index_x newest_index_y ax bx ay by x y.
+  ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr>
+\<Longrightarrow> ufe_invar ufe
+\<Longrightarrow> x < length l \<Longrightarrow> y < length l
+\<Longrightarrow> lca = lowest_common_ancestor l x y
+\<Longrightarrow> newest_index_x = find_newest_on_path l a x lca
+\<Longrightarrow> newest_index_y = find_newest_on_path l a y lca
+\<Longrightarrow> (ax, bx) = u ! the (newest_index_x)
+\<Longrightarrow> (ay, by) = u ! the (newest_index_y)
+\<Longrightarrow> \<not>(x = y \<or> rep_of l x \<noteq> rep_of l y)
+\<Longrightarrow> newest_index_x > newest_index_y
+\<Longrightarrow> P x y"
+and "\<And> ufe lca newest_index_x newest_index_y ax bx ay by x y.
+P y x \<Longrightarrow> ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr>
+\<Longrightarrow> ufe_invar ufe
+\<Longrightarrow> x < length l \<Longrightarrow> y < length l
+\<Longrightarrow> lca = lowest_common_ancestor l x y
+\<Longrightarrow> newest_index_x = find_newest_on_path l a x lca
+\<Longrightarrow> newest_index_y = find_newest_on_path l a y lca
+\<Longrightarrow> (ax, bx) = u ! the (newest_index_x)
+\<Longrightarrow> (ay, by) = u ! the (newest_index_y)
+\<Longrightarrow> \<not>(x = y \<or> rep_of l x \<noteq> rep_of l y)
+\<Longrightarrow> newest_index_x < newest_index_y
+\<Longrightarrow> P x y"
+  shows "P x y"
+proof-
+  define lca' newest_index_x' newest_index_y' axbx' ayby' 
+    where defs1: "lca' = lowest_common_ancestor l x y"
+      "newest_index_x' = find_newest_on_path l a x lca'"
+      "newest_index_y' = find_newest_on_path l a y lca'"
+      "axbx' = u ! the (newest_index_x')" 
+      "ayby' = u ! the (newest_index_y')"
+  obtain ax' bx' ay' by' where defs2: "(ax', bx') = axbx'"
+    "(ay', by') = ayby'" by (metis prod.exhaust_sel)
+  note defs = defs1 defs2 
+  consider (a) "newest_index_x' > newest_index_y'"
+    | (b) "newest_index_x' = newest_index_y'"
+    | (c) "newest_index_x' < newest_index_y'"
+    using linorder_less_linear by auto
+  then show ?thesis 
+  proof(cases)
+    case a 
+    with assms defs show ?thesis 
+      by metis
+  next
+    case b
+    with assms defs  show ?thesis 
+      by (metis explain_index_neq)
+  next
+    case c
+    with assms defs  show ?thesis 
+      by (metis lowest_common_ancestor.domintros lowest_common_ancestor_symmetric ufe_data_structure.select_convs(1))
+  qed
+qed
 
 paragraph \<open>Explain terminates when the invariant holds.\<close>
 
@@ -929,31 +1158,34 @@ lemma explain_domain_ufe_union_invar:
   shows "explain_dom (ufe_union ufe x2 y2, x, y)"
   using assms proof(induction rule: explain.pinduct)
   case (1 l u a x y)
-  then show ?case 
-  proof(cases rule: explain_cases[of l u a x y])
-    case (base ufe)
-    then show ?thesis 
+  then have induction_assms: "ufe_invar \<lparr>uf_list = l, unions = u, au = a\<rparr>" "x < length l" "y < length l"
+      apply blast
+    using 1 by (metis ufe_data_structure.select_convs(1))+
+  from induction_assms 1 show ?case
+  proof(induction rule: explain_cases_simple)
+    case (base x y ufe)
+    then show ?case 
       using "1.prems"(6) explain_empty_domain by auto
   next
-    case (case_x ufe lca newest_index_x newest_index_y ax bx ay "by")
-    with  "1.prems" rep_of_ufe_union_invar 
+    case (case_x ufe lca newest_index_x newest_index_y ax bx ay "by" x y)
+    with rep_of_ufe_union_invar 
     have rep: "rep_of (uf_list (ufe_union ufe x2 y2)) x = rep_of (uf_list (ufe_union ufe x2 y2)) y"
-      by blast
-    with "1.prems"  case_x  ufe_invar_imp_ufa_invar have "ufa_invar l"
+      by metis
+    with case_x ufe_invar_imp_ufa_invar have "ufa_invar l"
       by (metis ufe_data_structure.select_convs(1))
     obtain l2 u2 a2 where ufe_union: "ufe_union ufe x2 y2 = \<lparr>uf_list = l2, unions = u2, au = a2\<rparr>" 
       using ufe_data_structure.cases by blast 
-    show ?thesis 
+    show ?case 
     proof(cases "rep_of l x2 = rep_of l y2")
       case True
-      with ufe_union case_x ufe_union1_ufe have "ufe_union ufe x2 y2 = ufe"  
+      with ufe_union case_x ufe_union1_ufe have "ufe_union ufe x2 y2 = ufe" 
         by simp
       with case_x show ?thesis 
-        using "1.hyps" by presburger
+        by presburger
     next
       case False
       have "l2 = ufa_union l x2 y2" and "u2 = u @ [(x2, y2)]" and "a2 = a[rep_of l x2 := Some (length u)]"
-        using False case_x ufe_union by force+
+        using False case_x ufe_union by simp+
       define lca' newest_index_x' newest_index_y' axbx' ayby' 
         where defs1: "lca' = lowest_common_ancestor l2 x y"
           "newest_index_x' = find_newest_on_path l2 a2 x lca'"
@@ -963,13 +1195,13 @@ lemma explain_domain_ufe_union_invar:
       obtain ax' bx' ay' by' where defs2: "(ax', bx') = axbx'"
         "(ay', by') = ayby'" by (metis prod.exhaust_sel)
       note defs = defs1 defs2
-      from explain_case_x_rep_of_ax_bx 1 case_x 
-      have **: "rep_of l ax = rep_of l x" "rep_of l y = rep_of l bx" 
-        by (metis ufe_data_structure.select_convs(1))+
-      with 1 case_x have *:
+      from explain_case_x_rep_of_ax_bx[OF case_x(2,1,5,3,4)] case_x 
+      have **: "rep_of l ax = rep_of l x" "rep_of l y = rep_of l bx"
+        by (metis order_less_imp_le)+
+      with case_x have *:
         "explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, x, ax)"
         "explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, bx, y)"
-        by (metis explain_case_x_newest_index_x_Some(2,3) ufe_data_structure.select_convs(1))+
+        by (metis explain_case_x_newest_index_x_Some(2,3) ufe_data_structure.select_convs(1) order_less_imp_le)+
           \<comment> \<open>ax and bx stay the same after the union\<close>
       from case_x "1.prems" ufe_union lowest_common_ancestor_ufe_union_invar
       have lca_eq: "lca = lca'" 
@@ -983,8 +1215,8 @@ lemma explain_domain_ufe_union_invar:
       have  "x < length (uf_list ufe)" "y < length (uf_list ufe)" 
         using "1.prems" case_x by auto
       then obtain k_x where k_x: "newest_index_x = Some k_x \<and> k_x < length u" "ax < length l" "bx < length l"
-        using case_x "1.prems" case_x(2-) explain_case_x_newest_index_x_Some
-        by (metis ufe_data_structure.select_convs(1))
+        using case_x explain_case_x_newest_index_x_Some
+        by (metis ufe_data_structure.select_convs(1) order_less_imp_le)
       with "1.prems" ufe_union case_x unions_ufe_union_invar have "(ax, bx) = axbx'" 
         by (metis defs1(4) nix_eq option.sel ufe_data_structure.select_convs(1) ufe_data_structure.select_convs(2))
       with defs have ax_bx_eq: "ax = ax'" "bx = bx'"
@@ -1001,11 +1233,14 @@ lemma explain_domain_ufe_union_invar:
       with rep ** explain_case_x_domain[of "ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2" l2 u2 a2 x ax' bx' y lca' newest_index_x' newest_index_y']
         defs ufe_union case_x(1,7,8) nix_eq
       show ?thesis 
-        by (metis ufe_data_structure.select_convs(1))
+        by (metis case_x.hyps(11) explain_empty_domain nless_le)
     qed
   next
-    case (case_y ufe lca newest_index_x newest_index_y ax bx ay "by")
-    then show ?thesis sorry
+    case (case_y ufe lca newest_index_x newest_index_y ax bx ay "by" x y)
+    with lowest_common_ancestor_symmetric explain_symmetric order_less_imp_le
+    have "explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, y, x)" sorry
+    with explain_symmetric show ?case 
+      by (smt (verit, best) case_y.prems(10) case_y.prems(7) case_y.prems(8) case_y.prems(9) explain_symmetric_domain induction_assms(1) ufe_data_structure.select_convs(1) ufe_union_length_uf_list union_ufe_invar)
   qed
 qed
 
@@ -1028,39 +1263,44 @@ next
     using ufe_data_structure.cases by blast
   obtain l2 u2 a2 where pufe_union: "ufe_union pufe x2 y2 = \<lparr>uf_list = l2, unions = u2, au = a2\<rparr>" 
     using ufe_data_structure.cases by blast 
-  with union have invar: "ufe_invar \<lparr>uf_list = l2, unions = u2, au = a2\<rparr>" 
-    by (metis pufe ufe_data_structure.select_convs(1) union_ufe_invar)
-  show ?case 
-  proof(cases rule: explain_cases[of l2 u2 a2 x y])
-    case (base ufe)
-    then show ?thesis 
+  with union have induction_assms: "ufe_invar \<lparr>uf_list = l2, unions = u2, au = a2\<rparr>" "x < length l2" "y < length l2"
+      by (metis pufe ufe_data_structure.select_convs(1) union_ufe_invar)+
+  from induction_assms pufe union pufe_union show ?case
+  proof(induction rule: explain_cases_simple)
+    case (base x y ufe)
+    then show ?case 
       using explain_empty_domain pufe_union by auto
   next
-    case (case_x ufe lca newest_index_x newest_index_y ax bx ay "by")
-    with explain_case_x_newest_index_x_Some(2,3)[OF invar] 
+    case (case_x ufe lca newest_index_x newest_index_y ax bx ay "by" x y)
+    with explain_case_x_newest_index_x_Some(2,3)[of l2 u2 a2 lca x y newest_index_x newest_index_y ax bx] case_x order_less_imp_le
     have lengths: "ax < length l2" "bx < length l2"
-      by (metis pufe_union ufe_data_structure.select_convs(1) union.prems(1) union.prems(2))+
+      by (metis pufe_union ufe_data_structure.select_convs(1))+
     then have lengths'': "ax < length l1" "bx < length l1"
       by (metis pufe pufe_union ufe_data_structure.select_convs(1) ufe_union_length_uf_list)+
-    have l: "x < length l2" "y < length l2""x2 < length l2" "y2 < length l2"
-         apply (metis pufe_union ufe_data_structure.select_convs(1) union.prems(1,2) )+
-       apply (metis pufe_union ufe_data_structure.select_convs(1) ufe_union_length_uf_list union.hyps(2,3))+
-      done
+    from case_x have l: "x < length l2" "y < length l2""x2 < length l2" "y2 < length l2"
+       by (metis pufe_union ufe_data_structure.select_convs(1) ufe_union_length_uf_list union.hyps(2,3))+
     then have lengths': "x < length (uf_list pufe)" "y < length l1" 
       by (metis pufe pufe_union ufe_data_structure.select_convs(1) ufe_union_length_uf_list)+
-    with lengths union have *: "explain_dom (pufe, x, ax)" "explain_dom (pufe, bx, y)"
+    with lengths case_x have *: "explain_dom (pufe, x, ax)" "explain_dom (pufe, bx, y)"
       by (metis pufe_union ufe_data_structure.select_convs(1) ufe_union_length_uf_list)+
-    from explain_case_x_rep_of_ax_bx_ufe_union[OF union(1) pufe]  l case_x 
+    from explain_case_x_rep_of_ax_bx_ufe_union[OF case_x(13,12,19)] l case_x 
     have "rep_of l1 x = rep_of l1 ax""rep_of l1 y = rep_of l1 bx" 
-      by (metis (mono_tags, lifting) pufe pufe_union ufe_data_structure.select_convs(1))+
+      by (metis dual_order.strict_iff_not ufe_data_structure.select_convs(1))+
     with  explain_domain_ufe_union_invar * union(1,2,3) lengths' union have "explain_dom (ufe_union pufe x2 y2, x, ax)"
       "explain_dom (ufe_union pufe x2 y2, bx, y)"
       by (metis lengths pufe pufe_union ufe_data_structure.select_convs(1) ufe_union_length_uf_list)+
-    with explain_case_x_domain pufe_union case_x 
-    show ?thesis by metis
+with case_x have "explain_dom (\<lparr>uf_list = l2, unions = u2, au = a2\<rparr>, x, ax)"
+      "explain_dom (\<lparr>uf_list = l2, unions = u2, au = a2\<rparr>, bx, y)"
+      by (metis)+
+    with explain_case_x_domain case_x(1-12, 19) order_less_imp_le
+    show ?case 
+      by metis
   next
-    case (case_y ufe lca newest_index_x newest_index_y ax bx ay "by")
-    then show ?thesis sorry
+    case (case_y ufe lca newest_index_x newest_index_y ax bx ay "by" x y)
+    with union have "explain_dom (ufe_union pufe x2 y2, y, x)" 
+      using pufe pufe_union by fastforce
+    with explain_symmetric_domain case_y show ?case 
+      by (metis pufe_union)
   qed
 qed
 
@@ -1172,17 +1412,19 @@ proof-
   from dom assms show ?thesis
   proof(induction arbitrary: l1 u1 a1 rule: explain.pinduct)
     case (1 l u a x y)
-    then show ?case 
-    proof(cases rule: explain_cases[of l u a x y])
-      case (base ufe)
+    then have induction_assms: "ufe_invar \<lparr>uf_list = l, unions = u, au = a\<rparr>" "x < length l" "y < length l"
+      by (metis ufe_data_structure.select_convs(1))+
+  from induction_assms 1 show ?case
+  proof(induction rule: explain_cases_simple)
+      case (base x y ufe)
       with explain_empty have "explain ufe x y = {}"
         by force
-      with base show ?thesis by blast
+      with base show ?case by blast
     next
-      case (case_x ufe lca newest_index_x newest_index_y ax bx ay "by")
+      case (case_x ufe lca newest_index_x newest_index_y ax bx ay "by" x y)
       obtain l2 u2 a2 where union: "ufe_union ufe x2 y2 = \<lparr>uf_list = l2, unions = u2, au = a2\<rparr>"
         using ufe_data_structure.cases by blast
-      with case_x(1,7) rep_of_ufe_union_invar 1 have rep: "rep_of l2 x = rep_of l2 y"
+      with case_x rep_of_ufe_union_invar have rep: "rep_of l2 x = rep_of l2 y"
         by (metis ufe_data_structure.select_convs(1))
       define lca' newest_index_x' newest_index_y' axbx' ayby' 
         where defs1: "lca' = lowest_common_ancestor l2 x y"
@@ -1193,38 +1435,38 @@ proof-
       obtain ax' bx' ay' by' where defs2: "(ax', bx') = axbx'"
         "(ay', by') = ayby'" by (metis prod.exhaust_sel)
       note defs = defs1 defs2
-      with lowest_common_ancestor_ufe_union_invar 1 case_x
+      with lowest_common_ancestor_ufe_union_invar case_x
       have lca: "lca = lca'" 
         by (metis ufe_data_structure.select_convs(1) union)
       from 1 have invar: "ufa_invar l" 
         by (metis ufe_data_structure.select_convs(1) ufe_invar_imp_ufa_invar)
-      with lowest_common_ancestor_correct case_x 1
+      with lowest_common_ancestor_correct case_x
       obtain px where px: "path l lca px x" 
         by (metis ufe_data_structure.ext_inject)
-      with find_newest_on_path_ufe_union_invar[OF this "1.prems"(1)] 1 case_x defs lca
+      with find_newest_on_path_ufe_union_invar case_x defs lca
       have newest_index_x: "newest_index_x = newest_index_x'"
         by (metis path_nodes_lt_length_l ufe_data_structure.select_convs(1) ufe_data_structure.select_convs(3) union)
       from invar lowest_common_ancestor_correct case_x 1
       obtain py where py: "path l lca py y" 
         by (metis ufe_data_structure.ext_inject)
-      with find_newest_on_path_ufe_union_invar[OF this "1.prems"(1)] 1 case_x defs lca
+      with find_newest_on_path_ufe_union_invar case_x defs lca
       have newest_index_y: "newest_index_y = newest_index_y'"
         by (metis path_nodes_lt_length_l ufe_data_structure.select_convs(1) ufe_data_structure.select_convs(3) union)
-      from case_x 1 explain_case_x_x_neq_lca have "lca \<noteq> x" 
-        by (metis ufe_data_structure.select_convs(1))
+      from case_x explain_case_x_x_neq_lca have "lca \<noteq> x" 
+        by (metis ufe_data_structure.select_convs(1) order_less_imp_le)
       with find_newest_on_path_Some px
       obtain k where k: "newest_index_x = Some k \<and> k < length u" 
-        using "1.prems"(1) case_x(3) by blast
+        using case_x by metis
       with newest_index_x have "the newest_index_x = the newest_index_x'"
         by simp
-      with newest_index_x defs case_x 1 unions_ufe_union_invar union
+      with newest_index_x defs case_x unions_ufe_union_invar union
       have "(ax, bx) = axbx'" 
         by (metis k option.sel ufe_data_structure.select_convs(2))
       then have "ax = ax'" and "bx = bx'" 
         using defs2(1) by auto
-      with 1 case_x have IH: "explain \<lparr>uf_list = l, unions = u, au = a\<rparr> x ax \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) x ax"
+      with case_x have IH: "explain \<lparr>uf_list = l, unions = u, au = a\<rparr> x ax \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) x ax"
         "explain \<lparr>uf_list = l, unions = u, au = a\<rparr> bx y \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) bx y"
-        by (metis explain_case_x_newest_index_x_Some(2,3) ufe_data_structure.ext_inject)+
+        by (metis explain_case_x_newest_index_x_Some(2,3) ufe_data_structure.ext_inject order_less_imp_le)+
       from "1.prems" have "ufe_invar \<lparr>uf_list = l2, unions = u2, au = a2\<rparr>" 
         by (metis case_x(1) union union_ufe_invar)
       with explain_domain have "explain_dom (\<lparr>uf_list = l2, unions = u2, au = a2\<rparr>, x, y)" 
@@ -1233,17 +1475,27 @@ proof-
       have explain_union: "explain \<lparr>uf_list = l2, unions = u2, au = a2\<rparr> x y
 =  {(ax', bx')} \<union> explain \<lparr>uf_list = l2, unions = u2, au = a2\<rparr> x ax' \<union>
   explain \<lparr>uf_list = l2, unions = u2, au = a2\<rparr> bx' y" 
-        using case_x(7) case_x(8) by presburger
-      with explain_case_x case_x
+        using case_x.hyps(11) order.strict_implies_order by blast
+      with explain_case_x case_x.hyps
       have "explain \<lparr>uf_list = l, unions = u, au = a\<rparr> x y
 =  {(ax, bx)} \<union> explain \<lparr>uf_list = l, unions = u, au = a\<rparr> x ax \<union>
   explain \<lparr>uf_list = l, unions = u, au = a\<rparr> bx y"
-        using "1.hyps" by presburger
-      then show ?thesis 
+        by (metis case_x.prems(1) order_less_imp_le)
+      then show ?case 
         using \<open>ax = ax'\<close> \<open>bx = bx'\<close> IH  case_x(1) explain_union union by auto
     next
-      case (case_y ufe lca newest_index_x newest_index_y ax bx ay "by")
-      then show ?thesis sorry
+      case (case_y ufe lca newest_index_x newest_index_y ax bx ay "by" x y)
+      then have y_x: "explain \<lparr>uf_list = l, unions = u, au = a\<rparr> y x \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) y x"
+        sorry
+      have union_invar: "ufe_invar (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2)" 
+        using case_y.prems(10) case_y.prems(11) case_y.prems(7) induction_assms(1) union_ufe_invar by presburger
+      from case_y(2,3) explain_domain have  "explain_dom (\<lparr>uf_list = l, unions = u, au = a\<rparr>, y, x)"
+"explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, y, x)"
+         apply (simp add: case_y.hyps(3) case_y.hyps(4))
+        using case_y(2,3) explain_domain union_ufe_invar case_y.hyps(3) case_y.hyps(4) 
+        by (metis union_invar ufe_data_structure.select_convs(1) ufe_union_length_uf_list)
+      with explain_symmetric explain_domain case_y(2) show ?case 
+        by (metis y_x case_y.hyps(3) case_y.hyps(4) induction_assms(1) ufe_data_structure.select_convs(1) ufe_union_length_uf_list union_invar)
     qed
   qed
 qed
@@ -1286,38 +1538,40 @@ next
     using ufe_data_structure.cases by blast
   obtain l2 u2 a2 where pufe_union: "ufe_union pufe x2 y2 = \<lparr>uf_list = l2, unions = u2, au = a2\<rparr>"
     using ufe_data_structure.cases by blast
-  then show ?case 
-  proof(cases rule: explain_cases[of l2 u2 a2 x y])
-    case (base ufe)
+  with union have induction_assms: "ufe_invar \<lparr>uf_list = l2, unions = u2, au = a2\<rparr>" "x < length l2" "y < length l2"
+    by (metis pufe ufe_data_structure.select_convs(1) union_ufe_invar)+
+  from induction_assms union pufe pufe_union show ?case
+  proof(induction rule: explain_cases_simple)
+    case (base x y ufe)
     with union(7) pufe_union have "x \<noteq> y \<Longrightarrow> False" by fastforce
-    then show ?thesis by blast
+    then show ?case by blast
   next
-    case (case_x ufe lca newest_index_x newest_index_y ax bx ay "by")
-    with explain_case_x_rep_of_ax_bx_ufe_union[OF union(1) pufe pufe_union] union 
+    case (case_x ufe lca newest_index_x newest_index_y ax bx ay "by" x y)
+    with explain_case_x_rep_of_ax_bx_ufe_union[OF union(1) pufe pufe_union] union
     have rep: "rep_of l1 ax = rep_of l1 x" "rep_of l1 bx = rep_of l1 y"
-      by (metis pufe pufe_union ufe_data_structure.select_convs(1) ufe_union_length_uf_list)+
-    from union have x_y_lt_length: "x < length l1" "y < length l1"
+      by (metis order_less_imp_le ufe_data_structure.select_convs(1) ufe_union_length_uf_list)+
+    from case_x have x_y_lt_length: "x < length l1" "y < length l1"
       by (metis pufe ufe_data_structure.select_convs(1) ufe_union_length_uf_list)+
     from union.hyps have invar: "ufe_invar (ufe_union pufe x2 y2)" 
       using pufe union_ufe_invar by auto
-    with case_x explain_case_x_newest_index_x_Some(2,3) union.prems pufe_union 
+    with case_x explain_case_x_newest_index_x_Some(2,3) pufe_union 
     have "ax < length l2" "bx < length l2"
-      by (metis pufe ufe_data_structure.select_convs(1) ufe_union_length_uf_list)+
+      by (metis pufe ufe_data_structure.select_convs(1) ufe_union_length_uf_list order_less_imp_le)+
     then have ax_bx_lt_length: "ax < length l1" "bx < length l1"
       by (metis pufe pufe_union ufe_data_structure.select_convs(1) ufe_union_length_uf_list)+
-    with union rep pufe have "(x, ax) \<in> (symcl (explain pufe x ax))\<^sup>*" "(bx, y) \<in> (symcl (explain pufe bx y))\<^sup>*"
-      by (metis ufe_data_structure.select_convs(1) ufe_union_length_uf_list)+
+    with case_x rep pufe have "(x, ax) \<in> (symcl (explain pufe x ax))\<^sup>*" "(bx, y) \<in> (symcl (explain pufe bx y))\<^sup>*"
+      by (metis ufe_data_structure.select_convs(1) ufe_union_length_uf_list order_less_imp_le)+
     with explain_ufe_union_invar2[OF union(1) pufe] x_y_lt_length ax_bx_lt_length
     have *: "(x, ax) \<in> (symcl (explain (ufe_union pufe x2 y2) x ax))\<^sup>*" "(bx, y) \<in> (symcl (explain (ufe_union pufe x2 y2) bx y))\<^sup>*" 
       by (metis pufe ufe_data_structure.select_convs(1) union.hyps(2) union.hyps(3))+
     from invar pufe_union
     have "explain_dom (\<lparr>uf_list = l2, unions = u2, au = a2\<rparr>, x, y)" 
       by (metis explain_domain pufe ufe_data_structure.select_convs(1) ufe_union_length_uf_list x_y_lt_length(1) x_y_lt_length(2))
-    with case_x explain_case_x pufe_union
+    with case_x explain_case_x order_less_imp_le
     have explain: "explain (ufe_union pufe x2 y2) x y = 
   {(ax, bx)} \<union> explain \<lparr>uf_list = l2, unions = u2, au = a2\<rparr> x ax \<union>
     explain \<lparr>uf_list = l2, unions = u2, au = a2\<rparr> bx y"
-      by presburger
+      by metis
     with symcl_def have 
       "(ax, bx) \<in> (symcl (explain (ufe_union pufe x2 y2) x y))\<^sup>*"
       "(x, ax) \<in> (symcl (explain (ufe_union pufe x2 y2) x y))\<^sup>*"
@@ -1325,17 +1579,20 @@ next
       apply (metis UnI1 inf_sup_ord(3) insert_subset r_into_rtrancl)
       using explain * pufe_union 
       by (metis Un_commute eqcl_union)+
-    with rtrancl_trans show ?thesis
+    with rtrancl_trans show ?case
       by metis
   next
-    case (case_y ufe lca newest_index_x newest_index_y ax bx ay "by")
-    then have 
-      "(ay, by) \<in> (symcl (explain (ufe_union pufe x2 y2) x y))\<^sup>*"
-      "(x, by) \<in> (symcl (explain (ufe_union pufe x2 y2) x y))\<^sup>*"
-      "(ay, y) \<in> (symcl (explain (ufe_union pufe x2 y2) x y))\<^sup>*"
-      sorry
-    with rtrancl_trans sym_symcl  show ?thesis 
-      by (metis sym_def sym_rtrancl)
+    case (case_y ufe lca newest_index_x newest_index_y ax bx ay "by" x y)
+    from case_y have y_x: "(y, x) \<in> (symcl (explain (ufe_union pufe x2 y2) y x))\<^sup>*"
+      by metis
+    have "ufe_invar (ufe_union pufe x2 y2)" 
+      using case_y.hyps(1) case_y.hyps(2) pufe_union by presburger
+    then have "explain_dom (ufe_union pufe x2 y2, x, y)" 
+      using case_y.prems(5) case_y.prems(6) explain_domain by blast
+    with explain_symmetric y_x have "(y, x) \<in> (symcl (explain (ufe_union pufe x2 y2) x y))\<^sup>*"
+      by (metis \<open>ufe_invar (ufe_union pufe x2 y2)\<close> case_y.prems(5) case_y.prems(6))
+    with sym_rtrancl sym_def show ?case 
+      by (metis sym_symcl)
   qed
 qed
 
