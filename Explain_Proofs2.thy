@@ -16,7 +16,7 @@ lemma edges_near_root_newer:
   then show ?case by simp
 next
   case (union pufe x y)
-  have i:"i < length (uf_list pufe)" 
+  have i: "i < length (uf_list pufe)" 
     using ufe_union_length_uf_list union.prems(1) by auto
   then show ?case 
   proof(cases "uf_list pufe ! i = uf_list pufe ! (uf_list pufe ! i)")
