@@ -26,7 +26,7 @@ proof(induction rule: path.induct)
 qed simp
 
 lemma path_snoc: 
-"path l u p (l ! v) \<Longrightarrow> v < length l \<Longrightarrow> l ! v < length l \<Longrightarrow> l ! v \<noteq> v \<Longrightarrow> path l u (p @ [v]) v"
+  "path l u p (l ! v) \<Longrightarrow> v < length l \<Longrightarrow> l ! v < length l \<Longrightarrow> l ! v \<noteq> v \<Longrightarrow> path l u (p @ [v]) v"
 proof-
   assume p: "path l u p (l!v)" and "v < length l" and a: "l ! v < length l" and b:"l ! v \<noteq> v"
   then have "path l v [v] v" 
@@ -38,7 +38,7 @@ proof-
 qed
 
 lemma path_divide1: 
-"path l u (p1 @ p2) v \<Longrightarrow> p1 \<noteq> [] \<Longrightarrow> path l u p1 (last p1) \<and> path l (last p1) (last p1 # p2) v"
+  "path l u (p1 @ p2) v \<Longrightarrow> p1 \<noteq> [] \<Longrightarrow> path l u p1 (last p1) \<and> path l (last p1) (last p1 # p2) v"
 proof(induction l u "p1 @ p2" v arbitrary: p1 p2 rule: path.induct)
   case (single n l)
   then show ?case 
@@ -110,7 +110,7 @@ next
 qed
 
 corollary paths_iff: 
-"path l u p1 v \<and> path l v p2 w \<longleftrightarrow> hd p2 = v \<and> last p1 = v \<and> p2 \<noteq> [] \<and> p1 \<noteq> [] \<and> path l u (p1 @ tl p2) w"
+  "path l u p1 v \<and> path l v p2 w \<longleftrightarrow> hd p2 = v \<and> last p1 = v \<and> p2 \<noteq> [] \<and> p1 \<noteq> [] \<and> path l u (p1 @ tl p2) w"
 proof
   assume assms:"path l u p1 v \<and> path l v p2 w"
   then have "last p1 = v" and "hd p2 = v"
@@ -150,7 +150,7 @@ lemma path_unique_if_length_eq:
     and "ufa_invar l"
     and "length p1 = length p2"
   shows "p1 = p2 \<and> x = y"
-using assms proof(induction arbitrary: p2 y rule: path.induct)
+  using assms proof(induction arbitrary: p2 y rule: path.induct)
   case (single n l)
   obtain k where "path l y [k] n" and "p2 = [k]"
     using list_decomp_1 single.prems by fastforce
@@ -168,7 +168,7 @@ lemma path_properties:
   assumes "path l x p y"
   shows "p \<noteq> [] \<and> (\<forall> i > 0 . i < length p \<longrightarrow> l ! (p ! i) = (p ! (i - 1))) \<and> hd p = x \<and> last p = y
          \<and> (\<forall> i < length p . p ! i < length l) \<and> (\<forall> i > 0 . i < length p \<longrightarrow> p ! i \<noteq> (p ! (i - 1)))"
-using assms proof(induction rule: path.induct)
+  using assms proof(induction rule: path.induct)
   case (single n l)
   then show ?case by auto
 next
@@ -331,7 +331,7 @@ lemma path_to_rep_of:
   assumes "ufa_invar l"
     and "x < length l"
   obtains p where "path l (rep_of l x) p x"
-using assms proof(induction arbitrary: thesis rule: rep_of_induct)
+  using assms proof(induction arbitrary: thesis rule: rep_of_induct)
   case (base i)
   then have "rep_of l i = i"
     by (simp add: rep_of_refl)
@@ -378,7 +378,7 @@ lemma path_not_first_no_root:
     and "i < length p"
     and "i > 0"
   shows "l ! (p ! i) \<noteq> p ! i"
-using assms proof(induction arbitrary: i rule: path.induct)
+  using assms proof(induction arbitrary: i rule: path.induct)
   case (single n l)
   then show ?case by auto
 next

@@ -12,7 +12,6 @@ text \<open>
   Reference paper: Proof-Producing Congruence Closure, Robert Nieuwenhuis and Albert Oliveras
 \<close>
 
-
 subsection \<open>Definitions\<close>
 text \<open>
 Data structure for the union, find and explain operations:
@@ -32,13 +31,12 @@ paragraph \<open>Union\<close>
 text \<open>Extension of the union operations to the \<open>uf_data_structure\<close>.\<close>
 fun ufe_union :: "ufe_data_structure \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> ufe_data_structure"
   where
-"ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x y = (
+    "ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x y = (
 if (rep_of l x \<noteq> rep_of l y) then
     \<lparr>uf_list = ufa_union l x y, 
      unions = u @ [(x,y)],
      au =  a[rep_of l x := Some (length u)]\<rparr>
 else \<lparr>uf_list = l, unions = u, au = a\<rparr>)"
-
 
 text \<open>Helper lemmata for \<open>ufe_union\<close>.\<close>
 lemma ufe_union1[simp]: "rep_of l x = rep_of l y \<Longrightarrow> ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x y = \<lparr>uf_list = l, unions = u, au = a\<rparr>"
@@ -74,8 +72,8 @@ lemma P_ufe_unionE[consumes 1, case_names rep_neq]:
 text \<open>For the application of a list of unions.\<close>
 fun apply_unions::"(nat * nat) list \<Rightarrow> ufe_data_structure \<Rightarrow> ufe_data_structure"
   where
-"apply_unions [] p = p" |
-"apply_unions ((x,y)#u) p = apply_unions u (ufe_union p x y)"
+    "apply_unions [] p = p" |
+    "apply_unions ((x,y)#u) p = apply_unions u (ufe_union p x y)"
 
 lemma apply_unions_cons: "apply_unions u1 a = b \<Longrightarrow> apply_unions u2 b = c \<Longrightarrow> apply_unions (u1 @ u2) a = c"
   by(induction u1 a rule: apply_unions.induct, simp_all)
@@ -85,15 +83,14 @@ paragraph \<open>Explain\<close>
 text \<open>Finds the path from x to rep_of x.\<close>
 function path_to_root :: "nat list \<Rightarrow> nat \<Rightarrow> nat list"
   where 
-"path_to_root l x = (if l ! x = x then [x] else path_to_root l (l ! x) @ [x])"
+    "path_to_root l x = (if l ! x = x then [x] else path_to_root l (l ! x) @ [x])"
   by pat_completeness auto
-
 
 text \<open>Finds the lowest common ancestor of x and y in the
       tree represented by the array l.\<close>
 fun (domintros) lowest_common_ancestor :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" 
   where
-"lowest_common_ancestor l x y = 
+    "lowest_common_ancestor l x y = 
 last (longest_common_prefix (path_to_root l x) (path_to_root l y))"
 
 lemma lowest_common_ancestor_symmetric:
@@ -110,15 +107,15 @@ text \<open>Finds the newest edge on the path from x to y
       (where y is nearer to the root than x).\<close>
 function (domintros) find_newest_on_path  :: "nat list \<Rightarrow> nat option list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat option"
   where
-"find_newest_on_path l a x y = 
+    "find_newest_on_path l a x y = 
   (if x = y then None
     else max (a ! x) (find_newest_on_path l a (l ! x) y))"
   by pat_completeness auto
 
-text "Explain operation, as described in the paper."
+text \<open>Explain operation, as described in the paper.\<close>
 function (domintros) explain :: "ufe_data_structure \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> (nat * nat) set"
   where
-"explain \<lparr>uf_list = l, unions = u, au = a\<rparr> x y = 
+    "explain \<lparr>uf_list = l, unions = u, au = a\<rparr> x y = 
       (if x = y \<or> rep_of l x \<noteq> rep_of l y then {}
       else 
           (let lca = lowest_common_ancestor l x y;
@@ -187,7 +184,7 @@ lemma explain_case_x_domain:
   by (smt (verit, best) lowest_common_ancestor.simps prod.inject) 
 
 lemma explain_case_y_domain:
- "ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr> 
+  "ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr> 
   \<Longrightarrow> explain_dom (\<lparr>uf_list = l, unions = u, au = a\<rparr>, x, by)
   \<Longrightarrow> explain_dom (\<lparr>uf_list = l, unions = u, au = a\<rparr>, ay, y)
   \<Longrightarrow> \<not>(x = y \<or> rep_of l x \<noteq> rep_of l y)   
@@ -233,8 +230,7 @@ lemma explain_case_y[simp]:
             \<union> explain \<lparr>uf_list = l, unions = u, au = a\<rparr> ay y"
   by (auto simp add: explain.psimps Let_def)  
 
-
-text \<open>Lemmas about rep_of.\<close>
+subsection \<open>Lemmas about rep_of.\<close>
 
 lemma rep_of_less_length_l:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> rep_of l x < length l"
@@ -262,6 +258,5 @@ next
   case False
   then show ?thesis  using ufe_data_structure.cases ufe_union2 by (metis ufe_data_structure.select_convs(1))
 qed
-
 
 end

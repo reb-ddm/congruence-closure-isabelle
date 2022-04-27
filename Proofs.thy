@@ -1,9 +1,12 @@
-section \<open>Correctness proofs\<close>
+section \<open>Correctness proofs for the helper functions\<close>
 theory Proofs
   imports Path 
 begin 
 
+subsection \<open>Proofs about the domain of the helper functions\<close>
+
 text \<open>The domain of \<open>path_to_root\<close> is the same as the domain of \<open>rep_of\<close>.\<close>
+
 lemma path_to_root_rel: "rep_of_rel x y \<longleftrightarrow> path_to_root_rel x y" 
 proof
   show "rep_of_rel x y \<Longrightarrow> path_to_root_rel x y"
@@ -16,17 +19,10 @@ qed
 lemma path_to_root_domain: "rep_of_dom (l, i) \<longleftrightarrow> path_to_root_dom (l, i)" 
   using path_to_root_rel by presburger
 
-
-text \<open>\<open>lowest_common_ancestor\<close> is total for Some reason, even though it invokes partial functions, weird.\<close>
-thm "lowest_common_ancestor.domintros"
-
-lemma "lowest_common_ancestor_dom (l, x, y) \<longleftrightarrow> path_to_root_dom (l, x) \<and> path_to_root_dom (l, y)" 
-  oops
-
 lemma lowest_common_ancestor_domain: "All lowest_common_ancestor_dom"
   using lowest_common_ancestor.domintros by auto
 
-paragraph \<open>Correctness proof for \<open>path_to_root\<close>.\<close>
+subsection \<open>Correctness proof for \<open>path_to_root\<close>.\<close>
 
 lemma path_to_root_correct:
   assumes "ufa_invar l"
@@ -49,7 +45,7 @@ next
 qed
 
 
-paragraph \<open>Correctness of \<open>lowest_common_ancestor\<close>.\<close>
+subsection \<open>Correctness of \<open>lowest_common_ancestor\<close>.\<close>
 
 abbreviation "common_ancestor l x y ca \<equiv>
 (\<exists> p . path l ca p x) \<and>
@@ -106,7 +102,7 @@ proof-
     then have "path_to_root l y = pRootR @ tl p4 @ tl pCaY" 
       using assms(1,4) path_root_y path_unique by simp
     then have prefix1: "prefix (pRootR @ tl p4) (path_to_root l x)" 
-          and prefix2: "prefix (pRootR @ tl p4) (path_to_root l y)"
+      and prefix2: "prefix (pRootR @ tl p4) (path_to_root l y)"
       using * by fastforce+
     have path_root_lca:"path l (rep_of l x) (pRootR @ tl p3) ?lca" 
       using assm pRootR path_concat1 by blast
@@ -128,7 +124,7 @@ proof-
     by blast
 qed
 
-paragraph \<open>Correctness of \<open>find_newest_on_path\<close>.\<close>
+subsection \<open>Correctness of \<open>find_newest_on_path\<close>.\<close>
 
 abbreviation "Newest_on_path l a x y newest \<equiv>
 \<exists> p . path l y p x \<and> newest = (MAX i \<in> set [1..<length p]. a ! (p ! i))
@@ -238,7 +234,7 @@ proof
     by simp
 qed
 
-paragraph \<open>Definition of valid \<open>ufe_data_structure\<close>.\<close>
+subsection \<open>Properties of the functions when invoked with valid parameters\<close>
 
 abbreviation "valid_unions u n \<equiv>
 (\<forall> i < length u. fst (u ! i) < n \<and> snd (u ! i) < n)"
@@ -391,14 +387,14 @@ next
   then have *: "apply_unions u ufe = ufe_union ?c x2 y2" 
     by (simp add: \<open>xy = (x2, y2)\<close>)
   obtain l1 u1 a1 where ufe: "?c = \<lparr>uf_list = l1, unions = u1, au = a1\<rparr>" 
-      using ufe_data_structure.cases by blast
+    using ufe_data_structure.cases by blast
   have "x2 < length (uf_list ?c) \<and> y2 < length (uf_list ?c)"
     by (metis Suc.prems(2) un' xy apply_unions_length_uf_list fst_conv length_append_singleton lessI nth_append_length snd_conv)
   with * c union_ufe_invar ufe show ?case 
     by simp
 qed
 
-text \<open>\<open>ufe_invar\<close> implies \<open>ufa_invar\<close>.\<close>
+paragraph \<open>\<open>ufe_invar\<close> implies \<open>ufa_invar\<close>.\<close>
 
 lemma ufe_invar_imp_ufa_invar_aux: 
   "ufa_invar (uf_list ufe) \<Longrightarrow> valid_unions u (length (uf_list ufe)) \<Longrightarrow> ufa_invar (uf_list (apply_unions u ufe))"
@@ -482,7 +478,7 @@ next
   qed
 qed
 
-paragraph \<open>Properties of some functions when \<open>ufe_invar\<close> holds.\<close>
+paragraph \<open>Properties of some functions when \<open>ufe_invar\<close> holds\<close>
 
 lemma no_redundant_unions:
   assumes invar: "ufe_invar a"
@@ -504,7 +500,6 @@ proof
   then show "False"
     by (simp add: unions_a)
 qed
-
 
 text \<open>(au ! i = None) iff i is a root.\<close>
 
@@ -566,8 +561,8 @@ lemma au_none_iff_root:
 next
   case (union pufe x y)
   obtain l1 u1 a1 where pufe: "pufe = \<lparr>uf_list = l1, unions = u1, au = a1\<rparr>" 
-      using ufe_data_structure.cases by blast
-    with union have "a1 ! i = None \<longleftrightarrow> l1 ! i = i"
+    using ufe_data_structure.cases by blast
+  with union have "a1 ! i = None \<longleftrightarrow> l1 ! i = i"
     by (metis (full_types) ufe_data_structure.select_convs(1) ufe_union_length_uf_list)
   have "length l = length l1" 
     by (metis pufe ufe_data_structure.select_convs(1) ufe_union_length_uf_list union.prems(1))
@@ -590,7 +585,7 @@ proof-
     by (simp add: that)
 qed
 
-paragraph "Lemmata about invariants w.r.t. \<open>ufe_union\<close>."
+paragraph "Lemmata about invariants wrt. \<open>ufe_union\<close>."
 
 lemma rep_of_ufa_union_invar:
   assumes "ufa_invar l"
@@ -698,8 +693,8 @@ qed
 
 lemma path_to_root_ufa_union1:
   assumes "ufa_invar l" and  "x < length l"
-     and "rep_of l x \<noteq> rep_of l x2"
-     and "x2 < length l" and "y2 < length l"
+    and "rep_of l x \<noteq> rep_of l x2"
+    and "x2 < length l" and "y2 < length l"
   shows "path_to_root (ufa_union l x2 y2) x = path_to_root l x"
   using assms proof(induction rule: rep_of_induct)
   case (base i)
@@ -718,9 +713,9 @@ qed
 
 lemma path_to_root_ufa_union2:
   assumes "ufa_invar l" and  "x < length l"
-     and "rep_of l x = rep_of l x2"
-     and "x2 < length l" and "y2 < length l"
-     and "rep_of l x2 \<noteq> rep_of l y2"
+    and "rep_of l x = rep_of l x2"
+    and "x2 < length l" and "y2 < length l"
+    and "rep_of l x2 \<noteq> rep_of l y2"
   shows "path_to_root (ufa_union l x2 y2) x = [rep_of l y2] @ path_to_root l x"
   using assms proof(induction rule: rep_of_induct)
   case (base i)
@@ -728,10 +723,10 @@ lemma path_to_root_ufa_union2:
     by (metis path_no_cycle path_to_root_correct rep_of_refl)
   from base have union: "ufa_union l x2 y2 ! i = rep_of l y2"
     by (simp add: rep_of_refl)
-    with base have "path_to_root (ufa_union l x2 y2) i = path_to_root (ufa_union l x2 y2) ((ufa_union l x2 y2)!i)@[i]"
-      by (metis length_list_update path_snoc path_to_root_correct path_unique rep_of_bound rep_of_idx rep_of_refl ufa_union_invar)
-    with base base_path union show ?case 
-      by (metis append_same_eq length_list_update path_no_cycle path_to_root_correct rep_of_idx rep_of_less_length_l ufa_union_aux ufa_union_invar)   
+  with base have "path_to_root (ufa_union l x2 y2) i = path_to_root (ufa_union l x2 y2) ((ufa_union l x2 y2)!i)@[i]"
+    by (metis length_list_update path_snoc path_to_root_correct path_unique rep_of_bound rep_of_idx rep_of_refl ufa_union_invar)
+  with base base_path union show ?case 
+    by (metis append_same_eq length_list_update path_no_cycle path_to_root_correct rep_of_idx rep_of_less_length_l ufa_union_aux ufa_union_invar)   
 next
   case (step i)
   then have *: "rep_of l (l ! i) = rep_of l x2" 
@@ -745,8 +740,8 @@ qed
 lemma lowest_common_ancestor_ufa_union_invar:
   assumes "ufa_invar l" and "rep_of l x = rep_of l y"
     and "x < length l" and "y < length l" 
-     and "x2 < length l" and "y2 < length l"
-   shows "lowest_common_ancestor (ufa_union l x2 y2) x y = lowest_common_ancestor l x y"
+    and "x2 < length l" and "y2 < length l"
+  shows "lowest_common_ancestor (ufa_union l x2 y2) x y = lowest_common_ancestor l x y"
 proof(cases "rep_of l x2 = rep_of l x")
   case True
   then show ?thesis 
@@ -784,8 +779,8 @@ lemma lowest_common_ancestor_ufe_union_invar:
   assumes "ufe = \<lparr>uf_list = l, unions = un, au = a\<rparr>"
     and "ufe_invar ufe" and "rep_of l x = rep_of l y"
     and "x < length l" and "y < length l" 
-     and "x2 < length l" and "y2 < length l"
-   shows "lowest_common_ancestor (uf_list (ufe_union ufe x2 y2)) x y = lowest_common_ancestor l x y"
+    and "x2 < length l" and "y2 < length l"
+  shows "lowest_common_ancestor (uf_list (ufe_union ufe x2 y2)) x y = lowest_common_ancestor l x y"
 proof-
   from assms(1,2) have "ufa_invar l" 
     by (metis ufe_data_structure.select_convs(1) ufe_invar_imp_ufa_invar)
@@ -801,7 +796,7 @@ lemma find_newest_on_path_dom_ufe_union:
     and "x2 < length l"
     and "y2 < length l"
   shows "path (uf_list (ufe_union ufe x2 y2)) y p x"
-using assms proof(induction arbitrary: ufe a u rule: path.induct)
+  using assms proof(induction arbitrary: ufe a u rule: path.induct)
   case (single n l3)
   then have "path (uf_list (ufe_union ufe x2 y2)) n [n] n" 
     by (metis path.single ufe_data_structure.select_convs(1) ufe_union_length_uf_list)
@@ -880,7 +875,6 @@ next
   with assms show ?thesis 
     by simp
 qed
-
 
 lemma path_ufe_union_invar: 
   assumes "path (uf_list ufe) a p b"
@@ -1026,7 +1020,7 @@ proof-
   qed
 qed
 
-paragraph \<open>Lemmata about \<open>find_newest_on_path\<close>.\<close>
+paragraph \<open>Additional properties of \<open>find_newest_on_path\<close>.\<close>
 
 lemma find_newest_on_path_if_Some:
   assumes "find_newest_on_path_dom (l, a, x, y)"
@@ -1121,6 +1115,5 @@ proof(rule ccontr)
   then show "False" 
     using x assms(1) by linarith
 qed
-
 
 end

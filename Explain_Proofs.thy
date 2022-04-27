@@ -3,7 +3,7 @@ theory Explain_Proofs
   imports Proofs "HOL.List"
 begin 
 
-paragraph \<open>A few lemmas about intermediate results of explain.\<close>
+paragraph \<open>A few lemmas about intermediate results of explain\<close>
 
 lemma k_and_outgoing_edge_same_rep:
   assumes "ufe_invar ufe"
@@ -71,7 +71,6 @@ next
       by (metis False \<open>k < length l1\<close> pufe ufe_data_structure.select_convs(1))
   qed
 qed
-
 
 lemma k_and_outgoing_edge_same_rep_before_union:
   assumes "ufe_invar before"
@@ -251,7 +250,6 @@ proof-
   with assms explain_case_x_newest_index_index2 show ?thesis 
     by auto
 qed
-
 
 lemma explain_case_y_newest_index_index2:
   assumes "ufe_invar  \<lparr>uf_list = l, unions = u, au = a\<rparr>"
@@ -433,8 +431,7 @@ lemma explain_domain_cases:
   }
 qed
 
-
-paragraph \<open>Other usefule lemmas.\<close>
+paragraph \<open>Other useful lemmas\<close>
 
 lemma au_entries_neq:
   assumes "ufe_invar ufe" and "i1 \<noteq> i2"
@@ -622,7 +619,6 @@ proof-
       using i1 i2 by presburger
   qed
 qed
-
 
 lemma explain_case_x_rep_of_ax_bx_ufe_union:
   assumes "ufe_invar ufe_before"
@@ -915,8 +911,7 @@ proof-
     "rep_of (uf_list ufe_before) bx = rep_of (uf_list ufe_before) y" by simp_all
 qed
 
-paragraph \<open>The order of the parameters in explain can be switched.\<close>
-
+paragraph \<open>The order of the parameters in explain can be switched\<close>
 
 lemma explain_symmetric_domain:
   assumes "explain_dom (ufe, x, y)"
@@ -998,7 +993,7 @@ lemma explain_symmetric_domain:
   qed
 qed
 
-lemma explain_symmetric:
+theorem explain_symmetric:
   assumes "explain_dom (ufe, x, y)"
     and "ufe_invar ufe"
     and "x < length (uf_list ufe)" and "y < length (uf_list ufe)"
@@ -1081,7 +1076,12 @@ lemma explain_symmetric:
       by (metis "*" calculation case_y(1))
   qed
 qed
-print_statement explain.pinduct
+
+paragraph \<open>A better case rule for proofs about explain\<close>
+
+text \<open>Given that case_y and case_y are symmetric, we can prove case_y
+      more easily with this new case rule. It needs to be used with the 
+      \<open>induction\<close> proof method. \<close>
 
 lemma explain_cases_simple[consumes 3, case_names base case_x case_y]:
   assumes "ufe_invar \<lparr>uf_list = l, unions = u, au = a\<rparr>"
@@ -1102,7 +1102,7 @@ lemma explain_cases_simple[consumes 3, case_names base case_x case_y]:
 \<Longrightarrow> \<not>(x = y \<or> rep_of l x \<noteq> rep_of l y)
 \<Longrightarrow> newest_index_x > newest_index_y
 \<Longrightarrow> P x y"
-and "\<And> ufe lca newest_index_x newest_index_y ax bx ay by x y.
+    and "\<And> ufe lca newest_index_x newest_index_y ax bx ay by x y.
 P y x \<Longrightarrow> ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr>
 \<Longrightarrow> ufe_invar ufe
 \<Longrightarrow> x < length l \<Longrightarrow> y < length l
@@ -1145,7 +1145,7 @@ proof-
   qed
 qed
 
-paragraph \<open>Explain terminates when the invariant holds.\<close>
+subsection \<open>Explain terminates when the invariant holds.\<close>
 
 lemma explain_domain_ufe_union_invar:
   assumes "explain_dom (ufe, x, y)"
@@ -1159,7 +1159,7 @@ lemma explain_domain_ufe_union_invar:
   using assms proof(induction rule: explain.pinduct)
   case (1 l u a x y)
   then have induction_assms: "ufe_invar \<lparr>uf_list = l, unions = u, au = a\<rparr>" "x < length l" "y < length l"
-      apply blast
+    apply blast
     using 1 by (metis ufe_data_structure.select_convs(1))+
   from induction_assms 1 show ?case
   proof(induction rule: explain_cases_simple)
@@ -1240,17 +1240,17 @@ lemma explain_domain_ufe_union_invar:
     then have dom: "explain_dom (\<lparr>uf_list = l, unions = u, au = a\<rparr>, y, x)" 
       using explain_symmetric_domain by presburger
     have *: "ufe_invar \<lparr>uf_list = l, unions = u, au = a\<rparr>"
-    "x2 < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>)"
-    "y2 < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>)"
-    "y < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>)"
-    "x < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>)"
-    "rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) y = rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) x"
+      "x2 < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>)"
+      "y2 < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>)"
+      "y < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>)"
+      "x < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>)"
+      "rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) y = rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) x"
       using induction_assms(1) apply blast
       using case_y.prems(7-11) by auto
         \<comment>\<open>We need to prove the induction hypotheses for the symmetric case.\<close>
     with explain_symmetric_domain union_ufe_invar *(1) ufe_union_length_uf_list 
-  linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
-  have a: "(\<And>xa xba xc xaa xab ya xac xad yba.
+      linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
+    have a: "(\<And>xa xba xc xaa xab ya xac xad yba.
         \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
         xa = lowest_common_ancestor l y x \<Longrightarrow>
         xba = find_newest_on_path l a y xa \<Longrightarrow>
@@ -1268,10 +1268,10 @@ lemma explain_domain_ufe_union_invar:
         rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) y =
         rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) xab \<Longrightarrow>
         explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, y, xab))"  
-    by (metis ufe_data_structure.select_convs(1))
-  with explain_symmetric_domain union_ufe_invar *(1) ufe_union_length_uf_list 
-  linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
- have b: "(\<And>xa xba xc xaa xab ya xac xad yba.
+      by (metis ufe_data_structure.select_convs(1))
+    with explain_symmetric_domain union_ufe_invar *(1) ufe_union_length_uf_list 
+      linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
+    have b: "(\<And>xa xba xc xaa xab ya xac xad yba.
         \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
         xa = lowest_common_ancestor l y x \<Longrightarrow>
         xba = find_newest_on_path l a y xa \<Longrightarrow>
@@ -1289,11 +1289,11 @@ lemma explain_domain_ufe_union_invar:
         rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) ya =
         rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) x \<Longrightarrow>
         explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, ya, x))"
-   by (metis ufe_data_structure.select_convs(1))
-  with explain_symmetric_domain union_ufe_invar *(1) ufe_union_length_uf_list 
-  linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
-linorder_le_cases
-  have c: "(\<And>xa xba xc xaa xab ya xac xad yba.
+      by (metis ufe_data_structure.select_convs(1))
+    with explain_symmetric_domain union_ufe_invar *(1) ufe_union_length_uf_list 
+      linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
+      linorder_le_cases
+    have c: "(\<And>xa xba xc xaa xab ya xac xad yba.
         \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
         xa = lowest_common_ancestor l y x \<Longrightarrow>
         xba = find_newest_on_path l a y xa \<Longrightarrow>
@@ -1311,11 +1311,11 @@ linorder_le_cases
         rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) y =
         rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) yba \<Longrightarrow>
         explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, y, yba))"
-    by metis
-  with explain_symmetric_domain union_ufe_invar *(1) ufe_union_length_uf_list 
-  linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
-  linorder_le_cases
-  have d: "(\<And>xa xba xc xaa xab ya xac xad yba.
+      by metis
+    with explain_symmetric_domain union_ufe_invar *(1) ufe_union_length_uf_list 
+      linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
+      linorder_le_cases
+    have d: "(\<And>xa xba xc xaa xab ya xac xad yba.
         \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
         xa = lowest_common_ancestor l y x \<Longrightarrow>
         xba = find_newest_on_path l a y xa \<Longrightarrow>
@@ -1333,16 +1333,16 @@ linorder_le_cases
         rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) xad =
         rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) x \<Longrightarrow>
         explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, xad, x))"
-    by metis
-  from * a b c d case_y dom
-  have "explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, y, x)" 
-    by blast
+      by metis
+    from * a b c d case_y dom
+    have "explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, y, x)" 
+      by blast
     with explain_symmetric_domain case_y.prems induction_assms ufe_union_length_uf_list union_ufe_invar show ?case 
       by (metis ufe_data_structure.select_convs(1))
   qed
 qed
 
-lemma explain_domain:
+theorem explain_domain:
   assumes "ufe_invar ufe"
     and "x < length (uf_list ufe)"
     and "y < length (uf_list ufe)"
@@ -1362,7 +1362,7 @@ next
   obtain l2 u2 a2 where pufe_union: "ufe_union pufe x2 y2 = \<lparr>uf_list = l2, unions = u2, au = a2\<rparr>" 
     using ufe_data_structure.cases by blast 
   with union have induction_assms: "ufe_invar \<lparr>uf_list = l2, unions = u2, au = a2\<rparr>" "x < length l2" "y < length l2"
-      by (metis pufe ufe_data_structure.select_convs(1) union_ufe_invar)+
+    by (metis pufe ufe_data_structure.select_convs(1) union_ufe_invar)+
   from induction_assms pufe union pufe_union show ?case
   proof(induction rule: explain_cases_simple)
     case (base x y ufe)
@@ -1376,7 +1376,7 @@ next
     then have lengths'': "ax < length l1" "bx < length l1"
       by (metis pufe pufe_union ufe_data_structure.select_convs(1) ufe_union_length_uf_list)+
     from case_x have l: "x < length l2" "y < length l2""x2 < length l2" "y2 < length l2"
-       by (metis pufe_union ufe_data_structure.select_convs(1) ufe_union_length_uf_list union.hyps(2,3))+
+      by (metis pufe_union ufe_data_structure.select_convs(1) ufe_union_length_uf_list union.hyps(2,3))+
     then have lengths': "x < length (uf_list pufe)" "y < length l1" 
       by (metis pufe pufe_union ufe_data_structure.select_convs(1) ufe_union_length_uf_list)+
     with lengths case_x have *: "explain_dom (pufe, x, ax)" "explain_dom (pufe, bx, y)"
@@ -1387,7 +1387,7 @@ next
     with  explain_domain_ufe_union_invar * union(1,2,3) lengths' union have "explain_dom (ufe_union pufe x2 y2, x, ax)"
       "explain_dom (ufe_union pufe x2 y2, bx, y)"
       by (metis lengths pufe pufe_union ufe_data_structure.select_convs(1) ufe_union_length_uf_list)+
-with case_x have "explain_dom (\<lparr>uf_list = l2, unions = u2, au = a2\<rparr>, x, ax)"
+    with case_x have "explain_dom (\<lparr>uf_list = l2, unions = u2, au = a2\<rparr>, x, ax)"
       "explain_dom (\<lparr>uf_list = l2, unions = u2, au = a2\<rparr>, bx, y)"
       by (metis)+
     with explain_case_x_domain case_x(1-12, 19) order_less_imp_le
@@ -1402,7 +1402,9 @@ with case_x have "explain_dom (\<lparr>uf_list = l2, unions = u2, au = a2\<rparr
   qed
 qed
 
-lemma explain_valid:
+subsection \<open>The result of explain contains only valid unions\<close>
+
+theorem explain_valid:
   assumes "ufe_invar ufe"
     and "x < length (uf_list ufe)"
     and "y < length (uf_list ufe)"
@@ -1499,6 +1501,8 @@ proof-
   qed
 qed
 
+subsection \<open>Explain is correct\<close>
+
 lemma explain_ufe_union_invar:
   assumes "ufe_invar ufe"
     and "ufe = \<lparr>uf_list = l1, unions = u1, au = a1\<rparr>"
@@ -1512,8 +1516,8 @@ proof-
     case (1 l u a x y)
     then have induction_assms: "ufe_invar \<lparr>uf_list = l, unions = u, au = a\<rparr>" "x < length l" "y < length l"
       by (metis ufe_data_structure.select_convs(1))+
-  from induction_assms 1 show ?case
-  proof(induction rule: explain_cases_simple)
+    from induction_assms 1 show ?case
+    proof(induction rule: explain_cases_simple)
       case (base x y ufe)
       with explain_empty have "explain ufe x y = {}"
         by force
@@ -1584,21 +1588,21 @@ proof-
     next
       case (case_y ufe lca newest_index_x newest_index_y ax bx ay "by" x y)
       then have dom: "\<And> x y. x < length l \<Longrightarrow> y < length l \<Longrightarrow> explain_dom (\<lparr>uf_list = l, unions = u, au = a\<rparr>, y, x)"
-"\<And> x y. x < length l \<Longrightarrow> y < length l \<Longrightarrow> explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, y, x)"
-         apply (metis explain_domain ufe_data_structure.select_convs(1))
+        "\<And> x y. x < length l \<Longrightarrow> y < length l \<Longrightarrow> explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, y, x)"
+        apply (metis explain_domain ufe_data_structure.select_convs(1))
         using case_y.hyps case_y.prems(7-11) union_ufe_invar explain_domain 
         by (metis ufe_data_structure.select_convs(1) ufe_union_length_uf_list)
       then have *: "ufe_invar \<lparr>uf_list = l, unions = u, au = a\<rparr> "
-    "\<lparr>uf_list = l, unions = u, au = a\<rparr> = \<lparr>uf_list = l1, unions = u1, au = a1\<rparr>"
-    "y < length l1"
-    "x < length l1"
-    "x2 < length l1"
-    "y2 < length l1"
+        "\<lparr>uf_list = l, unions = u, au = a\<rparr> = \<lparr>uf_list = l1, unions = u1, au = a1\<rparr>"
+        "y < length l1"
+        "x < length l1"
+        "x2 < length l1"
+        "y2 < length l1"
         using induction_assms(1) apply blast
         using case_y.prems(7-11) by auto
-       \<comment>\<open>We need to prove the induction hypotheses for the symmetric case.\<close>
+          \<comment>\<open>We need to prove the induction hypotheses for the symmetric case.\<close>
       with dom explain_symmetric union_ufe_invar *(1) ufe_union_length_uf_list 
-  linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
+        linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
       have a: "(\<And>xa xb xc xaa xab ya xac xad yb l1 u1 a1.
             \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
             xa = lowest_common_ancestor l y x \<Longrightarrow>
@@ -1619,7 +1623,7 @@ proof-
             \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) y xab)"
         by (metis ufe_data_structure.select_convs(1))
       with dom explain_symmetric union_ufe_invar *(1) ufe_union_length_uf_list 
-  linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric 
+        linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric 
       have b: "(\<And>xa xb xc xaa xab ya xac xad yb l1 u1 a1.
             \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
             xa = lowest_common_ancestor l y x \<Longrightarrow>
@@ -1638,10 +1642,10 @@ proof-
             y2 < length l1 \<Longrightarrow>
             explain \<lparr>uf_list = l, unions = u, au = a\<rparr> ya x
             \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) ya x)"
-                by (metis ufe_data_structure.select_convs(1))
+        by (metis ufe_data_structure.select_convs(1))
       with dom explain_symmetric union_ufe_invar *(1) ufe_union_length_uf_list 
-  linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
-  linorder_le_cases
+        linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
+        linorder_le_cases
       have c: "(\<And>xa xb xc xaa xab ya xac xad yb l1 u1 a1.
             \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
             xa = lowest_common_ancestor l y x \<Longrightarrow>
@@ -1660,10 +1664,10 @@ proof-
             y2 < length l1 \<Longrightarrow>
             explain \<lparr>uf_list = l, unions = u, au = a\<rparr> y yb
             \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) y yb)"
-                by metis
+        by metis
       with dom explain_symmetric union_ufe_invar *(1) ufe_union_length_uf_list 
-  linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
-  linorder_le_cases
+        linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
+        linorder_le_cases
       have d: "(\<And>xa xb xc xaa xab ya xac xad yb l1 u1 a1.
             \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
             xa = lowest_common_ancestor l y x \<Longrightarrow>
@@ -1682,15 +1686,15 @@ proof-
             y2 < length l1 \<Longrightarrow>
             explain \<lparr>uf_list = l, unions = u, au = a\<rparr> xad x
             \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) xad x)"
-                by metis
+        by metis
       with dom * a b c d 
       have y_x: "explain \<lparr>uf_list = l, unions = u, au = a\<rparr> y x \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) y x"
         using case_y.IH by blast
       have union_invar: "ufe_invar (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2)" 
         using case_y.prems(10) case_y.prems(11) case_y.prems(7) induction_assms(1) union_ufe_invar by presburger
       from case_y(2,3) explain_domain have  "explain_dom (\<lparr>uf_list = l, unions = u, au = a\<rparr>, y, x)"
-"explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, y, x)"
-         apply (simp add: case_y.hyps(3) case_y.hyps(4))
+        "explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, y, x)"
+        apply (simp add: case_y.hyps(3) case_y.hyps(4))
         using case_y(2,3) explain_domain union_ufe_invar case_y.hyps(3) case_y.hyps(4) 
         by (metis union_invar ufe_data_structure.select_convs(1) ufe_union_length_uf_list)
       with explain_symmetric explain_domain case_y(2) show ?case 
@@ -1720,7 +1724,7 @@ text \<open>The transitive, reflexive, symmetric closure of \<open>explain ufe x
 lemma eqcl_union: "a \<in> (symcl A)\<^sup>* \<Longrightarrow> a \<in> (symcl (A \<union> B))\<^sup>*"
   by (metis Un_mono Un_upper1 converse_mono rtrancl_mono_mp symcl_def)
 
-lemma explain_correct:
+theorem explain_correct:
   assumes "ufe_invar ufe"
     and "x < length (uf_list ufe)"
     and "y < length (uf_list ufe)"
@@ -1796,6 +1800,6 @@ next
 qed
 
 
-text \<open>\<open>explain ufe x y\<close> is minimal.\<close>
+subsection \<open>\<open>explain ufe x y\<close> is minimal.\<close>
 
 end
