@@ -1,4 +1,4 @@
-chapter \<open>Union-Find Data-Structure with Explain Operation.\<close>
+chapter \<open>Union-Find Data-Structure with Explain Operation\<close>
 theory Explain
   imports 
     "Separation_Logic_Imperative_HOL.Union_Find" 
