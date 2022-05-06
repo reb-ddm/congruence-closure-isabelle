@@ -88,14 +88,13 @@ function path_to_root :: "nat list \<Rightarrow> nat \<Rightarrow> nat list"
 
 text \<open>Finds the lowest common ancestor of x and y in the
       tree represented by the array l.\<close>
-fun (domintros) lowest_common_ancestor :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" 
+fun lowest_common_ancestor :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" 
   where
     "lowest_common_ancestor l x y = 
 last (longest_common_prefix (path_to_root l x) (path_to_root l y))"
 
 lemma lowest_common_ancestor_symmetric:
-  assumes "lowest_common_ancestor_dom (l, x, y)"
-  shows "lowest_common_ancestor l x y = lowest_common_ancestor l y x"
+  "lowest_common_ancestor l x y = lowest_common_ancestor l y x"
 proof-
   have "longest_common_prefix (path_to_root l x) (path_to_root l y) =
 longest_common_prefix (path_to_root l y) (path_to_root l x)"

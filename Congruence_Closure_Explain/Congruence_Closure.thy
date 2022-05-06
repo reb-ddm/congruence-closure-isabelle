@@ -67,15 +67,14 @@ fun link_to_lookup :: "equation option list list \<Rightarrow> equation \<Righta
   \<comment> \<open>This should not be invoked.\<close>
 | "link_to_lookup t (a \<approx> b) = One (a \<approx> b)"
 
-function set_lookup :: "equation option list list \<Rightarrow> equation list \<Rightarrow> nat list \<Rightarrow> equation option list list"
+fun set_lookup :: "equation option list list \<Rightarrow> equation list \<Rightarrow> nat list \<Rightarrow> equation option list list"
   where
 "set_lookup t [] l = t"
 | "set_lookup t ((F a\<^sub>1 a\<^sub>2 \<approx> a)#xs) l = 
     set_lookup (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a))) xs l"
   \<comment> \<open>This should not be invoked.\<close>
 | "set_lookup t ((a \<approx> b)#xs) l = set_lookup t xs l"
-  by pat_completeness auto
-termination by lexicographic_order
+
 
 fun left :: "pending_equation \<Rightarrow> nat"
   where
@@ -121,7 +120,7 @@ function propagate :: "pending_equation list \<Rightarrow> congruence_closure \<
   by pat_completeness auto
 
 
-function merge :: "congruence_closure \<Rightarrow> equation \<Rightarrow> congruence_closure"
+fun merge :: "congruence_closure \<Rightarrow> equation \<Rightarrow> congruence_closure"
   where 
 "merge cc (a \<approx> b) = propagate [One (a \<approx> b)] cc"
 
@@ -135,7 +134,7 @@ Some eq
           lookup = upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a)), 
           proof_forest = pf, pf_labels = pfl\<rparr>
 )"
-  by pat_completeness auto
+
 
 fun are_congruent :: "congruence_closure \<Rightarrow> equation \<Rightarrow> bool"
   where
@@ -151,6 +150,60 @@ text \<open>For the initialisation of the congruence closure algorithm.\<close>
 abbreviation 
 "initial_cc n \<equiv> \<lparr>cc_list = [0..<n], use_list = replicate n [], lookup = replicate n (replicate n None),
                   proof_forest = [0..<n], pf_labels = replicate n None\<rparr>"
+
+
+section \<open>Explain definition\<close>
+
+text \<open>The highest node is in this case the same as the rep_of, because we do not 
+      have the optimisation of checking which equivalence class is bigger, 
+      we just make the union in the given order. When adding this optimisation,
+      a highest_node function must be also implemented. \<close>
+
+text \<open>There are three variables changed by this function: 
+
+      The overall output of explain
+      The Union Find list of the additional union find, which is local to the explain function
+      The list of pending proofs, which need to be recursively called with cc_explain
+      
+      These are the three values returned by this function.\<close>
+
+function explain_along_path :: "congruence_closure \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 
+    (equation set * nat list * (nat * nat) list)"
+  where 
+"explain_along_path cc l a c = 
+(if rep_of l a = rep_of l c 
+then
+  ({}, l, [])
+else
+  (let b = (proof_forest cc) ! rep_of l a in 
+    (
+    case the ((pf_labels cc) ! rep_of l a) of 
+        One a' \<Rightarrow>  
+          (let (output, new_l, pending) = explain_along_path cc (ufa_union l a b) (rep_of l b) c
+          in ({a'} \<union> output, new_l, pending))
+\<comment> \<open>wieso ist das überhaupt legal\<close>
+        | Two (F a\<^sub>1 a\<^sub>2 \<approx> a') (F b\<^sub>1 b\<^sub>2 \<approx> b') \<Rightarrow> 
+          (let (output, new_l, pending) = explain_along_path cc (ufa_union l a b) (rep_of l b) c
+          in ({(F a\<^sub>1 a\<^sub>2 \<approx> a'), (F b\<^sub>1 b\<^sub>2 \<approx> b')} \<union> output, new_l, [(a\<^sub>1, a\<^sub>2), (b\<^sub>1, b\<^sub>2)] @ pending))
+    )
+  )
+)"
+  by pat_completeness auto
+
+function cc_explain :: "congruence_closure \<Rightarrow> nat list \<Rightarrow> (nat * nat) list \<Rightarrow> equation set"
+  where
+"cc_explain cc l [] = {}"
+| "cc_explain cc l ((a, b) # xs) =
+(if are_congruent cc (a \<approx> b)
+then
+  (let c = lowest_common_ancestor (proof_forest cc) a b;
+   (output1, new_l, pending1) = explain_along_path cc l a c;
+   (output2, new_new_l, pending2) =  explain_along_path cc new_l b c
+  in
+    output1 \<union> output2 \<union> cc_explain cc new_new_l (xs @ pending1 @ pending2))
+else cc_explain cc l xs)
+"
+  by pat_completeness auto
 
 
 end

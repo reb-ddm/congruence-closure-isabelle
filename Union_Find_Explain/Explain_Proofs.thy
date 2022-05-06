@@ -670,7 +670,6 @@ proof-
         "(ay', by') = ayby'" by (metis prod.exhaust_sel)
       note defs = defs1 defs2
       with assms defs lowest_common_ancestor_ufe_union_invar have "lca = lca'" 
-        using lowest_common_ancestor.domintros 
         by (metis True ufe_data_structure.select_convs(1) ufe_union_length_uf_list)
       from defs lowest_common_ancestor_correct obtain px' py' where "path l1 lca' px' x" "path l1 lca' py' y" 
         using invar1 length_eq True assms(5) assms(6) by presburger
@@ -938,7 +937,7 @@ lemma explain_symmetric_domain:
   next
     case (case_x ufe lca newest_index_x newest_index_y ax bx ay "by")
     with defs lowest_common_ancestor_symmetric have "lca = lca'" 
-      using lowest_common_ancestor.domintros by presburger
+      by presburger
     then have "newest_index_x' = newest_index_y" 
       and  "newest_index_y' = newest_index_x"
       by (auto simp add: case_x defs)
@@ -961,7 +960,7 @@ lemma explain_symmetric_domain:
   next
     case (case_y ufe lca newest_index_x newest_index_y ax bx ay "by")
     with defs lowest_common_ancestor_symmetric have "lca = lca'" 
-      using lowest_common_ancestor.domintros by presburger
+      by presburger
     then have "newest_index_x' = newest_index_y" 
       and  "newest_index_y' = newest_index_x"
       by (auto simp add: case_y defs)
@@ -1018,7 +1017,7 @@ theorem explain_symmetric:
   next
     case (case_x ufe lca newest_index_x newest_index_y ax bx ay "by")
     with defs lowest_common_ancestor_symmetric have "lca = lca'" 
-      using lowest_common_ancestor.domintros by presburger
+      by presburger
     then have "newest_index_x' = newest_index_y" 
       and  "newest_index_y' = newest_index_x"
       by (auto simp add: case_x defs)
@@ -1041,7 +1040,7 @@ theorem explain_symmetric:
   next
     case (case_y ufe lca newest_index_x newest_index_y ax bx ay "by")
     with defs lowest_common_ancestor_symmetric have "lca = lca'" 
-      using lowest_common_ancestor.domintros by presburger
+      by presburger
     then have "newest_index_x' = newest_index_y" 
       and  "newest_index_y' = newest_index_x"
       by (auto simp add: case_y defs)
@@ -1141,7 +1140,7 @@ proof-
   next
     case c
     with assms defs  show ?thesis 
-      by (metis lowest_common_ancestor.domintros lowest_common_ancestor_symmetric ufe_data_structure.select_convs(1))
+      by (metis lowest_common_ancestor_symmetric ufe_data_structure.select_convs(1))
   qed
 qed
 
@@ -1249,7 +1248,7 @@ lemma explain_domain_ufe_union_invar:
       using case_y.prems(7-11) by auto
         \<comment>\<open>We need to prove the induction hypotheses for the symmetric case.\<close>
     with explain_symmetric_domain union_ufe_invar *(1) ufe_union_length_uf_list 
-      linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
+      linorder_not_less case_y lowest_common_ancestor_symmetric  
     have a: "(\<And>xa xba xc xaa xab ya xac xad yba.
         \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
         xa = lowest_common_ancestor l y x \<Longrightarrow>
@@ -1270,7 +1269,7 @@ lemma explain_domain_ufe_union_invar:
         explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, y, xab))"  
       by (metis ufe_data_structure.select_convs(1))
     with explain_symmetric_domain union_ufe_invar *(1) ufe_union_length_uf_list 
-      linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
+      linorder_not_less case_y lowest_common_ancestor_symmetric  
     have b: "(\<And>xa xba xc xaa xab ya xac xad yba.
         \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
         xa = lowest_common_ancestor l y x \<Longrightarrow>
@@ -1291,7 +1290,7 @@ lemma explain_domain_ufe_union_invar:
         explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, ya, x))"
       by (metis ufe_data_structure.select_convs(1))
     with explain_symmetric_domain union_ufe_invar *(1) ufe_union_length_uf_list 
-      linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
+      linorder_not_less case_y lowest_common_ancestor_symmetric  
       linorder_le_cases
     have c: "(\<And>xa xba xc xaa xab ya xac xad yba.
         \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
@@ -1313,7 +1312,7 @@ lemma explain_domain_ufe_union_invar:
         explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, y, yba))"
       by metis
     with explain_symmetric_domain union_ufe_invar *(1) ufe_union_length_uf_list 
-      linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
+      linorder_not_less case_y lowest_common_ancestor_symmetric  
       linorder_le_cases
     have d: "(\<And>xa xba xc xaa xab ya xac xad yba.
         \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
@@ -1602,7 +1601,7 @@ proof-
         using case_y.prems(7-11) by auto
           \<comment>\<open>We need to prove the induction hypotheses for the symmetric case.\<close>
       with dom explain_symmetric union_ufe_invar *(1) ufe_union_length_uf_list 
-        linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
+        linorder_not_less case_y lowest_common_ancestor_symmetric  
       have a: "(\<And>xa xb xc xaa xab ya xac xad yb l1 u1 a1.
             \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
             xa = lowest_common_ancestor l y x \<Longrightarrow>
@@ -1623,7 +1622,7 @@ proof-
             \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) y xab)"
         by (metis ufe_data_structure.select_convs(1))
       with dom explain_symmetric union_ufe_invar *(1) ufe_union_length_uf_list 
-        linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric 
+        linorder_not_less case_y lowest_common_ancestor_symmetric 
       have b: "(\<And>xa xb xc xaa xab ya xac xad yb l1 u1 a1.
             \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
             xa = lowest_common_ancestor l y x \<Longrightarrow>
@@ -1644,7 +1643,7 @@ proof-
             \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) ya x)"
         by (metis ufe_data_structure.select_convs(1))
       with dom explain_symmetric union_ufe_invar *(1) ufe_union_length_uf_list 
-        linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
+        linorder_not_less case_y lowest_common_ancestor_symmetric  
         linorder_le_cases
       have c: "(\<And>xa xb xc xaa xab ya xac xad yb l1 u1 a1.
             \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
@@ -1666,7 +1665,7 @@ proof-
             \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) y yb)"
         by metis
       with dom explain_symmetric union_ufe_invar *(1) ufe_union_length_uf_list 
-        linorder_not_less lowest_common_ancestor.domintros case_y lowest_common_ancestor_symmetric  
+        linorder_not_less case_y lowest_common_ancestor_symmetric  
         linorder_le_cases
       have d: "(\<And>xa xb xc xaa xab ya xac xad yb l1 u1 a1.
             \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>

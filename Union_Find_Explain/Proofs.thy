@@ -19,9 +19,6 @@ qed
 lemma path_to_root_domain: "rep_of_dom (l, i) \<longleftrightarrow> path_to_root_dom (l, i)" 
   using path_to_root_rel by presburger
 
-lemma lowest_common_ancestor_domain: "All lowest_common_ancestor_dom"
-  using lowest_common_ancestor.domintros by auto
-
 subsection \<open>Correctness proof for \<open>path_to_root\<close>.\<close>
 
 lemma path_to_root_correct:
