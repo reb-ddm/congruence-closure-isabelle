@@ -1,7 +1,7 @@
 chapter \<open>Congruence Closure Algorithm with Explain Operation\<close>
 theory Congruence_Closure
   imports 
-    Explain_Proofs2 
+    "../Union_Find_Explain/Explain_Proofs2" 
 begin
 
 section \<open>Definitions\<close>
@@ -135,7 +135,6 @@ Some eq
           proof_forest = pf, pf_labels = pfl\<rparr>
 )"
 
-
 fun are_congruent :: "congruence_closure \<Rightarrow> equation \<Rightarrow> bool"
   where
 "are_congruent \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl\<rparr> (a \<approx> b) = 
@@ -198,7 +197,7 @@ function cc_explain :: "congruence_closure \<Rightarrow> nat list \<Rightarrow> 
 then
   (let c = lowest_common_ancestor (proof_forest cc) a b;
    (output1, new_l, pending1) = explain_along_path cc l a c;
-   (output2, new_new_l, pending2) =  explain_along_path cc new_l b c
+   (output2, new_new_l, pending2) = explain_along_path cc new_l b c
   in
     output1 \<union> output2 \<union> cc_explain cc new_new_l (xs @ pending1 @ pending2))
 else cc_explain cc l xs)
