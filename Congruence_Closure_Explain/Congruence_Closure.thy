@@ -37,6 +37,7 @@ text \<open>Data structure for the congruence closure operations (merge, are_con
             or None if no such equation exists.
   \<open>proof_forest\<close>: tree-shaped graph, with the sequence of merge operations as edges
   \<open>pf_labels\<close>: for each edge in the \<open>proof_forest\<close>, a label with the input equations
+  \<open>input\<close>: a list of the input equation, useful for proofs
 \<close>
 record congruence_closure =
   cc_list :: "nat list"
@@ -44,6 +45,7 @@ record congruence_closure =
   lookup :: "equation option list list"
   proof_forest :: "nat list"
   pf_labels :: "pending_equation option list"
+  input :: "equation list"
 
 text \<open>For updating two dimensional lists.\<close>
 fun upd :: "'a list list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> 'a list list"
@@ -92,7 +94,7 @@ fun right :: "pending_equation \<Rightarrow> nat"
 
 text \<open>Implementation of the proof forest\<close>
 
-function add_edge :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat list"
+function (domintros) add_edge :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat list"
   where
 "add_edge pf e e' = (if pf ! e = e then (pf[e := e']) else add_edge (pf[e := e']) (pf ! e) e)"
   by pat_completeness auto
@@ -105,41 +107,43 @@ text \<open>To show: pfl ! e = None iff pf ! e = e\<close>
 
 function propagate :: "pending_equation list \<Rightarrow> congruence_closure \<Rightarrow> congruence_closure"
   where
-"propagate (pe # xs) \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl\<rparr> = 
+"propagate [] cc = cc"
+| "propagate (pe # xs) \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> = 
 (let a = left pe; b = right pe in
   (if rep_of l a = rep_of l b 
-    then propagate xs \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl\<rparr>
+    then propagate xs \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>
     else
       propagate (xs @ (map (link_to_lookup t) (filter (lookup_Some t) (u ! rep_of l a))))
       \<lparr>cc_list = ufa_union l a b, 
       use_list = (u[rep_of l a := []])[rep_of l b := (u ! rep_of l b) @ (filter (lookup_None t) (u ! rep_of l a))], 
       lookup = set_lookup t (filter (lookup_None t) (u ! rep_of l a)) l,
-      proof_forest = add_edge pf a b, pf_labels = add_label pfl pf a pe\<rparr>
+      proof_forest = add_edge pf a b, pf_labels = add_label pfl pf a pe, input = ip\<rparr>
 ))"
-| "propagate [] cc = cc"
   by pat_completeness auto
 
 
 fun merge :: "congruence_closure \<Rightarrow> equation \<Rightarrow> congruence_closure"
   where 
-"merge cc (a \<approx> b) = propagate [One (a \<approx> b)] cc"
+"merge \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> (a \<approx> b) = 
+  propagate [One (a \<approx> b)]  \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = (a \<approx> b)#ip\<rparr>"
 
-| "merge \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl\<rparr> (F a\<^sub>1 a\<^sub>2 \<approx> a) = 
+| "merge \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> (F a\<^sub>1 a\<^sub>2 \<approx> a) = 
 (case (t ! rep_of l a\<^sub>1) ! rep_of l a\<^sub>2 of
 Some eq 
-      \<Rightarrow> propagate [Two (F a\<^sub>1 a\<^sub>2 \<approx> a) eq] \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl\<rparr>
+      \<Rightarrow> propagate [Two (F a\<^sub>1 a\<^sub>2 \<approx> a) eq] \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = (F a\<^sub>1 a\<^sub>2 \<approx> a)#ip\<rparr>
 | None 
       \<Rightarrow> \<lparr>cc_list = l, 
           use_list = (u[rep_of l a\<^sub>1 := (F a\<^sub>1 a\<^sub>2 \<approx> a)#(u ! rep_of l a\<^sub>1)])[rep_of l a\<^sub>2 := (F a\<^sub>1 a\<^sub>2 \<approx> a)#(u ! rep_of l a\<^sub>2)], 
           lookup = upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a)), 
-          proof_forest = pf, pf_labels = pfl\<rparr>
+          proof_forest = pf, pf_labels = pfl, input = (F a\<^sub>1 a\<^sub>2 \<approx> a)#ip\<rparr>
 )"
 
+text \<open>The input must be a valid index (a < nr_vars cc \<and> b < nr_vars cc)\<close>
 fun are_congruent :: "congruence_closure \<Rightarrow> equation \<Rightarrow> bool"
   where
-"are_congruent \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl\<rparr> (a \<approx> b) = 
+"are_congruent \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> (a \<approx> b) = 
     (rep_of l a = rep_of l b)"
-| "are_congruent \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl\<rparr> (F a\<^sub>1 a\<^sub>2 \<approx> a) = 
+| "are_congruent \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> (F a\<^sub>1 a\<^sub>2 \<approx> a) = 
     (case (t ! rep_of l a\<^sub>1) ! rep_of l a\<^sub>2 of
       Some (F b\<^sub>1 b\<^sub>2 \<approx> b) \<Rightarrow> (rep_of l a = rep_of l b)
     | None \<Rightarrow> False
@@ -148,7 +152,7 @@ fun are_congruent :: "congruence_closure \<Rightarrow> equation \<Rightarrow> bo
 text \<open>For the initialisation of the congruence closure algorithm.\<close>
 abbreviation 
 "initial_cc n \<equiv> \<lparr>cc_list = [0..<n], use_list = replicate n [], lookup = replicate n (replicate n None),
-                  proof_forest = [0..<n], pf_labels = replicate n None\<rparr>"
+                  proof_forest = [0..<n], pf_labels = replicate n None, input = []\<rparr>"
 
 
 section \<open>Explain definition\<close>
@@ -158,7 +162,7 @@ text \<open>The highest node is in this case the same as the rep_of, because we 
       we just make the union in the given order. When adding this optimisation,
       a highest_node function must be also implemented. \<close>
 
-text \<open>There are three variables changed by this function: 
+text \<open>There are three variables changed by the function \<open>explain_along_path\<close>: 
 
       The overall output of explain
       The Union Find list of the additional union find, which is local to the explain function
@@ -188,6 +192,7 @@ else
   )
 )"
   by pat_completeness auto
+
 
 function cc_explain :: "congruence_closure \<Rightarrow> nat list \<Rightarrow> (nat * nat) list \<Rightarrow> equation set"
   where
