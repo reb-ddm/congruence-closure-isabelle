@@ -99,6 +99,15 @@ function (domintros) add_edge :: "nat list \<Rightarrow> nat \<Rightarrow> nat \
 "add_edge pf e e' = (if pf ! e = e then (pf[e := e']) else add_edge (pf[e := e']) (pf ! e) e)"
   by pat_completeness auto
 
+lemma add_edge_rel: "rep_of_rel (l, x) (l, y) \<longleftrightarrow> add_edge_rel (l[y := y'], x, y) (l, y, y')" 
+proof
+  show "rep_of_rel (l, x) (l, y) \<Longrightarrow> add_edge_rel (l[y := y'], x, y) (l, y, y')"
+    by (induction "(l, x)" "(l, y)" rule: rep_of_rel.induct)(auto simp add: add_edge_rel.intros)
+next
+  show "add_edge_rel (l[y := y'], x, y) (l, y, y') \<Longrightarrow> rep_of_rel (l, x) (l, y)"
+    by (induction "(l[y := y'], x, y)" "(l, y, y')" rule: add_edge_rel.induct) (auto simp add: rep_of_rel.intros)
+qed
+
 function add_label :: "pending_equation option list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> pending_equation \<Rightarrow> pending_equation option list"
   where
 "add_label pfl pf e lbl = (if pf ! e = e then (pfl[e := Some lbl]) else add_label (pfl[e := Some lbl]) pf (pf ! e) (the (pfl ! e)))"

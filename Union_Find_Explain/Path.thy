@@ -397,6 +397,7 @@ next
   qed
 qed
 
+
 lemma nodes_path_lt_length_l:
   assumes "path l x p y"
     and "i < length p"
@@ -420,6 +421,127 @@ proof-
   with assms show "rep_of l (p ! i) = rep_of l x"
     and "rep_of l (p ! i) = rep_of l y"
     using path_rep_eq by metis+
+qed
+
+lemma path_root_rep_of_dom: "path l root p i \<Longrightarrow> l ! root = root \<Longrightarrow> rep_of_dom (l, i)"
+proof(induction "length p" arbitrary: p i)
+  case 0
+  then have "length p > 0" 
+    using path_not_empty by auto
+  then show ?case 
+    by (simp add: "0.hyps")
+next
+  case (Suc x)
+  then show ?case proof(cases "x = 0")
+    case True
+    with Suc have "hd p = root" "last p = i"
+      by (auto simp add: path_hd path_last)
+    with True have "i = root" 
+      by (metis Suc.hyps(2) last_replicate le_antisym length_0_conv length_greater_0_conv lessI remdups_adj_length remdups_adj_length_ge1 remdups_adj_singleton_iff)
+    then show ?thesis 
+      using Suc.prems(2) rep_of.domintros by auto
+  next
+    case False
+    have "path l root (butlast p) (l ! i)" 
+      by (metis False Suc.hyps(2) Suc.prems(1) Suc.prems(2) length_Suc_rev_conv list.size(3) list_e_eq_lel(2) path.cases path_butlast path_root) 
+    have "x = length (butlast p)" 
+      by (simp add: Suc.hyps(2) Suc_to_right)
+    then have "rep_of_dom (l, l ! i)" 
+      using Suc.hyps(1) Suc.prems(2) \<open>path l root (butlast p) (l ! i)\<close> by blast
+    then show ?thesis 
+      using rep_of.domintros by blast
+  qed
+qed
+
+lemma path_fun_upd:
+  assumes "path l x p y" "i \<notin> set p"
+  shows "path (CONST list_update l i k) x p y"
+using assms proof(induction rule: path.induct)
+  case (single n l)
+  then show ?case 
+    by (simp add: path.single)
+next
+  case (step r l u p v)
+  then show ?case 
+    by (metis length_list_update list.set_intros(1) list.set_intros(2) nth_list_update_neq path.cases path.step)
+qed
+
+text \<open>The paths of nodes with a different root are disjoint.\<close>
+
+lemma path_rep_of_neq_not_in_path: 
+  assumes "path l y\<^sub>2 p\<^sub>2 x\<^sub>2"
+          "i\<^sub>2 < length p\<^sub>2"
+          "rep_of l n \<noteq> rep_of l x\<^sub>2"
+          "ufa_invar l"
+    shows "n \<noteq> p\<^sub>2 ! i\<^sub>2"
+proof
+  assume n_in_path: "n = p\<^sub>2 ! i\<^sub>2"
+  then have "rep_of l (p\<^sub>2 ! i\<^sub>2) = rep_of l x\<^sub>2" 
+    using nodes_path_rep_of(2) assms by blast
+  with n_in_path have "rep_of l x\<^sub>2 = rep_of l n" 
+    by simp
+  with assms show "False" 
+    by argo
+qed
+
+lemma path_rep_of_neq_disjoint: 
+  assumes "path l y\<^sub>1 p\<^sub>1 x\<^sub>1" "path l y\<^sub>2 p\<^sub>2 x\<^sub>2"
+          "i\<^sub>1 < length p\<^sub>1" "i\<^sub>2 < length p\<^sub>2"
+          "rep_of l x\<^sub>1 \<noteq> rep_of l x\<^sub>2"
+          "ufa_invar l"
+        shows "p\<^sub>1 ! i\<^sub>1 \<noteq> p\<^sub>2 ! i\<^sub>2"
+using assms proof(induction l y\<^sub>1 p\<^sub>1 x\<^sub>1 arbitrary: i\<^sub>1 rule: path.induct)
+  case (single n l)
+  then have "[n] ! i\<^sub>1 = n" 
+    by force
+  then show ?case 
+    using path_rep_of_neq_not_in_path single.prems by auto
+next
+  case (step r l u p v)
+  then show ?case 
+  proof(cases "i\<^sub>1")
+    case 0
+    then have "(r # p) ! i\<^sub>1 = r" 
+      by simp
+    with step show ?thesis 
+      by (metis path_nodes_lt_length_l path_rep_eq path_rep_of_neq_not_in_path rep_of_idx)
+  next
+    case (Suc nat)
+    then have "(r # p) ! i\<^sub>1 = p ! (i\<^sub>1 - 1)" 
+      by simp
+    then show ?thesis 
+      using Suc step by auto
+  qed
+qed
+
+lemma path_remove_left: 
+  assumes "path l i (i#pia) ia"
+    "ufa_invar l"
+  shows "i \<notin> set pia"
+proof
+  assume "i \<in> set pia"
+  then obtain p\<^sub>1 p\<^sub>2 where "pia = p\<^sub>1 @ [i] @ p\<^sub>2" 
+    by (metis Cons_eq_append_conv append_Nil in_set_conv_decomp_first)
+  with assms have "path l i ([i] @ p\<^sub>1 @ [i]) i" 
+    by (metis Cons_eq_appendI append_is_Nil_conv empty_append_eq_id list.sel(1) path_divide2 snoc_eq_iff_butlast)
+  with path_unique assms show "False" 
+    by (metis append_self_conv last_ConsL path_divide1 snoc_eq_iff_butlast)
+qed
+
+lemma path_remove_right: 
+  assumes "path l ia (pia) i"
+    "ufa_invar l"
+  shows "i \<notin> set (butlast pia)"
+proof
+  have pia: "pia = (butlast pia) @ [i]" 
+    by (metis assms(1) path_last path_not_empty snoc_eq_iff_butlast)
+  assume "i \<in> set (butlast pia)"
+  then obtain p\<^sub>1 p\<^sub>2 where "butlast pia = p\<^sub>1 @ [i] @ p\<^sub>2" 
+    by (metis Cons_eq_append_conv append_Nil in_set_conv_decomp_first)
+  with assms have "path l i ([i] @ p\<^sub>2 @ [i]) i" 
+    using pia path_divide2 by fastforce
+  with path_unique assms show "False" 
+    by (metis append_self_conv last_ConsL path_divide1 snoc_eq_iff_butlast)
 qed
 
 end
