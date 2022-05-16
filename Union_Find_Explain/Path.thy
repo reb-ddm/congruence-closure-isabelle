@@ -463,7 +463,7 @@ next
 qed
 
 lemma path_fun_upd:
-  assumes "path l x p y" "i \<notin> set p"
+  assumes "path l x p y" "i \<notin> set (tl p)"
   shows "path (CONST list_update l i k) x p y"
 using assms proof(induction rule: path.induct)
   case (single n l)
@@ -472,7 +472,7 @@ using assms proof(induction rule: path.induct)
 next
   case (step r l u p v)
   then show ?case 
-    by (metis length_list_update list.set_intros(1) list.set_intros(2) nth_list_update_neq path.cases path.step)
+    by (metis (no_types, lifting) in_set_tlD length_list_update list.sel(3) list.set_intros(1) nth_list_update_neq path.cases path.step)
 qed
 
 text \<open>The paths of nodes with a different root are disjoint.\<close>

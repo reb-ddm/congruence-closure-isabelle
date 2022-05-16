@@ -42,6 +42,17 @@ next
 qed
 
 
+lemma path_to_root_length: "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> length (path_to_root l x) > 0"
+proof-
+  assume "ufa_invar l" "x < length l"
+  have "path_to_root_dom(l, x)" 
+    using \<open>ufa_invar l\<close> \<open>x < length l\<close> path_to_root_domain ufa_invarD(1) by auto
+  then show ?thesis
+    apply(induction rule: path_to_root.pinduct)
+    by (simp add: path_to_root.psimps)
+qed
+
+
 subsection \<open>Correctness of \<open>lowest_common_ancestor\<close>.\<close>
 
 abbreviation "common_ancestor l x y ca \<equiv>
