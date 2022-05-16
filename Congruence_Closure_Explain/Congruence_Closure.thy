@@ -108,11 +108,12 @@ next
     by (induction "(l[y := y'], x, y)" "(l, y, y')" rule: add_edge_rel.induct) (auto simp add: rep_of_rel.intros)
 qed
 
-function add_label :: "pending_equation option list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> pending_equation \<Rightarrow> pending_equation option list"
+function (domintros) add_label :: "pending_equation option list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> pending_equation \<Rightarrow> pending_equation option list"
   where
 "add_label pfl pf e lbl = (if pf ! e = e then (pfl[e := Some lbl]) else add_label (pfl[e := Some lbl]) pf (pf ! e) (the (pfl ! e)))"
   by pat_completeness auto
 text \<open>To show: pfl ! e = None iff pf ! e = e\<close>
+
 
 function propagate :: "pending_equation list \<Rightarrow> congruence_closure \<Rightarrow> congruence_closure"
   where
@@ -130,6 +131,33 @@ function propagate :: "pending_equation list \<Rightarrow> congruence_closure \<
 ))"
   by pat_completeness auto
 
+lemma propagate_simp2:
+  assumes "propagate_dom ((pe # xs), cc)"
+          "a = left pe" "b = right pe" "rep_of (cc_list cc) a = rep_of (cc_list cc) b"
+        shows "propagate (pe # xs) cc = propagate xs cc"
+  using assms congruence_closure.cases propagate.psimps unfolding Let_def 
+  by (metis congruence_closure.select_convs(1))
+
+lemma propagate_simp2':
+  assumes "propagate_dom ((pe # xs), \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>)"
+          "a = left pe" "b = right pe" "rep_of l a = rep_of l b"
+        shows "propagate (pe # xs) \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> = propagate xs \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
+  using assms congruence_closure.cases propagate.psimps unfolding Let_def 
+  by presburger
+
+lemma propagate_simp3: 
+  assumes "propagate_dom ((pe # xs), \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>)"
+          "a = left pe" "b = right pe" "rep_of l a \<noteq> rep_of l b"
+    shows"propagate (pe # xs) \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> = 
+           propagate (xs @ (map (link_to_lookup t) (filter (lookup_Some t) (u ! rep_of l a))))
+              \<lparr>cc_list = ufa_union l a b, 
+              use_list = (u[rep_of l a := []])[rep_of l b := (u ! rep_of l b) @ (filter (lookup_None t) (u ! rep_of l a))], 
+              lookup = set_lookup t (filter (lookup_None t) (u ! rep_of l a)) l,
+              proof_forest = add_edge pf a b, pf_labels = add_label pfl pf a pe, input = ip\<rparr>"
+  using assms propagate.psimps unfolding Let_def 
+  by presburger
+
+lemmas propagate_simps[simp] = propagate.psimps(1) propagate_simp2 propagate_simp3
 
 fun merge :: "congruence_closure \<Rightarrow> equation \<Rightarrow> congruence_closure"
   where 

@@ -11,6 +11,9 @@ inductive path :: "nat list \<Rightarrow> nat \<Rightarrow> nat list \<Rightarro
   single: "n < length l \<Longrightarrow> path l n [n] n" |
   step: "r < length l \<Longrightarrow> l ! u = r \<Longrightarrow> l ! u \<noteq> u \<Longrightarrow>  path l u p v \<Longrightarrow> path l r (r # p) v"
 
+lemma path_not_empty: "path l u p v \<Longrightarrow> p \<noteq> []"
+  by(induction rule:path.induct,auto)
+
 lemma path_concat1: "path l u p1 v \<Longrightarrow> path l v p2 w \<Longrightarrow> path l u (p1 @ tl p2) w"
 proof(induction rule: path.induct)
   case (single n l)
@@ -79,7 +82,10 @@ next
   qed
 qed
 
+
 lemma path_hd: "path l u p v \<Longrightarrow> hd p = u"
+    by(induction rule: path.induct, auto)
+lemma hd_path: "path l k p v \<Longrightarrow> hd p = u \<Longrightarrow> u = k"
   by(induction rule: path.induct, auto)
 
 lemma path_last: "path l u p v \<Longrightarrow> last p = v"
@@ -87,6 +93,12 @@ proof(induction rule: path.induct)
   case (step r l u p v)
   then show ?case 
     by (metis last_ConsR list.distinct(1) path.cases)
+qed auto
+lemma last_path: "path l k p v \<Longrightarrow> last p = u \<Longrightarrow> u = v"
+proof(induction rule: path.induct)
+  case (step r l u p v)
+  then show ?case 
+    by (simp add: path_not_empty)
 qed auto
 
 lemma path_penultimate: "path l u p v \<Longrightarrow> length p > 1 \<Longrightarrow> last (butlast p) = l ! v"
@@ -124,9 +136,6 @@ next
   then show "path l u p1 v \<and> path l v p2 w" 
     by (metis path_divide1 list.collapse)
 qed
-
-lemma path_not_empty: "path l u p v \<Longrightarrow> p \<noteq> []"
-  by(induction rule:path.induct,auto)
 
 inductive_cases path_single: "path l u [k] v"
 
@@ -529,7 +538,7 @@ proof
 qed
 
 lemma path_remove_right: 
-  assumes "path l ia (pia) i"
+  assumes "path l ia pia i"
     "ufa_invar l"
   shows "i \<notin> set (butlast pia)"
 proof
@@ -542,6 +551,58 @@ proof
     using pia path_divide2 by fastforce
   with path_unique assms show "False" 
     by (metis append_self_conv last_ConsL path_divide1 snoc_eq_iff_butlast)
+qed
+
+
+lemma path_remove_child: 
+  assumes "path l ia pia (l ! i)"
+    "ufa_invar l" "i < length l" "l ! i \<noteq> i"
+  shows "i \<notin> set pia"
+proof-
+  from assms have "path l (l ! i) [l ! i, i] i" 
+    by (metis path.step single ufa_invarD(2))
+  have pia: "path l ia (pia @ [i]) i" 
+    by (simp add: assms path_snoc ufa_invarD(2))
+  with path_remove_right show ?thesis 
+    by (metis assms(2) butlast_snoc)
+qed
+
+lemma path_previous_node: 
+  assumes "path l y p x" "i < length p - 1" "p ! (i + 1) = n"
+        shows "p ! i = l ! n"
+using assms proof(induction arbitrary: i rule: path.induct)
+  case (single n l)
+  then show ?case by auto 
+next
+  case (step r l u p v)
+  then show ?case proof(cases i)
+    case 0
+    have "p \<noteq> []" 
+      using path_not_empty step.hyps(4) by blast
+    with step 0 have "hd p = n" 
+      by (simp add: hd_conv_nth)
+    with step have "u = n" 
+      using hd_path by blast
+    with step show ?thesis 
+      by (metis "0" nth_Cons_0)
+  next
+    case (Suc nat)
+    with step show ?thesis by auto
+  qed
+qed
+
+lemma path_hd_and_last:
+  assumes "path l y p x" "length p > 1"
+  shows "p = y # (tl (butlast p)) @ [x]"
+proof-
+  have "p = butlast p @ [x]" 
+    by (metis append_butlast_last_id assms(1) path_last path_not_empty)
+  have "length (butlast p) > 0" 
+    using add.right_neutral assms(2) by auto
+  then have "butlast p @ [x] = y # (tl (butlast p) @ [x])" 
+    by (metis Cons_eq_appendI assms(1) assms(2) hd_Cons_tl hd_butlast hd_path length_greater_0_conv) 
+  then show ?thesis 
+    using \<open>p = butlast p @ [x]\<close> by auto
 qed
 
 end
