@@ -17,7 +17,7 @@ cc_\<alpha> (apply_merges (initial_cc n) xs) eq = Congruence_Closure (set xs) eq
   sorry
 lemma 
 "valid_vars eq n \<Longrightarrow> cc_invar cc \<Longrightarrow> 
-cc_\<alpha> cc eq = Congruence_Closure (set (input cc)) eq"
+cc_\<alpha> cc eq = Congruence_Closure ((input cc)) eq"
   sorry
 
 subsection \<open>Correctness of are_congruent\<close>

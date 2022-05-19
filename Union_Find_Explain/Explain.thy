@@ -263,4 +263,10 @@ next
   then show ?thesis  using ufe_data_structure.cases ufe_union2 by (metis ufe_data_structure.select_convs(1))
 qed
 
+lemma ufa_union_root: 
+  assumes "(ufa_union l a b) ! i = i" "ufa_invar l" 
+    "a < length l" "b < length l"
+  shows "l ! i = i"
+  using assms by (metis nth_list_update_neq rep_of_root)
+
 end

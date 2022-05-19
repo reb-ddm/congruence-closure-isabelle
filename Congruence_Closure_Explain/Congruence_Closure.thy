@@ -45,29 +45,34 @@ record congruence_closure =
   lookup :: "equation option list list"
   proof_forest :: "nat list"
   pf_labels :: "pending_equation option list"
-  input :: "equation list"
+  input :: "equation set"
 
 text \<open>For updating two dimensional lists.\<close>
 fun upd :: "'a list list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> 'a list list"
   where 
 "upd xs n m e = xs[n := (xs ! n)[m := e]]"
 
-fun lookup_Some :: "equation option list list \<Rightarrow> equation \<Rightarrow> bool"
+text \<open>Finds the entry in the lookup table for the representatives of \<open>a\<^sub>1\<close> and \<open>a\<^sub>2\<close>.\<close>
+abbreviation lookup_entry :: "equation option list list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> equation option"
   where
-"lookup_Some t (F a\<^sub>1 a\<^sub>2 \<approx> a) = (\<not>Option.is_none ((t ! a\<^sub>1) ! a\<^sub>2))"
-| "lookup_Some t (a \<approx> b) = False"
+"lookup_entry t l a\<^sub>1 a\<^sub>2 \<equiv> ((t ! (rep_of l a\<^sub>1)) ! (rep_of l a\<^sub>2))"
 
-fun lookup_None :: "equation option list list \<Rightarrow> equation \<Rightarrow> bool"
+fun lookup_Some :: "equation option list list \<Rightarrow> nat list \<Rightarrow> equation \<Rightarrow> bool"
   where
-"lookup_None t (F a\<^sub>1 a\<^sub>2 \<approx> a) = (Option.is_none ((t ! a\<^sub>1) ! a\<^sub>2))"
-| "lookup_None t (a \<approx> b) = False"
+"lookup_Some t l (F a\<^sub>1 a\<^sub>2 \<approx> a) = (\<not>Option.is_none (lookup_entry t l a\<^sub>1 a\<^sub>2))"
+| "lookup_Some t l (a \<approx> b) = False"
+
+fun lookup_None :: "equation option list list \<Rightarrow> nat list \<Rightarrow> equation \<Rightarrow> bool"
+  where
+"lookup_None t l (F a\<^sub>1 a\<^sub>2 \<approx> a) = (Option.is_none (lookup_entry t l a\<^sub>1 a\<^sub>2))"
+| "lookup_None t l (a \<approx> b) = False"
 
 \<comment> \<open>Should only be used if \<open>lookup(a\<^sub>1, a\<^sub>2)\<close> is not None and if the equation is not of the type (a = b)\<close>
-fun link_to_lookup :: "equation option list list \<Rightarrow> equation \<Rightarrow> pending_equation"
+fun link_to_lookup :: "equation option list list \<Rightarrow> nat list \<Rightarrow> equation \<Rightarrow> pending_equation"
   where
-"link_to_lookup t (F a\<^sub>1 a\<^sub>2 \<approx> a) = Two (F a\<^sub>1 a\<^sub>2 \<approx> a) (the ((t ! a\<^sub>1) ! a\<^sub>2))"
+"link_to_lookup t l (F a\<^sub>1 a\<^sub>2 \<approx> a) = Two (F a\<^sub>1 a\<^sub>2 \<approx> a) (the (lookup_entry t l a\<^sub>1 a\<^sub>2))"
   \<comment> \<open>This should not be invoked.\<close>
-| "link_to_lookup t (a \<approx> b) = One (a \<approx> b)"
+| "link_to_lookup t l (a \<approx> b) = One (a \<approx> b)"
 
 fun set_lookup :: "equation option list list \<Rightarrow> equation list \<Rightarrow> nat list \<Rightarrow> equation option list list"
   where
@@ -114,6 +119,12 @@ function (domintros) add_label :: "pending_equation option list \<Rightarrow> na
   by pat_completeness auto
 text \<open>To show: pfl ! e = None iff pf ! e = e\<close>
 
+abbreviation propagate_step
+  where 
+"propagate_step l u t pf pfl ip a b pe \<equiv> \<lparr>cc_list = ufa_union l a b,
+        use_list = u[rep_of l a := [], rep_of l b := u ! rep_of l b @ filter (lookup_None t l) (u ! rep_of l a)],
+        lookup = set_lookup t (filter (lookup_None t l) (u ! rep_of l a)) l, 
+        proof_forest = add_edge pf a b, pf_labels = add_label pfl pf a pe, input = ip\<rparr>"
 
 function propagate :: "pending_equation list \<Rightarrow> congruence_closure \<Rightarrow> congruence_closure"
   where
@@ -123,11 +134,8 @@ function propagate :: "pending_equation list \<Rightarrow> congruence_closure \<
   (if rep_of l a = rep_of l b 
     then propagate xs \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>
     else
-      propagate (xs @ (map (link_to_lookup t) (filter (lookup_Some t) (u ! rep_of l a))))
-      \<lparr>cc_list = ufa_union l a b, 
-      use_list = (u[rep_of l a := []])[rep_of l b := (u ! rep_of l b) @ (filter (lookup_None t) (u ! rep_of l a))], 
-      lookup = set_lookup t (filter (lookup_None t) (u ! rep_of l a)) l,
-      proof_forest = add_edge pf a b, pf_labels = add_label pfl pf a pe, input = ip\<rparr>
+      propagate (xs @ (map (link_to_lookup t l) (filter (lookup_Some t l) (u ! rep_of l a))))
+      (propagate_step l u t pf pfl ip a b pe)
 ))"
   by pat_completeness auto
 
@@ -149,11 +157,8 @@ lemma propagate_simp3:
   assumes "propagate_dom ((pe # xs), \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>)"
           "a = left pe" "b = right pe" "rep_of l a \<noteq> rep_of l b"
     shows"propagate (pe # xs) \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> = 
-           propagate (xs @ (map (link_to_lookup t) (filter (lookup_Some t) (u ! rep_of l a))))
-              \<lparr>cc_list = ufa_union l a b, 
-              use_list = (u[rep_of l a := []])[rep_of l b := (u ! rep_of l b) @ (filter (lookup_None t) (u ! rep_of l a))], 
-              lookup = set_lookup t (filter (lookup_None t) (u ! rep_of l a)) l,
-              proof_forest = add_edge pf a b, pf_labels = add_label pfl pf a pe, input = ip\<rparr>"
+           propagate (xs @ (map (link_to_lookup t l) (filter (lookup_Some t l) (u ! rep_of l a))))
+              (propagate_step l u t pf pfl ip a b pe)"
   using assms propagate.psimps unfolding Let_def 
   by presburger
 
@@ -162,17 +167,17 @@ lemmas propagate_simps[simp] = propagate.psimps(1) propagate_simp2 propagate_sim
 fun merge :: "congruence_closure \<Rightarrow> equation \<Rightarrow> congruence_closure"
   where 
 "merge \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> (a \<approx> b) = 
-  propagate [One (a \<approx> b)]  \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = (a \<approx> b)#ip\<rparr>"
+  propagate [One (a \<approx> b)]  \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = insert (a \<approx> b) ip\<rparr>"
 
 | "merge \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> (F a\<^sub>1 a\<^sub>2 \<approx> a) = 
 (case (t ! rep_of l a\<^sub>1) ! rep_of l a\<^sub>2 of
 Some eq 
-      \<Rightarrow> propagate [Two (F a\<^sub>1 a\<^sub>2 \<approx> a) eq] \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = (F a\<^sub>1 a\<^sub>2 \<approx> a)#ip\<rparr>
+      \<Rightarrow> propagate [Two (F a\<^sub>1 a\<^sub>2 \<approx> a) eq] \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = insert (F a\<^sub>1 a\<^sub>2 \<approx> a) ip\<rparr>
 | None 
       \<Rightarrow> \<lparr>cc_list = l, 
           use_list = (u[rep_of l a\<^sub>1 := (F a\<^sub>1 a\<^sub>2 \<approx> a)#(u ! rep_of l a\<^sub>1)])[rep_of l a\<^sub>2 := (F a\<^sub>1 a\<^sub>2 \<approx> a)#(u ! rep_of l a\<^sub>2)], 
           lookup = upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a)), 
-          proof_forest = pf, pf_labels = pfl, input = (F a\<^sub>1 a\<^sub>2 \<approx> a)#ip\<rparr>
+          proof_forest = pf, pf_labels = pfl, input = insert (F a\<^sub>1 a\<^sub>2 \<approx> a) ip\<rparr>
 )"
 
 text \<open>The input must be a valid index (a < nr_vars cc \<and> b < nr_vars cc)\<close>
@@ -189,7 +194,7 @@ fun are_congruent :: "congruence_closure \<Rightarrow> equation \<Rightarrow> bo
 text \<open>For the initialisation of the congruence closure algorithm.\<close>
 abbreviation 
 "initial_cc n \<equiv> \<lparr>cc_list = [0..<n], use_list = replicate n [], lookup = replicate n (replicate n None),
-                  proof_forest = [0..<n], pf_labels = replicate n None, input = []\<rparr>"
+                  proof_forest = [0..<n], pf_labels = replicate n None, input = {}\<rparr>"
 
 
 section \<open>Explain definition\<close>

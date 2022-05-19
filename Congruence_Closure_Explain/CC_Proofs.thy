@@ -159,51 +159,6 @@ proof-
     by (metis \<open>rep_of l (rep_of l x) = rep_of l x\<close> rep_of_fun_upd' ufa_invar_fun_upd')
 qed
 
-lemma add_edge_ufa_invar_invar: 
-  assumes "add_edge_dom (l, e, e')" "ufa_invar l" 
-    "e' < length l" "e < length l" 
-    "rep_of l e \<noteq> rep_of l e'"
-  shows "ufa_invar (add_edge l e e')"
-  using assms proof(induction l e e' rule: add_edge.pinduct)
-  case (1 pf e e')
-  from 1 have path_root: "path pf (rep_of pf e') (path_to_root pf e') e'" 
-    by (simp add: path_to_root_correct)
-  with path_rep_of_neq_disjoint 1 have e_notin_path_root: "e \<notin> set (path_to_root pf e')" 
-    by (metis in_set_conv_nth nodes_path_rep_of(2))
-  with ufa_invar_fun_upd have ufa_invar_upd: "ufa_invar (pf[e := e'])" 
-    using 1 path_root by blast
-  then show ?case 
-  proof(cases "pf ! e = e")
-    case True
-    from ufa_invar_upd show ?thesis 
-      by (simp add: "1.hyps" True add_edge.psimps)
-  next
-    case False
-    have lengths: "e < length (pf[e := e'])" "pf ! e < length (pf[e := e'])" 
-      by (auto simp add: "1.prems" ufa_invarD(2))
-    have "rep_of (pf[e := e']) e = rep_of (pf[e := e']) e'" 
-      by (metis "1.prems"(3) lengths(1) nth_list_update_eq rep_of_idx ufa_invar_upd)
-    also have "... = rep_of pf e'" 
-      using "1.prems"(1) e_notin_path_root path_root rep_of_fun_upd by auto
-    have path_e_root: "path pf (rep_of pf e) (path_to_root pf e) e" 
-      by (simp add: "1.prems" path_to_root_correct)
-    with "1.prems" have path_pf_e: "path pf (rep_of pf e) (butlast (path_to_root pf e)) (pf ! e)" 
-      by (metis False path_butlast rep_of_root)
-    then have "last (path_to_root pf e) = e" 
-      using path_e_root path_last by auto
-    with path_remove_right have "e \<notin> set (butlast (path_to_root pf e))" 
-      using "1.prems"(1) path_e_root by auto
-    with rep_of_fun_upd 1 have "rep_of (pf[e := e']) (pf ! e) = rep_of pf e" 
-      by (metis path_pf_e rep_of_step)
-    then have "rep_of (pf[e := e']) (pf ! e) \<noteq> rep_of (pf[e := e']) e" 
-      by (simp add: "1.prems"(4) \<open>rep_of (pf[e := e']) e' = rep_of pf e'\<close> calculation)
-    then have "ufa_invar (add_edge (pf[e := e']) (pf ! e) e)" 
-      by (metis "1.IH" lengths ufa_invar_upd)
-    then show ?thesis 
-      by (simp add: "1.hyps" False add_edge.psimps)
-  qed
-qed
-
 lemma add_edge_domain: 
   assumes "ufa_invar l" "y < length l" "y' < length l" "rep_of l y \<noteq> rep_of l y'"
   shows "add_edge_dom (l, y, y')"
@@ -261,6 +216,56 @@ proof-
         by (metis IH.prems(2) IH.prems(3) IH.prems(5) \<open>l ! y < length (l[y := y'])\<close> \<open>path (l[y := y']) (rep_of (l[y := y']) (l ! y)) (path_to_root (l[y := y']) (l ! y)) (l ! y)\<close> \<open>path l (rep_of l y') (path_to_root l y') y'\<close> \<open>rep_of l y = rep_of (l[y := y']) (l ! y)\<close> \<open>ufa_invar (l[y := y'])\<close> \<open>y \<notin> set (path_to_root l y')\<close> length_list_update nth_list_update_eq rep_of_fun_upd rep_of_idx)
       then show ?thesis 
         using add_edge.domintros by blast
+    qed
+  qed
+qed
+
+lemma add_edge_ufa_invar_invar: 
+  assumes "ufa_invar l" 
+    "e' < length l" "e < length l" 
+    "rep_of l e \<noteq> rep_of l e'"
+  shows "ufa_invar (add_edge l e e')"
+proof-
+  have dom: "add_edge_dom (l, e, e')" 
+    by (simp add: add_edge_domain assms)
+  from dom assms show ?thesis
+    using assms proof(induction l e e' rule: add_edge.pinduct)
+    case (1 pf e e')
+    from 1 have path_root: "path pf (rep_of pf e') (path_to_root pf e') e'" 
+      by (simp add: path_to_root_correct)
+    with path_rep_of_neq_disjoint 1 have e_notin_path_root: "e \<notin> set (path_to_root pf e')" 
+      by (metis in_set_conv_nth nodes_path_rep_of(2))
+    with ufa_invar_fun_upd have ufa_invar_upd: "ufa_invar (pf[e := e'])" 
+      using 1 path_root by blast
+    then show ?case 
+    proof(cases "pf ! e = e")
+      case True
+      from ufa_invar_upd show ?thesis 
+        by (simp add: "1.hyps" True add_edge.psimps)
+    next
+      case False
+      have lengths: "e < length (pf[e := e'])" "pf ! e < length (pf[e := e'])" 
+        by (auto simp add: "1.prems" ufa_invarD(2))
+      have "rep_of (pf[e := e']) e = rep_of (pf[e := e']) e'" 
+        by (metis "1.prems"(3) lengths(1) nth_list_update_eq rep_of_idx ufa_invar_upd)
+      also have "... = rep_of pf e'" 
+        using "1.prems"(1) e_notin_path_root path_root rep_of_fun_upd by auto
+      have path_e_root: "path pf (rep_of pf e) (path_to_root pf e) e" 
+        by (simp add: "1.prems" path_to_root_correct)
+      with "1.prems" have path_pf_e: "path pf (rep_of pf e) (butlast (path_to_root pf e)) (pf ! e)" 
+        by (metis False path_butlast rep_of_root)
+      then have "last (path_to_root pf e) = e" 
+        using path_e_root path_last by auto
+      with path_remove_right have "e \<notin> set (butlast (path_to_root pf e))" 
+        using "1.prems"(1) path_e_root by auto
+      with rep_of_fun_upd 1 have "rep_of (pf[e := e']) (pf ! e) = rep_of pf e" 
+        by (metis path_pf_e rep_of_step)
+      then have "rep_of (pf[e := e']) (pf ! e) \<noteq> rep_of (pf[e := e']) e" 
+        by (simp add: "1.prems"(4) \<open>rep_of (pf[e := e']) e' = rep_of pf e'\<close> calculation)
+      then have "ufa_invar (add_edge (pf[e := e']) (pf ! e) e)" 
+        by (metis "1.IH" lengths ufa_invar_upd)
+      then show ?thesis 
+        by (simp add: "1.hyps" False add_edge.psimps)
     qed
   qed
 qed
@@ -378,7 +383,7 @@ proof-
       have "path (pf[e := e']) (rep_of pf (pf ! e)) (path_to_root pf (pf ! e)) (pf ! e)" 
         by (metis in_set_tlD \<open>e \<notin> set (path_to_root pf (pf ! e))\<close> \<open>path pf (rep_of pf (pf ! e)) (path_to_root pf (pf ! e)) (pf ! e)\<close> path_fun_upd)
       with "1.prems" add_edge_list_unchanged[of "pf[e := e']" "pf ! e" _ e e] have "add_edge (pf[e := e']) (pf ! e) e ! e = (pf[e := e']) ! e"
-        by (metis \<open>e \<notin> set (path_to_root pf (pf ! e))\<close> \<open>path pf (rep_of pf (pf ! e)) (path_to_root pf (pf ! e)) (pf ! e)\<close> add_edge_list_unchanged invar length_list_update list_update_overwrite nth_list_update_eq rep_of_fun_upd rep_of_idx ufa_compress_aux(2))
+        by (metis \<open>e \<notin> set (path_to_root pf (pf ! e))\<close> \<open>path pf (rep_of pf (pf ! e)) (path_to_root pf (pf ! e)) (pf ! e)\<close> invar length_list_update list_update_overwrite nth_list_update_eq rep_of_fun_upd rep_of_idx ufa_compress_aux(2))
       with 1 show ?thesis 
         by (metis add_edge.psimps nth_list_update_eq)
     qed
@@ -440,8 +445,8 @@ proof-
         using path_last by auto
       have "(add_edge pf e e') ! e = e'" 
         by (simp add: "1.prems" nth_add_edge_e_eq_e')
-      have *: "path_to_root pf  (pf ! e) @ [e] = path_to_root pf e" 
-        by (metis "1.prems" False append_butlast_last_id butlast.simps(1) last_path path_pf_e(1) path_to_root_correct path_unique ufa_invarD(2))
+      from "1.prems" have *: "path_to_root pf  (pf ! e) @ [e] = path_to_root pf e" 
+        by (metis False append_butlast_last_id butlast.simps(1) last_path path_pf_e(1) path_to_root_correct path_unique ufa_invarD(2))
       with path_pf_e "1.prems"(1) path_to_root_fun_upd have "path_to_root (pf[e := e']) (pf ! e) = path_to_root pf (pf ! e)" 
         by (metis path_e' path_nodes_lt_length_l ufa_invar_fun_upd)
       with * have **: "tl(rev (path_to_root pf e)) = rev (path_to_root (pf[e := e']) (pf ! e))" 
@@ -454,7 +459,7 @@ proof-
   qed
 qed
 
-subsection \<open>Termination and correctness of \<open>add_edge\<close> and \<open>add_label\<close>\<close>
+subsection \<open>Termination and correctness of \<open>add_label\<close>\<close>
 
 text \<open>The termination of add_label only depends on pf and y.\<close>
 lemma add_label_dom_pf_y: "add_label_dom (pfl, pf, y, x) \<Longrightarrow> add_label_dom (pfl', pf, y, x')"
@@ -496,6 +501,145 @@ next
     then show ?case apply(cases "pf ! e = e")
       using rep_of.domintros by blast+
   qed
+qed
+
+subsection \<open>Proofs about \<open>set_lookup\<close>\<close>
+
+lemma set_lookup_unchanged:
+  assumes "l ! i \<noteq> i \<or> l ! j \<noteq> j" "i < length t" "j < length (t ! i)" "ufa_invar l"
+    "\<forall> k < length xs . (\<exists> b\<^sub>1 b\<^sub>2 b . xs ! k = (F b\<^sub>1 b\<^sub>2 \<approx> b) \<and> 
+      b\<^sub>1 < length l \<and> b\<^sub>2 < length l \<and> b < length l)"
+  shows "set_lookup t xs l ! i ! j = t ! i ! j"
+  using assms proof(induction rule: set_lookup.induct)
+  case (1 t l)
+  then show ?case by simp
+next
+  case (2 t a\<^sub>1 a\<^sub>2 a xs l)
+  then have "a\<^sub>1 < length l" "a\<^sub>2 < length l" "a < length l"
+    by fastforce+
+  then have "l ! rep_of l a\<^sub>1 = rep_of l a\<^sub>1" "l ! rep_of l a\<^sub>2 = rep_of l a\<^sub>2"
+    by (simp_all add: "2.prems"(4) rep_of_root)
+  then have "rep_of l a\<^sub>1 \<noteq> i \<or> rep_of l a\<^sub>2 \<noteq> j" 
+    using "2.prems"(1) by blast
+  from 2 have " \<forall>k<length xs. \<exists>b\<^sub>1 b\<^sub>2 b. xs ! k = F b\<^sub>1 b\<^sub>2 \<approx> b \<and> b\<^sub>1 < length l \<and> b\<^sub>2 < length l \<and> b < length l "
+    by (metis in_set_conv_nth list.set_intros(2))
+  with 2 have "set_lookup (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a))) xs l ! i ! j =
+    upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a)) ! i ! j" 
+    using length_list_update nth_list_update_eq nth_list_update_neq upd.simps 
+    by (smt (verit))
+  then show ?case 
+    by (metis "2.prems"(2) \<open>rep_of l a\<^sub>1 \<noteq> i \<or> rep_of l a\<^sub>2 \<noteq> j\<close> nth_list_update_eq nth_list_update_neq set_lookup.simps(2) upd.simps)
+next
+  case (3 t a b xs l)
+  then show ?case 
+    by (metis bot_nat_0.extremum bot_nat_0.not_eq_extremum equation.distinct(1) impossible_Cons nth_Cons_0)
+qed
+
+lemma length_Cons:
+  assumes "xs = a # ys"
+  shows "length xs > 0" 
+  by (simp add: assms)
+
+abbreviation lookup_valid_element :: "equation option list list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool"
+  where
+    "lookup_valid_element t l i j \<equiv> t ! i ! j = None \<or> 
+(\<exists>a\<^sub>1 a\<^sub>2 aa. t ! i ! j = Some (F a\<^sub>1 a\<^sub>2 \<approx> aa) \<and>
+  rep_of l a\<^sub>1 = i \<and> rep_of l a\<^sub>2 = j \<and>
+  a\<^sub>1 < length l \<and> a\<^sub>2 < length l \<and> aa < length l)"
+
+abbreviation set_lookup_valid_input :: "equation list \<Rightarrow> nat list \<Rightarrow> bool"
+  where
+    "set_lookup_valid_input xs l \<equiv> 
+\<forall> i < length xs . (\<exists>a\<^sub>1 a\<^sub>2 a. xs ! i = (F a\<^sub>1 a\<^sub>2 \<approx> a) \<and> a\<^sub>1 < length l \<and> a\<^sub>2 < length l \<and> a < length l)"
+
+abbreviation quadratic_table :: "'a list list \<Rightarrow> bool"
+  where
+    "quadratic_table xs \<equiv> \<forall> i < length xs . length (xs ! i) = length xs"
+
+lemma set_lookup_valid: 
+  assumes "lookup_valid_element t l i j" 
+    "l ! i = i" "l ! j = j"
+    "set_lookup_valid_input xs l"
+    "length t = length l" "ufa_invar l" "quadratic_table t"
+  shows "lookup_valid_element (set_lookup t xs l) l i j"
+  using assms proof(induction t xs l rule: set_lookup.induct)
+  case (1 t l)
+  then show ?case 
+    by simp
+next
+  case (2 t a\<^sub>1 a\<^sub>2 a' xs l)
+  then show ?case proof(cases "set_lookup t ((F a\<^sub>1 a\<^sub>2 \<approx> a') # xs) l ! i ! j")
+    case None
+    then show ?thesis by blast
+  next
+    case (Some k) 
+    have a_length: "a\<^sub>1 < length l" "a\<^sub>2 < length l" "a' < length l"
+      using "2.prems" by fastforce+
+    then have "rep_of l a\<^sub>1 < length t" "rep_of l a\<^sub>2 < length (t ! rep_of l a\<^sub>1)" 
+      by (simp_all add: "2.prems" rep_of_less_length_l)
+    then have lookup_entry: "lookup_entry (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a'))) l  a\<^sub>1  a\<^sub>2 = Some (F a\<^sub>1 a\<^sub>2 \<approx> a')" 
+      by fastforce
+    then have "\<not> (lookup_None (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a'))) l) (F a\<^sub>1 a\<^sub>2 \<approx> a')"
+      by force
+    have **: "set_lookup_valid_input xs l"
+      "length (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a'))) = length l" 
+      "\<forall>i<length (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a'))).
+       length (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a')) ! i) =
+       length (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a')))" 
+      using 2(5) apply auto[1] using 2(6) apply auto[2] using 2(8)
+      by (metis  length_list_update nth_list_update_eq nth_list_update_neq upd.simps)
+    then show ?thesis proof(cases "i = rep_of l a\<^sub>1 \<and> j = rep_of l a\<^sub>2")
+      case True
+      with lookup_entry have *: "upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a')) ! i ! j = Some (F a\<^sub>1 a\<^sub>2 \<approx> a')"
+        by blast
+      with 2 * ** a_length True 
+      have IH: "lookup_valid_element (set_lookup (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a'))) xs l) l i j" 
+        by auto
+      then show ?thesis by simp
+    next
+      case False
+      then have *: "upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a')) ! i ! j = t ! i ! j" 
+        by (metis (no_types, lifting) nth_list_update_eq nth_list_update_neq nth_update_invalid upd.elims)
+      with 2 * ** 
+      have IH: "lookup_valid_element (set_lookup (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a'))) xs l) l i j" 
+        by presburger
+      have "set_lookup (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a'))) xs l ! i ! j = 
+          set_lookup t ((F a\<^sub>1 a\<^sub>2 \<approx> a') # xs) l ! i ! j" by auto
+      with IH * show ?thesis by metis
+    qed
+  qed
+next
+  case (3 t a2 b2 xs l)
+  then have "(\<exists>a\<^sub>1 a\<^sub>2 c. a2 \<approx> b2 = (F a\<^sub>1 a\<^sub>2 \<approx> c))" 
+    by auto
+  then show ?case by simp
+qed
+
+lemma set_lookup_valid_length: 
+  assumes "quadratic_table t"
+  shows "quadratic_table (set_lookup t xs l)"
+  using assms proof(induction t xs l rule: set_lookup.induct)
+  case (2 t a\<^sub>1 a\<^sub>2 a xs l)
+  then have "quadratic_table (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a)))" 
+    by (metis length_list_update nth_list_update_eq nth_list_update_neq upd.elims)
+  with 2 show ?case 
+    using set_lookup.simps(2) by presburger
+qed simp_all
+
+lemma ufa_union_lookup_valid: 
+  assumes "lookup_valid_element t l i j" "(ufa_union l a b) ! i = i" "(ufa_union l a b) ! j = j" 
+    "a < length l" "b < length l" "ufa_invar l"
+  shows "lookup_valid_element t (ufa_union l a b) i j"
+proof(cases "t ! i ! j = None")
+  case True
+  then show ?thesis 
+    by blast
+next
+  case False
+  from assms have "l ! i = i" "l ! j = j" 
+    using False rep_of_min by blast+
+  then show ?thesis 
+    by (metis (no_types, lifting) assms length_list_update nth_list_update_eq rep_of_less_length_l ufa_union_aux)
 qed
 
 end
