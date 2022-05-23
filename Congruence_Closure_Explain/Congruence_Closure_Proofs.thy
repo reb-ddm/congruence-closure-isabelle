@@ -9,6 +9,10 @@ fun apply_merges :: "congruence_closure \<Rightarrow> equation list \<Rightarrow
 | "apply_merges cc [] = cc"
 
 
+
+lemma cc_\<alpha>_eq_CC_representativeE: "cc_\<alpha> cc (s \<approx> t) = Congruence_Closure (representativeE cc) (s \<approx> t)"
+  sorry
+
 subsection \<open>Correctness of merge\<close>
 
 lemma 

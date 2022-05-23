@@ -476,7 +476,7 @@ proof(induction arbitrary: pfl' x' rule: add_label.pinduct)
   qed
 qed
 
-lemma "rep_of_dom (pf, y) \<longleftrightarrow> add_label_dom (pfl, pf, y, y')"
+lemma rep_of_dom_iff_add_label_dom: "rep_of_dom (pf, y) \<longleftrightarrow> add_label_dom (pfl, pf, y, y')"
 proof
   show "rep_of_dom (pf, y) \<Longrightarrow> add_label_dom (pfl, pf, y, y')"
   proof(induction rule: rep_of.pinduct)
@@ -502,6 +502,12 @@ next
       using rep_of.domintros by blast+
   qed
 qed
+
+lemma add_label_domain: 
+  assumes "ufa_invar pf" "y < length pf"
+  shows "add_label_dom (pfl, pf, y, y')"
+  using assms rep_of_dom_iff_add_label_dom 
+  by (simp add: ufa_invar_def)
 
 subsection \<open>Proofs about \<open>set_lookup\<close>\<close>
 

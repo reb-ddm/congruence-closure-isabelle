@@ -57,7 +57,61 @@ next
     using monotonic apply blast
     done
 qed
+thm Congruence_Closure.induct
 
+lemma Congruence_Closure_not_empty:
+"Congruence_Closure A (a \<approx> b) \<Longrightarrow> a \<noteq> b \<Longrightarrow> A \<noteq> {}"
+  apply(induction A "(a \<approx> b)" arbitrary: a b rule: Congruence_Closure.induct)
+      apply auto[1]
+     apply simp
+  using symmetric apply blast
+  using transitive apply argo
+  using Congruence_Closure.cases apply blast
+  done
+
+lemma Congruence_Closure_empty_aux:
+"Congruence_Closure A x \<Longrightarrow> A = {} \<Longrightarrow> (\<exists> a . x = (a \<approx> a))"
+  apply(induction A x arbitrary: rule: Congruence_Closure.induct)
+  by auto
+
+lemma Congruence_Closure_empty:
+"Congruence_Closure {} x \<longleftrightarrow> (\<exists> a . x = (a \<approx> a))"
+proof
+  from Congruence_Closure_empty_aux show "Congruence_Closure {} x \<Longrightarrow> \<exists>a. x = a \<approx> a" 
+    by blast
+  from Congruence_Closure.intros show "\<exists>a. x = a \<approx> a \<Longrightarrow> Congruence_Closure {} x"
+    by blast
+qed
+
+lemma Congruence_Closure_eq:
+  assumes "\<And> a. a \<in> A \<Longrightarrow> Congruence_Closure B a"
+"\<And> b. b \<in> B \<Longrightarrow> Congruence_Closure A b"
+shows "Congruence_Closure A = Congruence_Closure B"
+proof(standard, standard)
+  fix x 
+  assume CC_A: "Congruence_Closure A x"
+  show "Congruence_Closure B x"
+    using CC_A assms apply(induction A x rule: Congruence_Closure.induct)
+        apply auto[1]
+    using reflexive apply simp
+    using symmetric apply blast
+    using transitive apply blast
+    using monotonic apply blast
+    done
+next 
+  fix x
+  assume CC_B: "Congruence_Closure B x"
+  show "Congruence_Closure A x"
+    using CC_B assms apply(induction B x rule: Congruence_Closure.induct)
+        apply auto[1]
+    using reflexive apply simp
+    using symmetric apply blast
+    using transitive apply blast
+    using monotonic apply blast
+    done
+qed
+
+  
 
 fun valid_vars :: "equation \<Rightarrow> nat \<Rightarrow> bool"
   where
@@ -71,7 +125,7 @@ fun valid_vars_pending :: "pending_equation \<Rightarrow> nat \<Rightarrow> bool
         (valid_vars (F a\<^sub>1 a\<^sub>2 \<approx> a) n \<and> valid_vars (F b\<^sub>1 b\<^sub>2 \<approx> b) n)"
   | "valid_vars_pending _ _ = False"
 
-lemma valid_vars_pendingI: 
+lemma valid_vars_pending_iff: 
   "valid_vars_pending a n \<longleftrightarrow> (\<exists> b c . b < n \<and> c < n \<and> a = (One (b \<approx> c))) \<or>
 (\<exists> b c d e f g . b < n \<and> c < n \<and> d < n \<and> e < n \<and> f < n \<and> g < n \<and> a = (Two (F b c \<approx> d) (F e f \<approx> g)))"
   (is "?P \<longleftrightarrow> ?Q")
@@ -124,7 +178,6 @@ abbreviation lookup_invar_correctness :: "congruence_closure \<Rightarrow> bool"
   )
 )"
 
-
 definition representativeE :: "congruence_closure \<Rightarrow> equation set"
   where
     "representativeE cc = {a \<approx> rep_of (cc_list cc) a |a.  a < nr_vars cc \<and> cc_list cc ! a \<noteq> a}
@@ -136,6 +189,10 @@ text \<open>These invariants are needed for the termination proofs:\<close>
 abbreviation proof_forest_invar_termination :: "congruence_closure \<Rightarrow> bool"
   where
     "proof_forest_invar_termination cc \<equiv> ufa_invar (proof_forest cc)"
+
+abbreviation cc_list_invar_termination :: "congruence_closure \<Rightarrow> bool"
+  where
+    "cc_list_invar_termination cc \<equiv> ufa_invar (cc_list cc)"
 
 text \<open>These invariants are needed for the validity proofs:\<close>
 
@@ -153,28 +210,34 @@ next
     by (metis in_set_conv_nth set_ConsD)
 qed
 
-lemma pending_left_right_valid: 
-  assumes "pending_invar (pe # xs) n"
+
+lemma pending_left_right_valid': 
+  assumes valid: "valid_vars_pending pe n"
   shows "right pe < n \<and> left pe < n"
 proof(cases pe)
   case (One x1)
-  have valid: "valid_vars_pending pe n" 
-    using assms by auto
   with One valid obtain x11 x12 where Constants: "x1 = (x11 \<approx> x12)" 
     by (metis equation.exhaust valid_vars_pending.simps(3))
   with One have "left pe = x11" by simp
   with Constants One valid show ?thesis by auto
 next
   case (Two x21 x22)
-  have valid: "valid_vars_pending pe n" 
-    using assms by auto
   with valid obtain x211 x212 x213 x221 x222 x223 
     where Function: "x21 = (F x211 x212 \<approx> x213)"  "x22 = (F x221 x222 \<approx> x223)" 
     by (metis Two equation.exhaust valid_vars_pending.simps(4) valid_vars_pending.simps(5))
   then show ?thesis using Two valid by auto
 qed
 
+lemma pending_left_right_valid: 
+  assumes "pending_invar (pe # xs) n"
+  shows "right pe < n \<and> left pe < n"
+  by (metis assms in_set_conv_nth list.set_intros(1) pending_left_right_valid')
+
 text \<open>Here the invariants are put together:\<close>
+
+definition cc_list_invar :: "congruence_closure \<Rightarrow> bool"
+  where
+    "cc_list_invar cc = cc_list_invar_termination cc"
 
 definition use_list_invar :: "congruence_closure \<Rightarrow> bool"
   where
@@ -197,10 +260,17 @@ definition inv1 :: "congruence_closure \<Rightarrow> bool"
   where
     "inv1 cc = True"
 
-definition inv2 :: "congruence_closure \<Rightarrow> bool"
+definition inv2 :: "congruence_closure \<Rightarrow> equation set \<Rightarrow> bool"
   where
-    "inv2 cc \<equiv> 
-Congruence_Closure (representativeE cc) = Congruence_Closure (input cc)"
+    "inv2 cc pe \<equiv> 
+Congruence_Closure (representativeE cc \<union> pe) = Congruence_Closure (input cc)"
+
+text \<open>Converts the list of pending equations to a set of pending equations.\<close>
+fun pending_set :: "pending_equation list \<Rightarrow> equation set"
+  where
+"pending_set [] = {}"
+| "pending_set ((One a)#xs) = {a} \<union> pending_set xs"
+| "pending_set ((Two a b)#xs) = {a, b} \<union> pending_set xs"
 
 text \<open>The union find data structure and the proof forest have the same equivalence classes. \<close>
 abbreviation pf_l_same_eq_classes :: "nat list \<Rightarrow> nat list \<Rightarrow> bool"
@@ -208,84 +278,39 @@ abbreviation pf_l_same_eq_classes :: "nat list \<Rightarrow> nat list \<Rightarr
     "pf_l_same_eq_classes pf l \<equiv> (\<forall> i < length pf . (\<forall> j < length pf . rep_of l i = rep_of l j 
 \<longleftrightarrow> rep_of pf i = rep_of pf j))"
 
-definition inv3 :: "congruence_closure \<Rightarrow> bool"
+definition inv_same_rep_classes :: "congruence_closure \<Rightarrow> bool"
   where
-    "inv3 cc \<equiv> pf_l_same_eq_classes (proof_forest cc) (cc_list cc)"
+    "inv_same_rep_classes cc \<equiv> pf_l_same_eq_classes (proof_forest cc) (cc_list cc)"
 
-lemma inv3_not_divided: 
-  assumes "i < length (proof_forest cc)" "j < length (proof_forest cc)" "inv3 cc"
+lemma inv_same_rep_classes_not_divided: 
+  assumes "i < length (proof_forest cc)" "j < length (proof_forest cc)" "inv_same_rep_classes cc"
   shows "rep_of (cc_list cc) i = rep_of (cc_list cc) j \<longleftrightarrow> rep_of (proof_forest cc) i = rep_of (proof_forest cc) j"
-  using assms unfolding inv3_def by presburger
+  using assms unfolding inv_same_rep_classes_def by presburger
 
-lemma inv3_divided: 
+lemma inv_same_rep_classes_divided: 
   assumes "i < length pf" "j < length pf" 
-    "inv3 \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
+    "inv_same_rep_classes \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
   shows "rep_of l i = rep_of l j \<longleftrightarrow> rep_of pf i = rep_of pf j"
-  using assms unfolding inv3_def congruence_closure.select_convs by blast
+  using assms unfolding inv_same_rep_classes_def congruence_closure.select_convs by blast
 
-lemma cc_\<alpha>_eq_CC_representativeE: "cc_\<alpha> cc (s \<approx> t) = Congruence_Closure (representativeE cc) (s \<approx> t)"
-  sorry
+definition inv_same_length :: "congruence_closure \<Rightarrow> nat \<Rightarrow> bool"
+  where
+    "inv_same_length cc n \<equiv> 
+(((nr_vars cc = n \<and> length (use_list cc) = n) \<and> length (lookup cc) = n) \<and> length (proof_forest cc) = n) \<and> length (pf_labels cc) = n"
+
+abbreviation cc_invar_pending :: "congruence_closure \<Rightarrow> pending_equation list \<Rightarrow> bool"
+  where
+    "cc_invar_pending cc pe \<equiv> (((((((cc_list_invar cc \<and> use_list_invar cc) \<and> lookup_invar cc) 
+        \<and> proof_forest_invar cc) \<and> inv1 cc) \<and> inv2 cc (pending_set pe)) \<and> inv_same_rep_classes cc) 
+        \<and> inv_same_length cc (nr_vars cc)) \<and> pending_invar pe (nr_vars cc)"
 
 abbreviation cc_invar :: "congruence_closure \<Rightarrow> bool"
   where
-    "cc_invar cc \<equiv> use_list_invar cc \<and> lookup_invar cc \<and> proof_forest_invar cc \<and> inv1 cc \<and> inv2 cc \<and> inv3 cc"
+    "cc_invar cc \<equiv> cc_invar_pending cc []"
 
-lemma cc_invar_initial_cc: "cc_invar (initial_cc n)"
-  sorry
+subsection \<open>add_edge correctness lemmata\<close>
 
-text \<open>The length of all arrays of congruence_closure is always nr_vars cc\<close>
-lemma length_initial_cc:
-  "nr_vars (initial_cc n) = n"
-  "nr_vars (initial_cc n) = length (use_list (initial_cc n))"
-  "nr_vars (initial_cc n) = length (lookup (initial_cc n))"
-  "nr_vars (initial_cc n) = length (proof_forest (initial_cc n))"
-  "nr_vars (initial_cc n) = length (pf_labels (initial_cc n))"
-  by auto
-
-lemma set_lookup_preserves_length:
-  "length (set_lookup t a b) = length t"
-  apply(induction t a b rule: set_lookup.induct)
-  by auto
-
-lemma add_edge_preserves_length:
-  "add_edge_dom (pf, a, b) \<Longrightarrow> length (add_edge pf a b) = length pf"
-  apply(induction pf a b rule: add_edge.pinduct)
-  by (simp add: add_edge.psimps)
-
-lemma add_edge_preserves_length':
-  assumes "ufa_invar pf" "a < length pf" "b < length pf" "rep_of pf a \<noteq> rep_of pf b" 
-  shows "length (add_edge pf a b) = length pf"
-  using add_edge_domain add_edge_preserves_length assms by blast
-
-lemma add_label_preserves_length:
-  "add_label_dom (pfl, a, b, c) \<Longrightarrow> length pfl = n \<Longrightarrow> length (add_label pfl a b c) = n"
-  apply(induction pfl a b c rule: add_label.pinduct)
-  by (simp add: add_label.psimps)
-
-lemma propagate_preserves_length_cc_list:
-  assumes "propagate_dom (a, cc)" 
-  shows "nr_vars cc = n \<Longrightarrow> nr_vars (propagate a cc) = n"
-  using assms apply(induction rule: propagate.pinduct)
-  unfolding propagate.psimps Let_def
-  by auto
-
-lemma propagate_preserves_length_use_list:
-  assumes "propagate_dom (a, cc)" "length (use_list cc) = n "
-  shows "length (use_list (propagate a cc)) = n"
-  using assms apply(induction rule: propagate.pinduct)
-  unfolding propagate.psimps Let_def 
-  by auto
-
-lemma propagate_preserves_length_lookup:
-  assumes "propagate_dom (a, cc)" "length (lookup cc) = n" 
-  shows "length (lookup (propagate a cc)) = n"
-  using assms apply(induction rule: propagate.pinduct)
-  unfolding propagate.psimps Let_def
-  using set_lookup_preserves_length
-  by auto
-
-
-lemma hd_tl_list: "length xs > 1 \<Longrightarrow>hd(tl xs) = xs ! 1"
+lemma hd_tl_list: "length xs > 1 \<Longrightarrow>hd (tl xs) = xs ! 1"
   by (metis One_nat_def drop0 drop_Suc hd_drop_conv_nth)
 
 text \<open>If the representative changes after a list update, then it must be equal to 
@@ -413,7 +438,17 @@ lemma rep_of_add_edge_invar:
   shows "rep_of (add_edge l x1 x2) a = rep_of (add_edge l x1 x2) b"
   by (simp add: assms rep_of_add_edge_aux)
 
-lemma add_edge_inv3_invar:  
+lemma add_edge_preserves_length:
+  "add_edge_dom (pf, a, b) \<Longrightarrow> length (add_edge pf a b) = length pf"
+  apply(induction pf a b rule: add_edge.pinduct)
+  by (simp add: add_edge.psimps)
+
+lemma add_edge_preserves_length':
+  assumes "ufa_invar pf" "a < length pf" "b < length pf" "rep_of pf a \<noteq> rep_of pf b" 
+  shows "length (add_edge pf a b) = length pf"
+  using add_edge_domain add_edge_preserves_length assms by blast
+
+lemma add_edge_inv_same_rep_classes_invar:  
   assumes  "pf_l_same_eq_classes pf l" "ufa_invar pf" "ufa_invar l"
     "a < length l" "b < length l"
     "rep_of l a \<noteq> rep_of l b" "length pf = length l"
@@ -430,35 +465,7 @@ proof(standard, standard, standard, standard)
     using assms i_j rep_of_add_edge_aux ufa_union_aux by auto
 qed
 
-lemma proof_forest_invar_step: 
-  assumes "proof_forest_invar \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
-    "a < length pf" "b < length pf"   "rep_of pf a \<noteq> rep_of pf b"
-  shows "proof_forest_invar
-     (propagate_step l u t pf pfl ip a b pe)"
-  unfolding proof_forest_invar_def using add_edge_ufa_invar_invar
-  using assms proof_forest_invar_def by auto
-
-lemma inv3_step:
-  assumes "inv3 \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
-    (is "inv3 ?base")
-    "rep_of pf a \<noteq> rep_of pf b" "ufa_invar pf" "ufa_invar l" "a < length pf" "b < length pf" "length pf = length l"
-  shows "inv3 (propagate_step l u t pf pfl ip a b pe)" (is "inv3 ?step")
-  unfolding inv3_def
-proof(standard, standard, standard, standard)
-  fix i j
-  assume i_j: "i < length (proof_forest ?step)" "j < length (proof_forest ?step)"
-  with add_edge_preserves_length' assms have *:"length (proof_forest ?step) = length (proof_forest ?base)" 
-    by simp
-  with add_edge_preserves_length' assms have "length (cc_list ?step) = length (cc_list ?base)" 
-    by simp
-  with assms * have "(rep_of (cc_list ?base) i = rep_of (cc_list ?base) j) =
-           (rep_of (proof_forest ?base) i = rep_of (proof_forest ?base) j)" unfolding inv3_def using inv3_not_divided 
-    using i_j by presburger
-  with rep_of_add_edge_aux ufa_union_aux assms * i_j inv3_not_divided
-  show "(rep_of (cc_list ?step) i = rep_of (cc_list ?step) j) =
-           (rep_of (proof_forest ?step) i = rep_of (proof_forest ?step) j) " 
-    by (smt (z3) "*" congruence_closure.select_convs(1) congruence_closure.select_convs(4))
-qed
+subsection \<open>Additional helper lemmata\<close>
 
 lemma filter_list:
   assumes "i < length (filter f xs)"
@@ -522,6 +529,38 @@ lemma lookup_invar_less_n:
     "(t ! i) ! j = Some (F f g \<approx> h)" "i < length l" "j < length l" "l ! i = i" "l ! j = j"
   shows "f < length l" "g < length l" "h < length l"
   using assms unfolding lookup_invar_def by fastforce+
+
+subsection \<open>The invariants remain invariant after one step of propagate\<close>
+
+lemma proof_forest_invar_step: 
+  assumes "proof_forest_invar \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
+    "a < length pf" "b < length pf" "rep_of pf a \<noteq> rep_of pf b"
+  shows "proof_forest_invar
+     (propagate_step l u t pf pfl ip a b pe)"
+  unfolding proof_forest_invar_def using add_edge_ufa_invar_invar
+  using assms proof_forest_invar_def by auto
+
+lemma inv_same_rep_classes_step:
+  assumes "inv_same_rep_classes \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
+    (is "inv_same_rep_classes ?base")
+    "rep_of pf a \<noteq> rep_of pf b" "ufa_invar pf" "ufa_invar l" "a < length pf" "b < length pf" "length pf = length l"
+  shows "inv_same_rep_classes (propagate_step l u t pf pfl ip a b pe)" (is "inv_same_rep_classes ?step")
+  unfolding inv_same_rep_classes_def
+proof(standard, standard, standard, standard)
+  fix i j
+  assume i_j: "i < length (proof_forest ?step)" "j < length (proof_forest ?step)"
+  with add_edge_preserves_length' assms have *:"length (proof_forest ?step) = length (proof_forest ?base)" 
+    by simp
+  with add_edge_preserves_length' assms have "length (cc_list ?step) = length (cc_list ?base)" 
+    by simp
+  with assms * have "(rep_of (cc_list ?base) i = rep_of (cc_list ?base) j) =
+           (rep_of (proof_forest ?base) i = rep_of (proof_forest ?base) j)" unfolding inv_same_rep_classes_def using inv_same_rep_classes_not_divided 
+    using i_j by presburger
+  with rep_of_add_edge_aux ufa_union_aux assms * i_j inv_same_rep_classes_not_divided
+  show "(rep_of (cc_list ?step) i = rep_of (cc_list ?step) j) =
+           (rep_of (proof_forest ?step) i = rep_of (proof_forest ?step) j) " 
+    by (smt (z3) "*" congruence_closure.select_convs(1) congruence_closure.select_convs(4))
+qed
 
 lemma pending_invar_step:
   assumes "pending_invar (pe # xs) (length l)" "a = left pe" "ufa_invar l" "length u = length l"
@@ -603,10 +642,8 @@ next
 qed
 
 lemma use_list_invar_step: 
-  assumes "lookup_invar \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
-    (is "lookup_invar ?base") 
-    "use_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
-    "ufa_invar l" "a < length l" "b < length l" "length t = length l" "length u = length l"
+  assumes "use_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
+    "ufa_invar l" "a < length l" "b < length l" "length u = length l"
   shows "use_list_invar (propagate_step l u t pf pfl ip a b pe)" (is "use_list_invar ?step")
   unfolding use_list_invar_def proof(standard, standard,standard, standard, standard)
   fix i j 
@@ -617,8 +654,7 @@ lemma use_list_invar_step:
     | (none) "i \<noteq> rep_of l a \<and> i \<noteq> rep_of l b" 
     by blast
   then show "\<exists>b\<^sub>1 b\<^sub>2 ba. use_list ?step ! i ! j = F b\<^sub>1 b\<^sub>2 \<approx> ba \<and> (i = rep_of (cc_list ?step) b\<^sub>1 \<or>
-               i = rep_of (cc_list ?step) b\<^sub>2) \<and>
-               b\<^sub>1 < nr_vars ?step \<and> b\<^sub>2 < nr_vars ?step \<and> ba < nr_vars ?step"
+               i = rep_of (cc_list ?step) b\<^sub>2) \<and> b\<^sub>1 < nr_vars ?step \<and> b\<^sub>2 < nr_vars ?step \<and> ba < nr_vars ?step"
   proof(cases)
     case rep_of_a
     then have "use_list ?step ! i = []" 
@@ -628,11 +664,11 @@ lemma use_list_invar_step:
   next
     case rep_of_b
     then have *: "use_list ?step ! i = u ! rep_of l b @ filter (lookup_None t l) (u ! rep_of l a)" 
-      using assms(7) i_j(1) by auto
+      using assms i_j(1) by auto
     have rep_a: "rep_of (cc_list ?step) a = rep_of l b" 
-      by (simp add: assms(3) assms(4) assms(5) ufa_union_aux)
+      by (simp add: assms ufa_union_aux)
     have rep_b: "rep_of (cc_list ?step) b = rep_of l b" 
-      by (simp add: assms(3) assms(4) assms(5) ufa_union_aux)
+      by (simp add: assms ufa_union_aux)
     then show ?thesis proof(cases "j < length (u ! rep_of l b)")
       case True
       with * have "use_list ?step ! i ! j = u ! i ! j" 
@@ -664,11 +700,68 @@ lemma use_list_invar_step:
   qed
 qed
 
+lemma inv2_invar_step:
+  assumes "cc_invar_pending \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> (pe # xs)"
+"a = left pe" "b = right pe" "rep_of l a \<noteq> rep_of l b"
+shows "inv2 (propagate_step l u t pf pfl ip a b pe) (pending_set xs)" 
+proof-
+  have 1: "eq \<in> representativeE \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> \<union> (pending_set (pe # xs))
+\<Longrightarrow> Congruence_Closure (representativeE (propagate_step l u t pf pfl ip a b pe) \<union> (pending_set xs)) eq"
+    for eq sorry
+  have 2: "eq \<in> (representativeE (propagate_step l u t pf pfl ip a b pe) \<union> (pending_set xs))
+\<Longrightarrow> Congruence_Closure (representativeE \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> \<union> (pending_set (pe # xs))) eq"
+    for eq sorry
+  have "Congruence_Closure
+        (input
+          \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>)
+= Congruence_Closure (input (propagate_step l u t pf pfl ip a b pe))"
+    by simp
+ with assms Congruence_Closure_eq[OF 1 2] show ?thesis unfolding inv2_def (*representativeE_def congruence_closure.select_convs*)
+   by metis
+qed
+
+
+subsection \<open>The length of all lists in the data structure are equal to nr_vars\<close>
+
+text \<open>The length of all arrays of congruence_closure is always nr_vars cc\<close>
+
+lemma set_lookup_preserves_length:
+  "length (set_lookup t a b) = length t"
+  apply(induction t a b rule: set_lookup.induct)
+  by auto
+
+lemma add_label_preserves_length:
+  "add_label_dom (pfl, a, b, c) \<Longrightarrow> length pfl = n \<Longrightarrow> length (add_label pfl a b c) = n"
+  apply(induction pfl a b c rule: add_label.pinduct)
+  by (simp add: add_label.psimps)
+
+lemma propagate_preserves_length_cc_list:
+  assumes "propagate_dom (a, cc)" 
+  shows "nr_vars cc = n \<Longrightarrow> nr_vars (propagate a cc) = n"
+  using assms apply(induction rule: propagate.pinduct)
+  unfolding propagate.psimps Let_def
+  by auto
+
+lemma propagate_preserves_length_use_list:
+  assumes "propagate_dom (a, cc)" "length (use_list cc) = n "
+  shows "length (use_list (propagate a cc)) = n"
+  using assms apply(induction rule: propagate.pinduct)
+  unfolding propagate.psimps Let_def 
+  by auto
+
+lemma propagate_preserves_length_lookup:
+  assumes "propagate_dom (a, cc)" "length (lookup cc) = n" 
+  shows "length (lookup (propagate a cc)) = n"
+  using assms apply(induction rule: propagate.pinduct)
+  unfolding propagate.psimps Let_def
+  using set_lookup_preserves_length
+  by auto
+
 lemma propagate_preserves_length_proof_forest:
   assumes "propagate_dom (a, cc)" 
     "length (proof_forest cc) = n" "length (cc_list cc) = n" "length (use_list cc) = n" "length (lookup cc) = n"
     "proof_forest_invar cc" "lookup_invar cc" "use_list_invar cc"
-    "ufa_invar (cc_list cc)" "pending_invar a n" "inv3 cc"
+    "ufa_invar (cc_list cc)" "pending_invar a n" "inv_same_rep_classes cc"
   shows "length (proof_forest (propagate a cc)) = n"
   using assms proof(induction a cc rule: propagate.pinduct)
   case (1 cc)
@@ -686,15 +779,15 @@ next
     case True
     then have "propagate (pe # xs)
          \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>
-  = propagate xs \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>" using a_def b_def propagate_simps
-      by (metis "2.hyps" propagate_simp2')
+  = propagate xs \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>" 
+      using a_def b_def propagate_simps by (metis "2.hyps" propagate_simp2')
     moreover have "pending_invar xs n"
       using "2.prems" pending_invar_Cons by blast
     ultimately show ?thesis using 2 True a_def b_def by metis
   next
     case False
     with 2 have rep_of_pf: "rep_of pf a \<noteq> rep_of pf b" 
-      by (metis "*"(1) a_b(1) a_b(2) inv3_divided)
+      by (metis "*"(1) a_b inv_same_rep_classes_divided)
     with add_edge_domain a_b * have dom: "add_edge_dom (pf, a, b)"
       by metis
     with 2 add_edge_preserves_length * have length_add_edge: "length (add_edge pf a b) = n"
@@ -713,17 +806,17 @@ next
       using \<open>rep_of pf a \<noteq> rep_of pf b\<close> a_b add_edge_preserves_length dom length_add_edge by presburger
     have "ufa_invar pf" "ufa_invar l" "a < length pf" "b < length pf" "length pf = length l"
       using * a_b \<open>ufa_invar l\<close> \<open>length l = n\<close> by simp_all
-    from inv3_step[OF 2(13) rep_of_pf this] have inv3: "inv3 (propagate_step l u t pf pfl ip a b pe)" by blast
+    from inv_same_rep_classes_step[OF 2(13) rep_of_pf this] have inv_same_rep_classes: "inv_same_rep_classes (propagate_step l u t pf pfl ip a b pe)" by blast
     from "2.prems" have "a < length l" "b < length l" "length t = length l" "length u = length l" 
       by (auto simp add:  \<open>length l = n\<close> a_b) 
     with lookup_invar_step 2 have lookup_invar: "lookup_invar (propagate_step l u t pf pfl ip a b pe)"
       using \<open>ufa_invar l\<close> by presburger
     from use_list_invar_step have use_list_invar: "use_list_invar (propagate_step l u t pf pfl ip a b pe)"
-      by (simp add: "2.prems" \<open>a < length l\<close> \<open>b < length l\<close> \<open>length t = length l\<close> \<open>length u = length l\<close> \<open>ufa_invar l\<close> )
+      by (simp add: "2.prems" \<open>a < length l\<close> \<open>b < length l\<close> \<open>length u = length l\<close> \<open>ufa_invar l\<close> )
     have "ufa_invar (ufa_union l a b)" "length (lookup (propagate_step l u t pf pfl ip a b pe)) = n"
       using \<open>a < length pf\<close> \<open>b < length pf\<close> \<open>length pf = length l\<close> \<open>ufa_invar l\<close> ufa_union_invar
       by (simp_all add: \<open>length l = n\<close> \<open>length t = length l\<close> set_lookup_preserves_length)
-    with 2(3)[OF a_def b_def False _ _ _ _ proof_forest_invar lookup_invar use_list_invar] False proof_forest_invar inv3 length_add_edge length_ufa_union pending_invar
+    with 2(3)[OF a_def b_def False _ _ _ _ proof_forest_invar lookup_invar use_list_invar] False proof_forest_invar inv_same_rep_classes length_add_edge length_ufa_union pending_invar
     have "length (proof_forest
        (propagate (xs @ map (link_to_lookup t l) (filter (lookup_Some t l) (u ! rep_of l a)))
          (propagate_step l u t pf pfl ip a b pe))) = n" 
@@ -734,35 +827,177 @@ next
 qed
 
 lemma propagate_preserves_length_pf_labels:
-  assumes "propagate_dom (a, cc)" "length (pf_labels cc) = n" "ufa_invar (proof_forest cc)"
+  assumes "propagate_dom (a, cc)" "length (pf_labels cc) = n" 
+"length (proof_forest cc) = n" "ufa_invar (proof_forest cc)"
+"pending_invar a n" "inv_same_rep_classes cc" "ufa_invar (cc_list cc)"
+"length (cc_list cc) = length (use_list cc)"
+"length (cc_list cc) = length (lookup cc)"
+"length (cc_list cc) = n"
+"lookup_invar cc" "use_list_invar cc"
   shows "length (pf_labels (propagate a cc)) = n"
   using assms proof(induction rule: propagate.pinduct)
   case (1 cc)
   then show ?case 
-    by (simp add: propagate.psimps(1))
+    by simp
 next
   case (2 pe xs l u t pf pfl ip)
   define a where "a = left pe"
-  have "a < length pf" sorry
-  then have "add_label_dom (pfl, pf, a, pe)"
-    sorry
-  with 2 add_label_preserves_length a_def propagate.psimps(2) show ?case 
-    by (smt (verit) congruence_closure.select_convs(5) )
+  define b where "b = right pe"
+  with "2.prems" a_def pending_left_right_valid have a_b: "a < length pf" "b < length pf"
+    by force+
+  with "2.prems" add_label_domain have "add_label_dom (pfl, pf, a, pe)"
+    by force
+  with 2(4) add_label_preserves_length
+  have "length (add_label pfl pf a pe) = n" 
+    by (metis congruence_closure.select_convs(5))
+  show ?case
+  proof(cases "rep_of l a = rep_of l b")
+    case True
+    then show ?thesis 
+      using 2 a_def b_def pending_invar_Cons by auto
+  next
+    case False
+    then have rep_pf: "rep_of pf a \<noteq> rep_of pf b" 
+      using "2.prems"(5) a_b inv_same_rep_classes_divided by auto
+    with add_edge_domain "2.prems" a_b have "add_edge_dom (pf, a, b)" 
+      by (metis congruence_closure.select_convs(4))
+    with 2(5) add_edge_preserves_length
+    have 1: "length (proof_forest (propagate_step l u t pf pfl ip a b pe)) = n" 
+      by auto
+    have 3: "proof_forest_invar_termination
+     (propagate_step l u t pf pfl ip a b pe) " 
+      using "2.prems"(3) rep_pf a_b add_edge_ufa_invar_invar by auto
+    have "n = length l" "ufa_invar l" "length u = length l"
+      using "2.prems" by auto
+    with pending_invar_step[of pe xs l a u t pf pfl ip] 2 a_def have 4: "pending_invar
+     (xs @ map (link_to_lookup t l) (filter (lookup_Some t l) (u ! rep_of l a))) (length l)"
+      by metis
+    from "2.prems" have 5: "inv_same_rep_classes (propagate_step l u t pf pfl ip a b pe)" 
+      by (metis \<open>n = length l\<close> \<open>ufa_invar l\<close> a_b congruence_closure.select_convs(4) inv_same_rep_classes_step rep_pf)
+    from "2.prems" have 6: "ufa_invar (cc_list (propagate_step l u t pf pfl ip a b pe))"
+      by (metis a_b congruence_closure.select_convs(1,4) ufa_union_invar)
+    from "2.prems" have 7: "nr_vars (propagate_step l u t pf pfl ip a b pe) =
+    length (use_list (propagate_step l u t pf pfl ip a b pe))" 
+      by (metis congruence_closure.select_convs(1,2) length_list_update)
+    from lookup_invar_step "2.prems" a_b have 8: "lookup_invar (propagate_step l u t pf pfl ip a b pe)"
+      by force
+    from use_list_invar_step "2.prems" have 9: "use_list_invar (propagate_step l u t pf pfl ip a b pe)" 
+      using \<open>length u = length l\<close> \<open>n = length l\<close> \<open>ufa_invar l\<close> a_b by auto
+    with 2 rep_pf 1 3 4 5 6 7 8 9
+    show ?thesis 
+      by (metis False \<open>length (add_label pfl pf a pe) = n\<close> a_def b_def congruence_closure.select_convs(1,3,5) length_list_update propagate_simp3 set_lookup_preserves_length)
+  qed
 qed
 
+lemma length_propagate_cc:
+  assumes "cc_invar_pending cc a"
+ "propagate_dom (a, cc)"
+  shows "nr_vars cc = nr_vars (propagate a cc)"
+  "nr_vars cc = length (use_list (propagate a cc))"
+  "nr_vars cc = length (lookup (propagate a cc))"
+  "nr_vars cc = length (proof_forest (propagate a cc))"
+  "nr_vars cc = length (pf_labels (propagate a cc))"
+  using assms propagate_preserves_length_use_list propagate_preserves_length_cc_list inv_same_length_def propagate_preserves_length_lookup
+  cc_list_invar_def propagate_preserves_length_proof_forest propagate_preserves_length_pf_labels proof_forest_invar_def 
+  by auto 
 
-lemma rep_of_ufa_union:
-  assumes  "ufa_invar l" "a < length l" "b < length l"
-  shows"rep_of l k = rep_of l a \<Longrightarrow> rep_of (ufa_union l a b) k = rep_of l b" 
-"rep_of l k = rep_of l b \<Longrightarrow> rep_of (ufa_union l a b) k = rep_of l b" 
-"rep_of l k \<noteq> rep_of l a \<Longrightarrow> rep_of l k \<noteq> rep_of l b \<Longrightarrow> rep_of (ufa_union l a b) k = rep_of l k" 
-  sorry
+lemma inv_same_length_step:
+  assumes "cc_invar_pending \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> (pe # xs)"
+"rep_of l a \<noteq> rep_of l b" "a = left pe" "b = right pe"
+shows "inv_same_length (propagate_step l u t pf pfl ip a b pe)
+(nr_vars (propagate_step l u t pf pfl ip a b pe))" 
+proof-
+  from assms have pe_valid: "valid_vars_pending pe (length l)" 
+    using pending_invar_Cons by auto
+  show ?thesis unfolding inv_same_length_def
+  apply(rule conjI)+
+      apply blast
+  using assms inv_same_length_def apply fastforce
+  using assms inv_same_length_def set_lookup_preserves_length apply auto[1]
+  using assms add_edge_preserves_length' pe_valid pending_left_right_valid' inv_same_rep_classes_divided length_list_update
+  unfolding inv_same_length_def proof_forest_invar_def subgoal sorry
+  (*apply (metis congruence_closure.select_convs(1) congruence_closure.select_convs(4))*)
+  using assms add_label_preserves_length add_label_domain pending_left_right_valid' 
+  unfolding proof_forest_invar_def inv_same_length_def 
+  by auto
+qed
 
-lemma rep_of_add_edge:
-  assumes "ufa_invar pf" "a < length pf" "b < length pf"
-  shows  "rep_of pf k = rep_of pf a \<Longrightarrow> rep_of (add_edge pf a b) k = rep_of pf b" 
-"rep_of pf k = rep_of pf b \<Longrightarrow> rep_of (add_edge pf a b) k = rep_of pf b"
-"rep_of pf k \<noteq> rep_of pf a \<Longrightarrow> rep_of l k \<noteq> rep_of l b \<Longrightarrow> rep_of (add_edge pf a b) k = rep_of pf k"
-  sorry
+subsection \<open>cc_invar lemmata\<close>
+
+lemma cc_invar_initial_cc: "cc_invar (initial_cc n)"
+proof(rule conjI)+
+  show "cc_list_invar (initial_cc n)" unfolding cc_list_invar_def 
+    by (simp add: ufa_init_invar)
+  show "use_list_invar (initial_cc n)" unfolding use_list_invar_def
+  proof(standard, standard, standard, standard, standard)
+    fix i j 
+    assume "i < nr_vars (initial_cc n)" "j < length (use_list (initial_cc n) ! i)"
+"cc_list (initial_cc n) ! i = i"
+    then have "length (use_list (initial_cc n) ! i) = 0" 
+      by fastforce
+    then have "False" 
+      using \<open>j < length (use_list (initial_cc n) ! i)\<close> by presburger
+  qed simp
+  show "lookup_invar (initial_cc n)" unfolding lookup_invar_def
+  proof(standard, standard, standard, standard, standard, standard, standard)
+    fix i j
+    assume "i < nr_vars (initial_cc n)" "j < nr_vars (initial_cc n)"
+"cc_list (initial_cc n) ! i = i \<and> cc_list (initial_cc n) ! j = j"
+    then show "lookup (initial_cc n) ! i ! j = None" 
+      by force
+  next
+    show "quadratic_table (lookup (initial_cc n))" 
+      by simp
+  qed
+  show "proof_forest_invar (initial_cc n)" unfolding proof_forest_invar_def
+    by (simp add: ufa_init_invar)
+  show "inv1 (initial_cc n)" unfolding inv1_def
+    by simp
+  show "inv2 (initial_cc n) (pending_set [])" unfolding inv2_def
+  proof
+    fix x
+    have "representativeE (initial_cc n) \<union> pending_set [] = {}" unfolding representativeE_def by simp
+    moreover have "input (initial_cc n) = {}"  by simp
+    ultimately show "Congruence_Closure (representativeE (initial_cc n) \<union> pending_set []) x =
+         Congruence_Closure (input (initial_cc n)) x" 
+      by presburger
+  qed
+  show "inv_same_rep_classes (initial_cc n)" unfolding inv_same_rep_classes_def
+  proof(standard, standard, standard, standard)
+    fix i j
+    assume "i < length (proof_forest (initial_cc n))"
+"j < length (proof_forest (initial_cc n))"
+    then show "(rep_of (cc_list (initial_cc n)) i =
+            rep_of (cc_list (initial_cc n)) j) =
+           (rep_of (proof_forest (initial_cc n)) i =
+            rep_of (proof_forest (initial_cc n)) j)" 
+      by force
+  qed
+  show "inv_same_length (initial_cc n) (nr_vars (initial_cc n))" unfolding inv_same_length_def
+    by simp
+  show "pending_invar [] (nr_vars (initial_cc n))" 
+    by simp
+qed
+
+lemma cc_invar_step:
+  assumes "cc_invar_pending \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> (pe # xs)"
+"valid_vars_pending pe (length l)" "a = left pe" "b = right pe" "rep_of l a \<noteq> rep_of l b"
+shows "cc_invar_pending (propagate_step l u t pf pfl ip a b pe) xs"
+  apply (rule conjI)+
+  using assms cc_list_invar_def pending_left_right_valid' ufa_union_invar apply auto[1]
+  using assms cc_list_invar_def inv_same_length_def pending_left_right_valid' use_list_invar_step apply auto[1]
+  using assms cc_list_invar_def inv_same_length_def lookup_invar_step pending_left_right_valid' apply auto[1]
+  using assms proof_forest_invar_step pending_left_right_valid' inv_same_rep_classes_divided 
+  unfolding cc_list_invar_def inv_same_length_def 
+  apply (metis (full_types) congruence_closure.select_convs(1) congruence_closure.select_convs(4))
+  using inv1_def apply blast
+  using assms inv2_invar_step apply blast
+  using assms inv_same_rep_classes_step inv_same_rep_classes_divided pending_left_right_valid'
+  unfolding cc_list_invar_def inv_same_length_def proof_forest_invar_def 
+  apply (smt (verit, del_insts) congruence_closure.select_convs(1) congruence_closure.select_convs(4))
+  using length_propagate_cc assms inv_same_length_step
+  unfolding inv_same_length_def subgoal sorry
+  using assms(1) apply auto
+  done
 
 end
