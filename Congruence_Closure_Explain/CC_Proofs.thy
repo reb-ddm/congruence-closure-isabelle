@@ -621,6 +621,57 @@ next
   then show ?case by simp
 qed
 
+text \<open>if \<open>set_lookup\<close> changes an entry, then this changed entry is valid.\<close>
+
+lemma set_lookup_valid2: 
+  assumes "t ! i ! j \<noteq> (set_lookup t xs l) ! i ! j"
+    "l ! i = i" "l ! j = j"
+    "set_lookup_valid_input xs l"
+    "length t = length l" "ufa_invar l" "quadratic_table t"
+  shows "lookup_valid_element (set_lookup t xs l) l i j"
+using assms proof(induction t xs l rule: set_lookup.induct)
+  case (1 t l)
+  then show ?case by simp
+next
+  case (2 t a\<^sub>1 a\<^sub>2 a xs l)
+  then show ?case proof(cases "upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a)) ! i ! j =
+    set_lookup (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a))) xs l ! i ! j")
+    case True
+    then have "upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a)) ! i ! j \<noteq> t ! i ! j" 
+      by (metis "2.prems"(1) set_lookup.simps(2))
+    then have "i = rep_of l a\<^sub>1" "j = rep_of l a\<^sub>2" 
+      apply (metis nth_list_update_neq upd.simps) 
+      by (metis (no_types, lifting) "2.prems"(1) True nth_list_update_eq nth_list_update_neq nth_update_invalid set_lookup.simps(2) upd.elims)
+    then have "(set_lookup t ((F a\<^sub>1 a\<^sub>2 \<approx> a) # xs) l) ! i ! j = Some (F a\<^sub>1 a\<^sub>2 \<approx> a)" 
+      by (metis True \<open>upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a)) ! i ! j \<noteq> t ! i ! j\<close> nth_list_update_eq nth_update_invalid set_lookup.simps(2) upd.elims)
+    have "a\<^sub>1 < length l \<and> a\<^sub>2 < length l \<and> a < length l" 
+      using "2.prems"(4) by auto
+    with True show ?thesis 
+      using \<open>i = rep_of l a\<^sub>1\<close> \<open>j = rep_of l a\<^sub>2\<close> \<open>set_lookup t ((F a\<^sub>1 a\<^sub>2 \<approx> a) # xs) l ! i ! j = Some (F a\<^sub>1 a\<^sub>2 \<approx> a)\<close> by blast
+  next
+    case False
+    with 2 have "set_lookup_valid_input xs l" 
+      by auto
+    have "length (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a))) = length l" 
+   "quadratic_table (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a)))" 
+      apply (simp add: "2.prems"(5))
+      by (metis "2.prems"(7) length_list_update nth_list_update_eq nth_list_update_neq upd.simps)
+    with 2 False have "lookup_valid_element
+     (set_lookup (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a))) xs l) l i j"
+      using \<open>set_lookup_valid_input xs l\<close> by fastforce
+    then show ?thesis 
+      using set_lookup.simps(2) by presburger
+  qed
+next
+  case (3 t a b xs l)
+  then have "set_lookup_valid_input xs l" 
+    by auto
+  with 3 have "lookup_valid_element (set_lookup t xs l) l i j" 
+    by auto
+  then show ?case by simp
+qed
+
+
 lemma set_lookup_valid_length: 
   assumes "quadratic_table t"
   shows "quadratic_table (set_lookup t xs l)"

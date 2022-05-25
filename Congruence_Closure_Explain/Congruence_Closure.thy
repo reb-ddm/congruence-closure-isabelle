@@ -122,8 +122,8 @@ text \<open>To show: pfl ! e = None iff pf ! e = e\<close>
 abbreviation propagate_step
   where 
 "propagate_step l u t pf pfl ip a b pe \<equiv> \<lparr>cc_list = ufa_union l a b,
-        use_list = u[rep_of l a := [], rep_of l b := u ! rep_of l b @ filter (lookup_None t l) (u ! rep_of l a)],
-        lookup = set_lookup t (filter (lookup_None t l) (u ! rep_of l a)) l, 
+        use_list = u[rep_of l a := [], rep_of l b := u ! rep_of l b @ filter (lookup_None t (ufa_union l a b)) (u ! rep_of l a)],
+        lookup = set_lookup t (filter (lookup_None t (ufa_union l a b)) (u ! rep_of l a)) (ufa_union l a b), 
         proof_forest = add_edge pf a b, pf_labels = add_label pfl pf a pe, input = ip\<rparr>"
 
 function propagate :: "pending_equation list \<Rightarrow> congruence_closure \<Rightarrow> congruence_closure"
@@ -134,7 +134,7 @@ function propagate :: "pending_equation list \<Rightarrow> congruence_closure \<
   (if rep_of l a = rep_of l b 
     then propagate xs \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>
     else
-      propagate (xs @ (map (link_to_lookup t l) (filter (lookup_Some t l) (u ! rep_of l a))))
+      propagate (xs @ (map (link_to_lookup t (ufa_union l a b)) (filter (lookup_Some t (ufa_union l a b)) (u ! rep_of l a))))
       (propagate_step l u t pf pfl ip a b pe)
 ))"
   by pat_completeness auto
@@ -156,8 +156,8 @@ lemma propagate_simp2':
 lemma propagate_simp3: 
   assumes "propagate_dom ((pe # xs), \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>)"
           "a = left pe" "b = right pe" "rep_of l a \<noteq> rep_of l b"
-    shows"propagate (pe # xs) \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> = 
-           propagate (xs @ (map (link_to_lookup t l) (filter (lookup_Some t l) (u ! rep_of l a))))
+    shows "propagate (pe # xs) \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> = 
+           propagate (xs @ (map (link_to_lookup t (ufa_union l a b)) (filter (lookup_Some t (ufa_union l a b)) (u ! rep_of l a))))
               (propagate_step l u t pf pfl ip a b pe)"
   using assms propagate.psimps unfolding Let_def 
   by presburger
