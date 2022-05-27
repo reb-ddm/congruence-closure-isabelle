@@ -48,9 +48,9 @@ record congruence_closure =
   input :: "equation set"
 
 text \<open>For updating two dimensional lists.\<close>
-fun upd :: "'a list list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> 'a list list"
+abbreviation upd :: "'a list list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> 'a list list"
   where 
-"upd xs n m e = xs[n := (xs ! n)[m := e]]"
+"upd xs n m e \<equiv> xs[n := (xs ! n)[m := e]]"
 
 text \<open>Finds the entry in the lookup table for the representatives of \<open>a\<^sub>1\<close> and \<open>a\<^sub>2\<close>.\<close>
 abbreviation lookup_entry :: "equation option list list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> equation option"
@@ -126,6 +126,10 @@ abbreviation propagate_step
         lookup = set_lookup t (filter (lookup_None t (ufa_union l a b)) (u ! rep_of l a)) (ufa_union l a b), 
         proof_forest = add_edge pf a b, pf_labels = add_label pfl pf a pe, input = ip\<rparr>"
 
+abbreviation pending_step
+  where 
+"pending_step l u t a b xs \<equiv> (xs @ (map (link_to_lookup t (ufa_union l a b)) (filter (lookup_Some t (ufa_union l a b)) (u ! rep_of l a))))"
+
 function propagate :: "pending_equation list \<Rightarrow> congruence_closure \<Rightarrow> congruence_closure"
   where
 "propagate [] cc = cc"
@@ -134,8 +138,7 @@ function propagate :: "pending_equation list \<Rightarrow> congruence_closure \<
   (if rep_of l a = rep_of l b 
     then propagate xs \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>
     else
-      propagate (xs @ (map (link_to_lookup t (ufa_union l a b)) (filter (lookup_Some t (ufa_union l a b)) (u ! rep_of l a))))
-      (propagate_step l u t pf pfl ip a b pe)
+      propagate (pending_step l u t a b xs) (propagate_step l u t pf pfl ip a b pe)
 ))"
   by pat_completeness auto
 
@@ -157,8 +160,7 @@ lemma propagate_simp3:
   assumes "propagate_dom ((pe # xs), \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>)"
           "a = left pe" "b = right pe" "rep_of l a \<noteq> rep_of l b"
     shows "propagate (pe # xs) \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> = 
-           propagate (xs @ (map (link_to_lookup t (ufa_union l a b)) (filter (lookup_Some t (ufa_union l a b)) (u ! rep_of l a))))
-              (propagate_step l u t pf pfl ip a b pe)"
+           propagate (pending_step l u t a b xs) (propagate_step l u t pf pfl ip a b pe)"
   using assms propagate.psimps unfolding Let_def 
   by presburger
 

@@ -103,8 +103,8 @@ proof(standard, standard, standard)
     have "i_ia \<noteq> [] \<Longrightarrow> path (l[i := y]) i [i, hd i_ia] (hd i_ia)" 
       using path_nodes_lt_length_l paths(1) single 
       by (smt (verit, best) \<open>i \<notin> set i_ia\<close> append_Cons_eq_iff length_list_update nth_list_update_neq path.simps path_hd)
-    with path_concat1 have p_l_upd_i_ia: "i_ia \<noteq> [] \<Longrightarrow> path (l[i := y]) i (i#i_ia) ia" 
-      by (smt (verit, ccfv_threshold) \<open>i_ia \<noteq> [] \<Longrightarrow> path (l[i := y]) (hd i_ia) i_ia ia\<close> list.sel(1) list.sel(3) not_Cons_self2 path.cases path.step)
+    with path_concat1 have p_l_upd_i_ia: "i_ia \<noteq> [] \<Longrightarrow> path (l[i := y]) i (i # i_ia) ia" 
+      by (metis \<open>i \<notin> set i_ia\<close> list.sel(3) path_fun_upd paths(1))
     from assms path_fun_upd in_set_tlD have path_rep_y: "path (l[i := y]) (rep_of l y) py y" 
       by metis
     from assms y have "path (l[i := y]) y [y, i] i" 
@@ -509,7 +509,7 @@ lemma add_label_domain:
   using assms rep_of_dom_iff_add_label_dom 
   by (simp add: ufa_invar_def)
 
-subsection \<open>Proofs about \<open>set_lookup\<close>\<close>
+subsection \<open>Validity and correctness of \<open>set_lookup\<close>\<close>
 
 lemma set_lookup_unchanged:
   assumes "l ! i \<noteq> i \<or> l ! j \<noteq> j" "i < length t" "j < length (t ! i)" "ufa_invar l"
@@ -531,10 +531,10 @@ next
     by (metis in_set_conv_nth list.set_intros(2))
   with 2 have "set_lookup (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a))) xs l ! i ! j =
     upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a)) ! i ! j" 
-    using length_list_update nth_list_update_eq nth_list_update_neq upd.simps 
-    by (smt (verit))
+    using length_list_update nth_list_update_eq nth_list_update_neq 
+    by (metis (no_types, lifting))
   then show ?case 
-    by (metis "2.prems"(2) \<open>rep_of l a\<^sub>1 \<noteq> i \<or> rep_of l a\<^sub>2 \<noteq> j\<close> nth_list_update_eq nth_list_update_neq set_lookup.simps(2) upd.simps)
+    by (metis \<open>rep_of l a\<^sub>1 \<noteq> i \<or> rep_of l a\<^sub>2 \<noteq> j\<close> nth_list_update' set_lookup.simps(2))
 next
   case (3 t a b xs l)
   then show ?case 
@@ -593,7 +593,7 @@ next
        length (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a')) ! i) =
        length (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a')))" 
       using 2(5) apply auto[1] using 2(6) apply auto[2] using 2(8)
-      by (metis  length_list_update nth_list_update_eq nth_list_update_neq upd.simps)
+      by (metis length_list_update nth_list_update_eq nth_list_update_neq)
     then show ?thesis proof(cases "i = rep_of l a\<^sub>1 \<and> j = rep_of l a\<^sub>2")
       case True
       with lookup_entry have *: "upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a')) ! i ! j = Some (F a\<^sub>1 a\<^sub>2 \<approx> a')"
@@ -605,7 +605,7 @@ next
     next
       case False
       then have *: "upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a')) ! i ! j = t ! i ! j" 
-        by (metis (no_types, lifting) nth_list_update_eq nth_list_update_neq nth_update_invalid upd.elims)
+        by (metis \<open>rep_of l a\<^sub>1 < length t\<close> nth_list_update_eq nth_list_update_neq)
       with 2 * ** 
       have IH: "lookup_valid_element (set_lookup (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a'))) xs l) l i j" 
         by presburger
@@ -640,10 +640,10 @@ next
     then have "upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a)) ! i ! j \<noteq> t ! i ! j" 
       by (metis "2.prems"(1) set_lookup.simps(2))
     then have "i = rep_of l a\<^sub>1" "j = rep_of l a\<^sub>2" 
-      apply (metis nth_list_update_neq upd.simps) 
-      by (metis (no_types, lifting) "2.prems"(1) True nth_list_update_eq nth_list_update_neq nth_update_invalid set_lookup.simps(2) upd.elims)
+       apply (metis nth_list_update_neq) 
+      by (metis "2.prems"(1) True nth_list_update' set_lookup.simps(2))
     then have "(set_lookup t ((F a\<^sub>1 a\<^sub>2 \<approx> a) # xs) l) ! i ! j = Some (F a\<^sub>1 a\<^sub>2 \<approx> a)" 
-      by (metis True \<open>upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a)) ! i ! j \<noteq> t ! i ! j\<close> nth_list_update_eq nth_update_invalid set_lookup.simps(2) upd.elims)
+      by (metis "2.prems"(1) True nth_list_update' set_lookup.simps(2))
     have "a\<^sub>1 < length l \<and> a\<^sub>2 < length l \<and> a < length l" 
       using "2.prems"(4) by auto
     with True show ?thesis 
@@ -654,8 +654,8 @@ next
       by auto
     have "length (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a))) = length l" 
    "quadratic_table (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a)))" 
-      apply (simp add: "2.prems"(5))
-      by (metis "2.prems"(7) length_list_update nth_list_update_eq nth_list_update_neq upd.simps)
+       apply (simp add: "2.prems"(5))
+      by (simp add: "2.prems"(7) nth_list_update')
     with 2 False have "lookup_valid_element
      (set_lookup (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a))) xs l) l i j"
       using \<open>set_lookup_valid_input xs l\<close> by fastforce
@@ -678,7 +678,7 @@ lemma set_lookup_valid_length:
   using assms proof(induction t xs l rule: set_lookup.induct)
   case (2 t a\<^sub>1 a\<^sub>2 a xs l)
   then have "quadratic_table (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a)))" 
-    by (metis length_list_update nth_list_update_eq nth_list_update_neq upd.elims)
+    by (simp add: nth_list_update')
   with 2 show ?case 
     using set_lookup.simps(2) by presburger
 qed simp_all
@@ -698,5 +698,144 @@ next
   then show ?thesis 
     by (metis (no_types, lifting) assms length_list_update nth_list_update_eq rep_of_less_length_l ufa_union_aux)
 qed
+
+
+text \<open>A lookup entry is either in the list xs or remains unchanged after \<open>set_lookup xs\<close>
+      if it is not in xs. \<close>
+lemma lookup_step_unchanged:
+  assumes "t ! a' ! b' = k"
+  shows "(\<exists> a b c. (F a b \<approx> c) \<in> set xs \<and> rep_of l a = a' \<and> rep_of l b = b') 
+\<or> (set_lookup t xs l) ! a' ! b' = k"
+using assms proof(induction t xs l rule: set_lookup.induct)
+  case (1 t l)
+  then show ?case 
+    by simp
+next
+  case (2 t a\<^sub>1 a\<^sub>2 a\<^sub>3 xs l)
+  then show ?case
+  proof(cases "upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a\<^sub>3)) ! a' ! b' = k")
+    case True
+    with 2 show ?thesis by auto
+  next
+    case False
+    with 2 have "rep_of l a\<^sub>1 = a' \<and> rep_of l a\<^sub>2 = b'" 
+      using nth_list_update' by metis 
+    then show ?thesis 
+      by auto
+  qed
+next
+  case (3 t a b xs l)
+  then show ?case 
+    by auto
+qed
+
+text \<open>Two equations \<open>F a\<^sub>1 a\<^sub>2 \<approx> a\<close> and \<open>F b\<^sub>1 b\<^sub>2 \<approx> b\<close> in u_a are either identical or do not have
+the same representatives for \<open>a\<^sub>1,b\<^sub>1\<close> and \<open>a\<^sub>2,b\<^sub>2\<close>.
+We need this to prove that set_lookup doesn't overwrite any value that it sets in lookup.\<close>
+abbreviation no_duplicate_representatives :: "equation list \<Rightarrow> nat list \<Rightarrow> bool"
+  where
+"no_duplicate_representatives u_a l \<equiv> (\<forall>i < length u_a . (\<forall> j < length u_a. (
+u_a ! i = u_a ! j \<or> (
+\<exists> a\<^sub>1 a\<^sub>2 a b\<^sub>1 b\<^sub>2 b. u_a ! i = (F a\<^sub>1 a\<^sub>2 \<approx> a) \<and> u_a ! j = (F b\<^sub>1 b\<^sub>2 \<approx> b) \<and> 
+(rep_of l a\<^sub>1 \<noteq> rep_of l b\<^sub>1 \<or> rep_of l a\<^sub>2 \<noteq> rep_of l b\<^sub>2)
+)
+)))"
+
+lemma no_duplicate_representatives_Cons:
+  assumes "no_duplicate_representatives (x#xs) l"
+  shows "no_duplicate_representatives xs l"
+proof(standard, standard, standard, standard)
+  fix i j 
+  assume "i < length xs" "j < length xs"
+  then have "xs ! i = (x # xs) ! (i + 1)""xs ! j = (x # xs) ! (j + 1)"
+"i + 1 < length (x # xs)""j + 1 < length (x # xs)"
+    by auto
+  with assms show "xs ! i = xs ! j \<or>
+           (\<exists>a\<^sub>1 a\<^sub>2 a b\<^sub>1 b\<^sub>2 b.
+               xs ! i = F a\<^sub>1 a\<^sub>2 \<approx> a \<and>
+               xs ! j = F b\<^sub>1 b\<^sub>2 \<approx> b \<and> (rep_of l a\<^sub>1 \<noteq> rep_of l b\<^sub>1 \<or> rep_of l a\<^sub>2 \<noteq> rep_of l b\<^sub>2))"
+    by presburger
+qed
+
+lemma no_duplicates_and_no_duplicate_representatives:
+  assumes "F c\<^sub>1 c\<^sub>2 \<approx> c \<notin> set xs" "no_duplicate_representatives ((F c\<^sub>1 c\<^sub>2 \<approx> c) # xs) l"
+  shows "~(\<exists> a b c. (F a b \<approx> c) \<in> set xs \<and> rep_of l a = rep_of l c\<^sub>1 \<and> rep_of l b = rep_of l c\<^sub>2)"
+proof
+  assume "\<exists>a b c. F a b \<approx> c \<in> set xs \<and> rep_of l a = rep_of l c\<^sub>1 \<and> rep_of l b = rep_of l c\<^sub>2"
+  then obtain a b d where "F a b \<approx> d \<in> set xs" 
+"rep_of l a = rep_of l c\<^sub>1" "rep_of l b = rep_of l c\<^sub>2"
+    by blast
+  with assms have "F a b \<approx> d \<noteq> F c\<^sub>1 c\<^sub>2 \<approx> c" 
+    by fast
+  then obtain i where "i < length xs" "xs ! i = F a b \<approx> d"
+    by (metis \<open>F a b \<approx> d \<in> set xs\<close> in_set_conv_nth)
+  then have "((F c\<^sub>1 c\<^sub>2 \<approx> c) # xs) ! 0 = (F c\<^sub>1 c\<^sub>2 \<approx> c)" "0 < length ((F c\<^sub>1 c\<^sub>2 \<approx> c) # xs)"
+ "((F c\<^sub>1 c\<^sub>2 \<approx> c) # xs) ! (i + 1) = F a b \<approx> d" "i + 1 < length ((F c\<^sub>1 c\<^sub>2 \<approx> c) # xs)"
+    by auto
+  with assms show "False" 
+    by (metis \<open>F a b \<approx> d \<noteq> F c\<^sub>1 c\<^sub>2 \<approx> c\<close> \<open>rep_of l a = rep_of l c\<^sub>1\<close> \<open>rep_of l b = rep_of l c\<^sub>2\<close> equation.inject(2))
+qed
+
+lemma set_lookup_correct:
+  assumes "F c\<^sub>1 c\<^sub>2 \<approx> c \<in> set xs" "no_duplicate_representatives xs l"
+"length t = length l" "ufa_invar l" "c\<^sub>1 < length l" "c\<^sub>2 < length l" "rep_of l c\<^sub>2 < length (t ! rep_of l c\<^sub>1)"
+  shows "lookup_entry (set_lookup t xs l) l c\<^sub>1 c\<^sub>2 = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)"
+using assms proof(induction t xs l rule: set_lookup.induct)
+  case (1 t l)
+  then show ?case by simp
+next
+  case (2 t a\<^sub>1 a\<^sub>2 a xs l)
+  then show ?case proof(cases "F c\<^sub>1 c\<^sub>2 \<approx> c \<in> set xs")
+    case True
+    with 2 have "no_duplicate_representatives xs l" "rep_of l c\<^sub>2
+    < length (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a)) ! rep_of l c\<^sub>1)"
+      using no_duplicate_representatives_Cons 2 apply presburger 
+      by (simp add: "2.prems"(7) nth_list_update')
+  with 2 True show ?thesis 
+    by fastforce
+next 
+  case False
+  then have "F c\<^sub>1 c\<^sub>2 \<approx> c = F a\<^sub>1 a\<^sub>2 \<approx> a" 
+    using "2.prems"(1) by auto
+  then have a_c: "a\<^sub>1 = c\<^sub>1" "a\<^sub>2 = c\<^sub>2" by auto 
+  with 2 have "lookup_entry (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a))) l c\<^sub>1 c\<^sub>2 = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)"
+    by (metis \<open>F c\<^sub>1 c\<^sub>2 \<approx> c = F a\<^sub>1 a\<^sub>2 \<approx> a\<close> nth_list_update_eq rep_of_bound)
+  from 2 no_duplicates_and_no_duplicate_representatives a_c False
+  have "~(\<exists> a b c. (F a b \<approx> c) \<in> set xs \<and> rep_of l a = rep_of l a\<^sub>1 \<and> rep_of l b = rep_of l a\<^sub>2)"
+    by simp
+  with lookup_step_unchanged show ?thesis unfolding set_lookup.simps
+    using a_c \<open>lookup_entry (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a))) l c\<^sub>1 c\<^sub>2 = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)\<close> by blast
+  qed
+next
+  case (3 t a b xs l)
+  then have "F c\<^sub>1 c\<^sub>2 \<approx> c \<in> set xs" "no_duplicate_representatives xs l"
+    apply simp 
+    using no_duplicate_representatives_Cons 3(3) by presburger
+  with 3 show ?case 
+    by fastforce
+qed
+
+lemma set_lookup_changed:
+  assumes "set_lookup t xs l ! i ! j = Some m" "t ! i ! j = k" "k \<noteq> Some m"
+  shows "m \<in> set xs"
+using assms proof(induction arbitrary: k rule: set_lookup.induct)
+  case (2 t a\<^sub>1 a\<^sub>2 a xs l)
+  have "set_lookup (upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a))) xs l ! i ! j = Some m"
+    using "2.prems"(1) by auto
+  then show ?case 
+  proof(cases "upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> a)) ! i ! j = Some m")
+    case False
+    with 2 have "m \<in> set xs" by force
+    then show ?thesis by simp
+  next
+    case True
+    with 2(3,4) have "i = rep_of l a\<^sub>1" "j = rep_of l a\<^sub>2" 
+      by (metis nth_list_update')+ 
+    with 2 True have "m = F a\<^sub>1 a\<^sub>2 \<approx> a" 
+      by (metis nth_list_update' option.inject)
+    then show ?thesis 
+      by simp
+  qed
+qed auto
 
 end
