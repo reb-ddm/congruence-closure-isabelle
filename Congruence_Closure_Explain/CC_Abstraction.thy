@@ -648,6 +648,17 @@ lemma use_list_invar_less_n:
   shows "a < length l" "b < length l" "c < length l"
   using assms unfolding use_list_invar_def by fastforce+
 
+lemma use_list_invar_rep_eq_i: 
+  assumes "use_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
+    "i < length l"  "l ! i = i" "(F a b \<approx> c) \<in> set (u ! i)"
+  shows "rep_of l a = i \<or> rep_of l b = i"
+proof-
+  from assms(4) obtain j where "j < length (u ! i)" "u ! i ! j = (F a b \<approx> c)"
+    by (metis in_set_conv_nth)
+  with assms show ?thesis unfolding use_list_invar_def by fastforce
+qed
+
+
 lemma lookup_invar_less_n:
   assumes "lookup_invar \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     "(t ! i) ! j = Some (F f g \<approx> h)" "i < length l" "j < length l" "l ! i = i" "l ! j = j"
@@ -1027,13 +1038,13 @@ qed
 lemma inv_lookup_use_list_step: 
   assumes "inv_lookup_use_list 
 \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
-"lookup_invar 
+    "lookup_invar 
 \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
-"use_list_invar 
+    "use_list_invar 
 \<lparr>cc_list = l, use_list = u, lookup = t, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     "ufa_invar l" "a < length l" "b < length l" "length u = length l" "length t = length l"
   shows "inv_lookup_use_list (propagate_step l u t pf pfl ip a b pe)" 
-(is "inv_lookup_use_list ?step")
+    (is "inv_lookup_use_list ?step")
 proof-
 
   have *: "i < nr_vars (propagate_step l u t pf pfl ip a b pe)
@@ -1043,30 +1054,30 @@ proof-
 \<Longrightarrow> (lookup (propagate_step l u t pf pfl ip a b pe) ! i ! j = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)) \<Longrightarrow>
        (F c\<^sub>1 c\<^sub>2 \<approx> c \<in> set (use_list (propagate_step l u t pf pfl ip a b pe) ! i) \<and> 
 F c\<^sub>1 c\<^sub>2 \<approx> c \<in> set (use_list (propagate_step l u t pf pfl ip a b pe) ! j))"
-(is "?i \<Longrightarrow> ?j \<Longrightarrow> ?root_i \<and> ?root_j \<Longrightarrow> ?lookup \<Longrightarrow> ?use_list_i \<and> ?use_list_j")
-for i j c\<^sub>1 c\<^sub>2 c
+    (is "?i \<Longrightarrow> ?j \<Longrightarrow> ?root_i \<and> ?root_j \<Longrightarrow> ?lookup \<Longrightarrow> ?use_list_i \<and> ?use_list_j")
+    for i j c\<^sub>1 c\<^sub>2 c
   proof-
-\<comment> \<open>To show: if i and j are roots after a step of propagate,
+    \<comment> \<open>To show: if i and j are roots after a step of propagate,
 then the non-empty lookup entry is also present in use_list(i) and use_list(j)\<close>
-  assume i_j: ?i ?j
-assume root: "?root_i \<and> ?root_j"
-from root have "rep_of (ufa_union l a b) i = i" "rep_of (ufa_union l a b) j = j" 
-    by (metis congruence_closure.select_convs(1) rep_of_refl)+
-  from root assms have root': "l ! i = i" "l ! j = j" 
-    by (metis congruence_closure.select_convs(1) ufa_union_root)+
-from lookup_invar_step assms  
-  have lookup_invar_step: "lookup_invar (propagate_step l u t pf pfl ip a b pe)" 
-    by blast
+    assume i_j: ?i ?j
+    assume root: "?root_i \<and> ?root_j"
+    from root have "rep_of (ufa_union l a b) i = i" "rep_of (ufa_union l a b) j = j" 
+      by (metis congruence_closure.select_convs(1) rep_of_refl)+
+    from root assms have root': "l ! i = i" "l ! j = j" 
+      by (metis congruence_closure.select_convs(1) ufa_union_root)+
+    from lookup_invar_step assms  
+    have lookup_invar_step: "lookup_invar (propagate_step l u t pf pfl ip a b pe)" 
+      by blast
     assume lookup: ?lookup
-  with assms i_j lookup have c_less_length: "c\<^sub>1 < length l" "c\<^sub>2 < length l"
-    unfolding  congruence_closure.select_convs 
-    by (metis (no_types, lifting) \<open>rep_of (ufa_union l a b) i = i\<close> \<open>rep_of (ufa_union l a b) j = j\<close> length_list_update lookup_invar_less_n lookup_invar_step rep_of_min ufa_union_invar)+
-  from root' have "rep_of l i = i" "rep_of l j = j"
-    by (simp_all add: rep_of_refl)
-  show "?use_list_i \<and> ?use_list_j"
+    with assms i_j lookup have c_less_length: "c\<^sub>1 < length l" "c\<^sub>2 < length l"
+      unfolding  congruence_closure.select_convs 
+      by (metis (no_types, lifting) \<open>rep_of (ufa_union l a b) i = i\<close> \<open>rep_of (ufa_union l a b) j = j\<close> length_list_update lookup_invar_less_n lookup_invar_step rep_of_min ufa_union_invar)+
+    from root' have "rep_of l i = i" "rep_of l j = j"
+      by (simp_all add: rep_of_refl)
+    show "?use_list_i \<and> ?use_list_j"
     proof(cases "t ! i ! j")
       case (Some x)
-\<comment> \<open>If the lookup entry was already Some before the propagate, 
+        \<comment> \<open>If the lookup entry was already Some before the propagate, 
 then it hasn't changed, and the use lists also haven't changed.\<close>
       with assms obtain d\<^sub>1 d\<^sub>2 d where x: "x = (F d\<^sub>1 d\<^sub>2 \<approx> d)" 
         unfolding lookup_invar_def congruence_closure.select_convs
@@ -1075,41 +1086,41 @@ then it hasn't changed, and the use lists also haven't changed.\<close>
       have "lookup (propagate_step l u t pf pfl ip a b pe) ! i ! j = Some x" 
         using Some by presburger
       with assms lookup have eq_in_u: "F c\<^sub>1 c\<^sub>2 \<approx> c \<in> set (u ! i)" "F c\<^sub>1 c\<^sub>2 \<approx> c \<in> set (u ! j)" 
-      unfolding inv_lookup_use_list_def
-      by (metis Some \<open>l ! i = i\<close> \<open>l ! j = j\<close> congruence_closure.select_convs(1,2,3) i_j length_list_update)+
-    from root have "i \<noteq> rep_of l a \<or> rep_of l a = rep_of l b"
-      by (metis congruence_closure.select_convs(1) i_j(1) length_list_update nth_list_update_eq)
-    then have *: "i \<noteq> rep_of l b \<Longrightarrow> u ! i = use_list (propagate_step l u t pf pfl ip a b pe) ! i"
-      by fastforce
-    then have "i = rep_of l b \<Longrightarrow> u ! i @ filter (lookup_None t (ufa_union l a b)) (u ! rep_of l a) 
+        unfolding inv_lookup_use_list_def
+        by (metis Some \<open>l ! i = i\<close> \<open>l ! j = j\<close> congruence_closure.select_convs(1,2,3) i_j length_list_update)+
+      from root have "i \<noteq> rep_of l a \<or> rep_of l a = rep_of l b"
+        by (metis congruence_closure.select_convs(1) i_j(1) length_list_update nth_list_update_eq)
+      then have *: "i \<noteq> rep_of l b \<Longrightarrow> u ! i = use_list (propagate_step l u t pf pfl ip a b pe) ! i"
+        by fastforce
+      then have "i = rep_of l b \<Longrightarrow> u ! i @ filter (lookup_None t (ufa_union l a b)) (u ! rep_of l a) 
 = use_list (propagate_step l u t pf pfl ip a b pe) ! i"
-      using assms(7) i_j(1) by auto
-    with eq_in_u * have 1: ?use_list_i
-      by fastforce
-from root have "j \<noteq> rep_of l a \<or> rep_of l a = rep_of l b"
-      by (metis congruence_closure.select_convs(1) i_j(2) length_list_update nth_list_update_eq)
-then have **: "j \<noteq> rep_of l b \<Longrightarrow> u ! j = use_list (propagate_step l u t pf pfl ip a b pe) ! j"
-      by fastforce
-    then have "j = rep_of l b \<Longrightarrow> u ! j @ filter (lookup_None t (ufa_union l a b)) (u ! rep_of l a) 
+        using assms(7) i_j(1) by auto
+      with eq_in_u * have 1: ?use_list_i
+        by fastforce
+      from root have "j \<noteq> rep_of l a \<or> rep_of l a = rep_of l b"
+        by (metis congruence_closure.select_convs(1) i_j(2) length_list_update nth_list_update_eq)
+      then have **: "j \<noteq> rep_of l b \<Longrightarrow> u ! j = use_list (propagate_step l u t pf pfl ip a b pe) ! j"
+        by fastforce
+      then have "j = rep_of l b \<Longrightarrow> u ! j @ filter (lookup_None t (ufa_union l a b)) (u ! rep_of l a) 
 = use_list (propagate_step l u t pf pfl ip a b pe) ! j"
-      using assms(7) i_j(2) by auto
-    with eq_in_u ** have ?use_list_j
-      by fastforce
-    with 1 show ?thesis by blast
+        using assms(7) i_j(2) by auto
+      with eq_in_u ** have ?use_list_j
+        by fastforce
+      with 1 show ?thesis by blast
     next
       case None
-\<comment> \<open>If the entry was None before the propagate, then it was changed
+        \<comment> \<open>If the entry was None before the propagate, then it was changed
 to some by the set_lookup function. All the elements added to lookup
 via set_lookup are also added to the use_list. \<close>
       with root set_lookup_changed lookup
       have F_in_set: "(F c\<^sub>1 c\<^sub>2 \<approx> c) \<in> set (filter (lookup_None t (ufa_union l a b)) (u ! rep_of l a))"
         by (metis congruence_closure.select_convs(3) option.distinct(1))
       then have F_in_use_list_a: "(F c\<^sub>1 c\<^sub>2 \<approx> c) \<in> set (u ! rep_of l a)" 
-"rep_of l (rep_of l a) = rep_of l a"
+        "rep_of l (rep_of l a) = rep_of l a"
         by (auto simp add: assms(4) assms(5) rep_of_idem)
       from lookup_invar_step lookup have rep_i_j: "i = rep_of (ufa_union l a b) c\<^sub>1"
-          "j = rep_of (ufa_union l a b) c\<^sub>2" unfolding lookup_invar_def 
-          by (metis congruence_closure.select_convs(1) equation.inject(2) i_j root option.discI option.inject)+
+        "j = rep_of (ufa_union l a b) c\<^sub>2" unfolding lookup_invar_def 
+        by (metis congruence_closure.select_convs(1) equation.inject(2) i_j root option.discI option.inject)+
       with assms(3) None F_in_use_list_a
       consider (both_a) "rep_of l c\<^sub>1 = rep_of l a" "rep_of l c\<^sub>2 = rep_of l a"
         | (c1_a) "rep_of l c\<^sub>1 = rep_of l a" "rep_of l c\<^sub>2 \<noteq> rep_of l a"
@@ -1119,67 +1130,112 @@ via set_lookup are also added to the use_list. \<close>
       then show ?thesis proof(cases)
         case both_a
         with equation_in_use_list_step_i_if_rep_l_a
-        equation_in_use_list_step_j_if_rep_l_a
-        assms F_in_use_list_a F_in_set None rep_i_j
-        i_j root lookup
+          equation_in_use_list_step_j_if_rep_l_a
+          assms F_in_use_list_a F_in_set None rep_i_j
+          i_j root lookup
         show ?thesis 
           by meson
       next
         case c1_a
         with equation_in_use_list_step_i_if_rep_l_a
-        equation_in_use_list_step_j_if_neq_rep_l_a
-        assms F_in_use_list_a F_in_set None rep_i_j
-        i_j root lookup c_less_length
+          equation_in_use_list_step_j_if_neq_rep_l_a
+          assms F_in_use_list_a F_in_set None rep_i_j
+          i_j root lookup c_less_length
         show ?thesis 
           by meson
       next
         case c2_a
         with equation_in_use_list_step_i_if_neq_rep_l_a
-        equation_in_use_list_step_j_if_rep_l_a
-        assms F_in_use_list_a F_in_set None rep_i_j
-        i_j root lookup c_less_length
+          equation_in_use_list_step_j_if_rep_l_a
+          assms F_in_use_list_a F_in_set None rep_i_j
+          i_j root lookup c_less_length
         show ?thesis by meson
-        qed
       qed
     qed
-    have **: "?i i \<Longrightarrow> ?root_i i \<Longrightarrow> ?use_list_i i c\<^sub>1 c\<^sub>2 c 
+  qed
+  have **: "?i i \<Longrightarrow> ?root_i i \<Longrightarrow> ?use_list_i i c\<^sub>1 c\<^sub>2 c 
 \<Longrightarrow> ?lookup (rep_of (cc_list (propagate_step l u t pf pfl ip a b pe)) c\<^sub>1) 
 (rep_of (cc_list (propagate_step l u t pf pfl ip a b pe)) c\<^sub>2) c\<^sub>1 c\<^sub>2 c"
-     (is "?i \<Longrightarrow> ?root \<Longrightarrow> ?use_list \<Longrightarrow> ?lookup") for i c\<^sub>1 c\<^sub>2 c
-    proof-
-      assume prems: ?i ?root ?use_list 
-      have "rep_of l b < length u" 
-        by (simp add: assms(4) assms(6) assms(7) rep_of_less_length_l)
-      with prems consider "i \<noteq> rep_of l b" 
-        | "i = rep_of l b" "F c\<^sub>1 c\<^sub>2 \<approx> c \<in> set (u ! rep_of l b)"
-        | "i = rep_of l b" "F c\<^sub>1 c\<^sub>2 \<approx> c \<in> set (filter (lookup_None t (ufa_union l a b)) (u ! rep_of l a))"
-        unfolding congruence_closure.select_convs 
-        by fastforce
-        then show "?lookup" proof(cases)
-          case 1
-          then show ?thesis sorry
-        next
-          case 2
-          then show ?thesis sorry
-        next
-          case 3
-          have *: "no_duplicate_representatives (filter (lookup_None t (ufa_union l a b)) 
-(u ! rep_of l a)) (ufa_union l a b)"
-            sorry
+    (is "?i \<Longrightarrow> ?root \<Longrightarrow> ?use_list \<Longrightarrow> ?lookup") for i c\<^sub>1 c\<^sub>2 c
+  proof-
+    assume prems: ?i ?root ?use_list 
+    then have root': "l ! i = i" "i < length l" "rep_of l i = i"
+       apply (metis assms(4) assms(5) assms(6) congruence_closure.select_convs(1) ufa_union_root)
+      using prems apply simp
+      using prems assms by (metis congruence_closure.select_convs(1) rep_of_refl ufa_union_root)
+from assms prems have c_length: "c\<^sub>1 < length l" "c\<^sub>2 < length l"
+         by (metis (no_types, lifting) congruence_closure.select_convs(1,2) in_set_conv_nth length_list_update use_list_invar_less_n use_list_invar_step)+
+       from assms have invar: "ufa_invar (ufa_union l a b)" 
+         by (simp add: ufa_union_invar) 
+       with assms have
+        *: "rep_of (ufa_union l a b) c\<^sub>2 < length (t ! rep_of (ufa_union l a b) c\<^sub>1)" 
+         unfolding lookup_invar_def 
+         by (metis \<open>c\<^sub>1 < length l\<close> \<open>c\<^sub>2 < length l\<close> congruence_closure.select_convs(3) length_list_update rep_of_less_length_l)
+       have no_dupl: "no_duplicate_representatives (filter (lookup_None t (ufa_union l a b)) (u ! rep_of l a)) (ufa_union l a b)"
+  sorry
+    have "rep_of l b < length u" 
+      by (simp add: assms(4) assms(6) assms(7) rep_of_less_length_l)
 
-          have "c\<^sub>1 < length l" "c\<^sub>2 < length l"
- "rep_of (ufa_union l a b) c\<^sub>2 < length (t ! rep_of (ufa_union l a b) c\<^sub>1)" 
-            "ufa_invar (ufa_union l a b)" sorry
-          with assms(8) length_list_update 3(2) * set_lookup_correct[of "c\<^sub>1" "c\<^sub>2" c 
-"(filter (lookup_None t (ufa_union l a b)) (u ! rep_of l a))"
-"(ufa_union l a b)" t] prems show ?thesis 
-            unfolding congruence_closure.select_convs
-            by force
-        qed
-        
+    with prems consider "i \<noteq> rep_of l b" 
+      | "i = rep_of l b" "F c\<^sub>1 c\<^sub>2 \<approx> c \<in> set (u ! rep_of l b)"
+      | "F c\<^sub>1 c\<^sub>2 \<approx> c \<in> set (filter (lookup_None t (ufa_union l a b)) (u ! rep_of l a))"
+      unfolding congruence_closure.select_convs 
+      by fastforce
+    then show "?lookup" proof(cases)
+      case 1
+      with prems have i_neq_rep_a: "i \<noteq> rep_of l a" 
+        by (metis congruence_closure.select_convs(1) length_list_update nth_list_update_eq)
+      with 1 have "use_list (propagate_step l u t pf pfl ip a b pe) ! i = u ! i" 
+        by simp
+      with prems have F_in_u: "F c\<^sub>1 c\<^sub>2 \<approx> c \<in> set (u ! i)" 
+        by argo
+      with assms root' have "lookup_entry t l c\<^sub>1 c\<^sub>2 = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)" 
+        unfolding inv_lookup_use_list_def congruence_closure.select_convs by simp
+
+       from F_in_u use_list_invar_rep_eq_i[OF assms(3) root'(2,1)]
+      have "rep_of l c\<^sub>1 = i \<or> rep_of l c\<^sub>2 = i" by blast
+      then consider "rep_of l c\<^sub>1 \<noteq> rep_of l a" "rep_of l c\<^sub>2 \<noteq> rep_of l a"
+        |"rep_of l c\<^sub>1 = rep_of l a" "rep_of l c\<^sub>2 \<noteq> rep_of l a"
+        |"rep_of l c\<^sub>1 \<noteq> rep_of l a" "rep_of l c\<^sub>2 = rep_of l a"
+        using i_neq_rep_a by blast
+      then show ?thesis proof(cases)
+        case 1
+with assms(4,5,6) c_length ufa_union_aux
+      have "rep_of l c\<^sub>1 = rep_of (ufa_union l a b) c\<^sub>1" 
+        by auto
+with 1 assms(4,5,6) c_length ufa_union_aux
+      have "rep_of l c\<^sub>2 = rep_of (ufa_union l a b) c\<^sub>2" 
+        by auto
+        then show ?thesis 
+          using \<open>lookup_entry t l c\<^sub>1 c\<^sub>2 = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)\<close> \<open>rep_of l c\<^sub>1 = rep_of (ufa_union l a b) c\<^sub>1\<close> lookup_step_unchanged_step by force
+      next
+        case 2
+with assms(4,5,6) c_length ufa_union_aux
+      have "rep_of l c\<^sub>2 = rep_of (ufa_union l a b) c\<^sub>2" 
+        by auto
+with 2 assms(4,5,6) c_length ufa_union_aux
+      have "rep_of (ufa_union l a b) c\<^sub>1 = rep_of l b" 
+        by presburger
+
+      with set_lookup_correct show ?thesis sorry
+      next
+        case 3
+        then show ?thesis sorry
       qed
-      show ?thesis unfolding inv_lookup_use_list_def
-        using "*" "**" by blast
+        
+    next
+      case 2
+      then show ?thesis sorry
+    next
+      case 3
+       with assms(8) length_list_update 3 * no_dupl set_lookup_correct prems c_length invar show ?thesis 
+        unfolding congruence_closure.select_convs 
+        by force
+    qed
+
+  qed
+  show ?thesis unfolding inv_lookup_use_list_def
+    using "*" "**" by blast
 qed
 
 paragraph \<open>inv2_invar\<close>

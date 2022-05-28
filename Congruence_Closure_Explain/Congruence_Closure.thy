@@ -121,10 +121,12 @@ text \<open>To show: pfl ! e = None iff pf ! e = e\<close>
 
 abbreviation propagate_step
   where 
-"propagate_step l u t pf pfl ip a b pe \<equiv> \<lparr>cc_list = ufa_union l a b,
+"propagate_step l u t pf pfl ip a b pe \<equiv> 
+\<lparr>cc_list = ufa_union l a b,
         use_list = u[rep_of l a := [], rep_of l b := u ! rep_of l b @ filter (lookup_None t (ufa_union l a b)) (u ! rep_of l a)],
         lookup = set_lookup t (filter (lookup_None t (ufa_union l a b)) (u ! rep_of l a)) (ufa_union l a b), 
         proof_forest = add_edge pf a b, pf_labels = add_label pfl pf a pe, input = ip\<rparr>"
+
 
 abbreviation pending_step
   where 
