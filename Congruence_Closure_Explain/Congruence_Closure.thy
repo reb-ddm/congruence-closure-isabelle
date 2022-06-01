@@ -232,7 +232,6 @@ else
         One a' \<Rightarrow>  
           (let (output, new_l, pending) = explain_along_path cc (ufa_union l a b) (rep_of l b) c
           in ({a'} \<union> output, new_l, pending))
-\<comment> \<open>wieso ist das überhaupt legal\<close>
         | Two (F a\<^sub>1 a\<^sub>2 \<approx> a') (F b\<^sub>1 b\<^sub>2 \<approx> b') \<Rightarrow> 
           (let (output, new_l, pending) = explain_along_path cc (ufa_union l a b) (rep_of l b) c
           in ({(F a\<^sub>1 a\<^sub>2 \<approx> a'), (F b\<^sub>1 b\<^sub>2 \<approx> b')} \<union> output, new_l, [(a\<^sub>1, a\<^sub>2), (b\<^sub>1, b\<^sub>2)] @ pending))
