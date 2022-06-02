@@ -1,6 +1,6 @@
 section \<open>Correctness proofs for congruence closure\<close>
 theory Congruence_Closure_Proofs
-  imports CC_Abstraction 
+  imports CC_Invars 
 begin 
 
 fun apply_merges :: "congruence_closure \<Rightarrow> equation list \<Rightarrow> congruence_closure"
