@@ -193,8 +193,7 @@ text \<open>Converts the list of pending equations to a set of pending equations
 fun pending_set :: "pending_equation list \<Rightarrow> equation set"
   where
 "pending_set [] = {}"
-| "pending_set ((One a)#xs) = {a} \<union> pending_set xs"
-| "pending_set ((Two a b)#xs) = {a, b} \<union> pending_set xs"
+| "pending_set (a#xs) = {left a \<approx> right a} \<union> pending_set xs"
 
 lemma pending_set_empty_iff_pending_empty:
  "pending_set pe = {} \<longleftrightarrow> pe = []"
@@ -380,7 +379,7 @@ a' < nr_vars cc \<longrightarrow> b' < nr_vars cc \<longrightarrow> (cc_list cc)
 \<longrightarrow> (lookup cc) ! a' ! b' = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)
 \<longrightarrow>
 (F c\<^sub>1 c\<^sub>2 \<approx> c) \<in> set ((use_list cc) ! a')
-\<and> (F c\<^sub>1 c\<^sub>2 \<approx> c) \<in> set ((use_list cc) ! b')
+\<or> (F c\<^sub>1 c\<^sub>2 \<approx> c) \<in> set ((use_list cc) ! b')
 )"
 
 text \<open>All equations in use_list are also in the congruence_closure of the data structure.\<close>
@@ -555,38 +554,8 @@ qed
 lemma pending_a_b_in_Congruence_Closure:
   assumes "valid_vars_pending eq (cc_list cc)" "a = left eq" "b = right eq" 
   shows "Congruence_Closure (representativeE cc \<union> pending_set [eq]) (a \<approx> b)"
-using assms(1) proof(induction rule: valid_vars_pending_cases)
-  case (One a b)
-  then show ?case 
-    using assms(2) assms(3) base by auto
-next
-  case (Two a\<^sub>1 a\<^sub>2 a' b\<^sub>1 b\<^sub>2 b')
-  have "Congruence_Closure (representativeE cc) (a\<^sub>1 \<approx> rep_of (cc_list cc) a\<^sub>1)"
-"Congruence_Closure (representativeE cc) (a\<^sub>2 \<approx> rep_of (cc_list cc) a\<^sub>2)"
-"Congruence_Closure (representativeE cc) (b\<^sub>1 \<approx> rep_of (cc_list cc) b\<^sub>1)"
-"Congruence_Closure (representativeE cc) (b\<^sub>2 \<approx> rep_of (cc_list cc) b\<^sub>2)"
-       apply (simp add: Two.hyps(2) a_eq_rep_of_a_in_CC(1))
-      apply (simp add: Two.hyps(3) a_eq_rep_of_a_in_CC(1))
-    apply (simp add: Two.hyps(5) a_eq_rep_of_a_in_CC(1))
-    by (simp add: Two.hyps(6) a_eq_rep_of_a_in_CC(1))
-  then have *: "Congruence_Closure (representativeE cc) (a\<^sub>1 \<approx> b\<^sub>1)"
-"Congruence_Closure (representativeE cc) (a\<^sub>2 \<approx> b\<^sub>2)"
-    using Congruence_Closure.symmetric Two.hyps(8,9) transitive1 by presburger+
-  have **: "Congruence_Closure (pending_set [eq]) (F a\<^sub>1 a\<^sub>2 \<approx> a')"
-"Congruence_Closure (pending_set [eq]) (F b\<^sub>1 b\<^sub>2 \<approx> b')"
-    apply (simp add: Two.hyps(1) base)
-    by (simp add: Two.hyps(1) base)
-  have a_b: "a' = a" "b' = b" 
-    apply (simp add: Two.hyps(1) assms(2))
-    by (simp add: Two.hyps(1) assms(3))
-  have "Congruence_Closure (pending_set [eq]) eq' \<Longrightarrow> Congruence_Closure (representativeE cc \<union> pending_set [eq]) eq'"
-"Congruence_Closure (representativeE cc) eq' \<Longrightarrow> Congruence_Closure (representativeE cc \<union> pending_set [eq]) eq'"
-   for eq' 
-     apply (metis Congruence_Closure_union')
-  by (simp add: Congruence_Closure_union)
-  with * ** a_b monotonic show ?case
-    by blast
-qed
+  using assms(1) apply(induction rule: valid_vars_pending_cases)
+  using assms base by auto
 
 lemma pending_a_b_in_Congruence_Closure':
   assumes "valid_vars_pending eq (cc_list cc)" "a = left eq" "b = right eq" 
@@ -824,6 +793,5 @@ lemma lookup_invar_less_n:
     "(t ! i) ! j = Some (F f g \<approx> h)" "i < length l" "j < length l" "l ! i = i" "l ! j = j"
   shows "f < length l" "g < length l" "h < length l"
   using assms unfolding lookup_invar_def by fastforce+
-
 
 end
