@@ -378,18 +378,32 @@ definition lookup_invar2 :: "congruence_closure \<Rightarrow> bool"
 a' < nr_vars cc \<longrightarrow> b' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a' \<longrightarrow> (cc_list cc) ! b' = b' 
 \<longrightarrow> (lookup cc) ! a' ! b' = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)
 \<longrightarrow>
-(F c\<^sub>1 c\<^sub>2 \<approx> c) \<in> set ((use_list cc) ! a')
-\<or> (F c\<^sub>1 c\<^sub>2 \<approx> c) \<in> set ((use_list cc) ! b')
+  (\<exists> b\<^sub>1 b\<^sub>2 b.
+    (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set ((use_list cc) ! a')
+      \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
+      \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2
+      \<and> Congruence_Closure (representativeE cc \<union> pending_set (pending cc)) (b \<approx> c)
+  ) \<and>
+  (\<exists> b\<^sub>1 b\<^sub>2 b.
+    (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set ((use_list cc) ! b')
+      \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
+      \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2
+      \<and> Congruence_Closure (representativeE cc \<union> pending_set (pending cc)) (b \<approx> c)
+  )
 )"
 
 text \<open>All equations in use_list are also in the congruence_closure of the data structure.\<close>
 definition use_list_invar2 :: "congruence_closure \<Rightarrow> bool"
   where
-"use_list_invar2 cc = (\<forall> a' eq.
+"use_list_invar2 cc = (\<forall> a' c\<^sub>1 c\<^sub>2 c.
 a' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a'
-\<longrightarrow>
-eq \<in> set ((use_list cc) ! a')
-\<longrightarrow> Congruence_Closure (representativeE cc \<union> pending_set (pending cc)) eq
+\<longrightarrow> (F c\<^sub>1 c\<^sub>2 \<approx> c) \<in> set ((use_list cc) ! a')
+\<longrightarrow> 
+  (\<exists> b\<^sub>1 b\<^sub>2 b.
+    lookup_entry (lookup cc) (cc_list cc) c\<^sub>1 c\<^sub>2 = Some (F b\<^sub>1 b\<^sub>2 \<approx> b)
+    \<and>
+    Congruence_Closure (representativeE cc \<union> pending_set (pending cc)) (b \<approx> c)
+  )
 )"
 
 
@@ -777,6 +791,12 @@ lemma use_list_invar_less_n:
     "i < length l" "j < length (u ! i)" "l ! i = i" "(u ! i) ! j = (F a b \<approx> c)"
   shows "a < length l" "b < length l" "c < length l"
   using assms unfolding use_list_invar_def by fastforce+
+
+lemma use_list_invar_less_n_in_set: 
+  assumes "use_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe,  proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
+    "i < length l" "(F a b \<approx> c) \<in> set (u ! i)" "l ! i = i"
+  shows "a < length l" "b < length l" "c < length l"
+  using assms by (metis in_set_conv_nth use_list_invar_less_n)+
 
 lemma use_list_invar_rep_eq_i: 
   assumes "use_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
