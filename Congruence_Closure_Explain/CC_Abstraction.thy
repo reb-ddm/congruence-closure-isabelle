@@ -372,39 +372,52 @@ definition inv_same_length :: "congruence_closure \<Rightarrow> nat \<Rightarrow
 length (proof_forest cc) = n) \<and> length (pf_labels cc) = n"
 
 text \<open>All equations in the lookup table are also present in both relevant use_lists.\<close>
-definition lookup_invar2 :: "congruence_closure \<Rightarrow> bool"
+
+abbreviation contains_similar_equation
   where
-"lookup_invar2 cc = (\<forall> a' b' c c\<^sub>1 c\<^sub>2.
-a' < nr_vars cc \<longrightarrow> b' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a' \<longrightarrow> (cc_list cc) ! b' = b' 
-\<longrightarrow> (lookup cc) ! a' ! b' = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)
-\<longrightarrow>
-  (\<exists> b\<^sub>1 b\<^sub>2 b.
+"contains_similar_equation cc a' c\<^sub>1 c\<^sub>2 c u_a
+\<equiv>
+(\<exists> b\<^sub>1 b\<^sub>2 b.
     (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set ((use_list cc) ! a')
       \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
       \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2
-      \<and> Congruence_Closure (representativeE cc \<union> pending_set (pending cc)) (b \<approx> c)
-  ) \<and>
-  (\<exists> b\<^sub>1 b\<^sub>2 b.
-    (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set ((use_list cc) ! b')
-      \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
-      \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2
-      \<and> Congruence_Closure (representativeE cc \<union> pending_set (pending cc)) (b \<approx> c)
+      \<and> Congruence_Closure (representativeE cc \<union> pending_set (pending cc)
+            \<union> set u_a) (b \<approx> c)
   )
+"
+definition lookup_invar2' :: "congruence_closure \<Rightarrow> equation list \<Rightarrow> bool"
+  where
+"lookup_invar2' cc u_a = (\<forall> a' b' c c\<^sub>1 c\<^sub>2.
+a' < nr_vars cc \<longrightarrow> b' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a' \<longrightarrow> (cc_list cc) ! b' = b' 
+\<longrightarrow> (lookup cc) ! a' ! b' = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)
+\<longrightarrow>
+  contains_similar_equation cc a' c\<^sub>1 c\<^sub>2 c u_a
+ \<and>
+  contains_similar_equation cc b' c\<^sub>1 c\<^sub>2 c u_a
 )"
 
-text \<open>All equations in use_list are also in the congruence_closure of the data structure.\<close>
-definition use_list_invar2 :: "congruence_closure \<Rightarrow> bool"
+abbreviation lookup_invar2 :: "congruence_closure \<Rightarrow> bool"
   where
-"use_list_invar2 cc = (\<forall> a' c\<^sub>1 c\<^sub>2 c.
+"lookup_invar2 cc \<equiv> lookup_invar2' cc []"
+
+text \<open>All equations in use_list are also in the congruence_closure of the data structure.\<close>
+definition use_list_invar2' :: "congruence_closure \<Rightarrow> equation list \<Rightarrow> bool"
+  where
+"use_list_invar2' cc u_a = (\<forall> a' c\<^sub>1 c\<^sub>2 c.
 a' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a'
 \<longrightarrow> (F c\<^sub>1 c\<^sub>2 \<approx> c) \<in> set ((use_list cc) ! a')
 \<longrightarrow> 
   (\<exists> b\<^sub>1 b\<^sub>2 b.
     lookup_entry (lookup cc) (cc_list cc) c\<^sub>1 c\<^sub>2 = Some (F b\<^sub>1 b\<^sub>2 \<approx> b)
     \<and>
-    Congruence_Closure (representativeE cc \<union> pending_set (pending cc)) (b \<approx> c)
+    Congruence_Closure (representativeE cc \<union> pending_set (pending cc)
+                  \<union> set u_a) (b \<approx> c)
   )
 )"
+
+abbreviation use_list_invar2 :: "congruence_closure \<Rightarrow> bool"
+  where
+"use_list_invar2 cc \<equiv> use_list_invar2' cc []"
 
 
 text \<open>Invariant for the whole data structure.\<close>
@@ -797,6 +810,18 @@ lemma use_list_invar_less_n_in_set:
     "i < length l" "(F a b \<approx> c) \<in> set (u ! i)" "l ! i = i"
   shows "a < length l" "b < length l" "c < length l"
   using assms by (metis in_set_conv_nth use_list_invar_less_n)+
+
+lemma use_list_invar_less_n_in_set': 
+  assumes "use_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe,  proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
+    "ufa_invar l" "i < length l" "eq \<in> set (u ! rep_of l i)" 
+obtains a\<^sub>1 a\<^sub>2 a where "eq = (F a\<^sub>1 a\<^sub>2 \<approx> a)" "a < length l" "a\<^sub>2 < length l" "a < length l"
+proof-
+  have "rep_of l i < length l" "l ! rep_of l i = rep_of l i"
+     apply (simp add: assms(2) assms(3) rep_of_bound)
+    by (simp add: assms(2) assms(3) rep_of_root)
+  with assms that show ?thesis unfolding use_list_invar_def
+    by (metis congruence_closure.select_convs(1,2) in_set_conv_nth)
+qed
 
 lemma use_list_invar_rep_eq_i: 
   assumes "use_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
