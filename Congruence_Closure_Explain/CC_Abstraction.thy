@@ -400,6 +400,27 @@ abbreviation lookup_invar2 :: "congruence_closure \<Rightarrow> bool"
   where
 "lookup_invar2 cc \<equiv> lookup_invar2' cc []"
 
+lemma lookup_invar2_def:
+"lookup_invar2 cc = (\<forall> a' b' c c\<^sub>1 c\<^sub>2.
+a' < nr_vars cc \<longrightarrow> b' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a' \<longrightarrow> (cc_list cc) ! b' = b' 
+\<longrightarrow> (lookup cc) ! a' ! b' = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)
+\<longrightarrow>
+  (\<exists> b\<^sub>1 b\<^sub>2 b.
+    (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set ((use_list cc) ! a')
+      \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
+      \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2
+      \<and> Congruence_Closure (representativeE cc \<union> pending_set (pending cc)) (b \<approx> c)
+  )
+ \<and>
+  (\<exists> b\<^sub>1 b\<^sub>2 b.
+    (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set ((use_list cc) ! b')
+      \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
+      \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2
+      \<and> Congruence_Closure (representativeE cc \<union> pending_set (pending cc)) (b \<approx> c)
+  )
+)"unfolding lookup_invar2'_def 
+  by auto
+
 text \<open>All equations in use_list are also in the congruence_closure of the data structure.\<close>
 definition use_list_invar2' :: "congruence_closure \<Rightarrow> equation list \<Rightarrow> bool"
   where
@@ -408,10 +429,16 @@ a' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a'
 \<longrightarrow> (F c\<^sub>1 c\<^sub>2 \<approx> c) \<in> set ((use_list cc) ! a')
 \<longrightarrow> 
   (\<exists> b\<^sub>1 b\<^sub>2 b.
-    lookup_entry (lookup cc) (cc_list cc) c\<^sub>1 c\<^sub>2 = Some (F b\<^sub>1 b\<^sub>2 \<approx> b)
-    \<and>
-    Congruence_Closure (representativeE cc \<union> pending_set (pending cc)
-                  \<union> set u_a) (b \<approx> c)
+      (lookup_entry (lookup cc) (cc_list cc) c\<^sub>1 c\<^sub>2 = Some (F b\<^sub>1 b\<^sub>2 \<approx> b)
+      \<and>
+      Congruence_Closure (representativeE cc \<union> pending_set (pending cc)
+                    \<union> set u_a) (b \<approx> c))
+    \<or>
+      ((F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set u_a
+      \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
+      \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2)
+      \<and> Congruence_Closure (representativeE cc \<union> pending_set (pending cc)
+                    \<union> set u_a) (b \<approx> c)
   )
 )"
 
@@ -419,6 +446,18 @@ abbreviation use_list_invar2 :: "congruence_closure \<Rightarrow> bool"
   where
 "use_list_invar2 cc \<equiv> use_list_invar2' cc []"
 
+
+lemma use_list_invar2_def: "use_list_invar2 cc = (\<forall> a' c\<^sub>1 c\<^sub>2 c.
+a' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a'
+\<longrightarrow> (F c\<^sub>1 c\<^sub>2 \<approx> c) \<in> set ((use_list cc) ! a')
+\<longrightarrow> 
+  (\<exists> b\<^sub>1 b\<^sub>2 b.
+      (lookup_entry (lookup cc) (cc_list cc) c\<^sub>1 c\<^sub>2 = Some (F b\<^sub>1 b\<^sub>2 \<approx> b)
+      \<and>
+      Congruence_Closure (representativeE cc \<union> pending_set (pending cc)) (b \<approx> c))
+  )
+)"unfolding use_list_invar2'_def
+  by simp
 
 text \<open>Invariant for the whole data structure.\<close>
 abbreviation cc_invar :: "congruence_closure \<Rightarrow> bool"
@@ -768,6 +807,28 @@ lemma update_lookup_unchanged:
   using assms unfolding update_lookup.simps 
   by (metis nth_list_update_eq nth_list_update_neq nth_update_invalid)
 
+
+lemma update_lookup_unchanged':
+  assumes "\<not> lookup_Some t l (F d\<^sub>1 d\<^sub>2 \<approx> d)"
+"lookup_entry t l c\<^sub>1 c\<^sub>2 = Some (F b\<^sub>1 b\<^sub>2 \<approx> ba)"
+  shows "lookup_entry (update_lookup t l (F d\<^sub>1 d\<^sub>2 \<approx> d)) l c\<^sub>1 c\<^sub>2
+= lookup_entry t l c\<^sub>1 c\<^sub>2"
+proof(cases "rep_of l c\<^sub>1 = rep_of l d\<^sub>1 \<and> rep_of l c\<^sub>2 = rep_of l d\<^sub>2")
+  case True
+then have "lookup_Some t l (F c\<^sub>1 c\<^sub>2 \<approx> c)" for c 
+  using assms(2) by fastforce
+  with True have "lookup_Some t l (F d\<^sub>1 d\<^sub>2 \<approx> c)" for c 
+    unfolding lookup_Some.simps 
+    by simp
+  with assms(1) show ?thesis 
+    by simp
+next
+  case False
+  then show ?thesis using update_lookup_unchanged assms 
+    by metis
+qed
+
+
 lemma lookup_step_unchanged_step:
   assumes "ufa_invar l" "a < length l" "b < length l"
 "t ! a' ! b' = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)"
@@ -837,6 +898,12 @@ lemma lookup_invar_less_n:
   assumes "lookup_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     "(t ! i) ! j = Some (F f g \<approx> h)" "i < length l" "j < length l" "l ! i = i" "l ! j = j"
   shows "f < length l" "g < length l" "h < length l"
+  using assms unfolding lookup_invar_def by fastforce+
+
+lemma lookup_invar_valid:
+  assumes "lookup_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
+    "(t ! i) ! j = Some (F f g \<approx> h)" "i < length l" "j < length l" "l ! i = i" "l ! j = j"
+  shows "i = rep_of l f" "j = rep_of l g" 
   using assms unfolding lookup_invar_def by fastforce+
 
 end
