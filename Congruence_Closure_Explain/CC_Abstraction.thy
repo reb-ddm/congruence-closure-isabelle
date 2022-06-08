@@ -184,9 +184,13 @@ definition cc_\<alpha> :: "congruence_closure \<Rightarrow> equation \<Rightarro
   where
     "cc_\<alpha> cc x \<equiv> valid_vars x (nr_vars cc) \<and> are_congruent cc x"
 
+
+abbreviation representatives_set :: "congruence_closure \<Rightarrow> equation set"
+  where
+"representatives_set cc \<equiv> {a \<approx> rep_of (cc_list cc) a |a. a < nr_vars cc \<and> cc_list cc ! a \<noteq> a}"
 definition representativeE :: "congruence_closure \<Rightarrow> equation set"
   where
-    "representativeE cc = {a \<approx> rep_of (cc_list cc) a |a. a < nr_vars cc \<and> cc_list cc ! a \<noteq> a}
+    "representativeE cc = representatives_set cc
 \<union> {F a' b' \<approx> rep_of (cc_list cc) c | a' b' c c\<^sub>1 c\<^sub>2 . a' < nr_vars cc \<and> b' < nr_vars cc \<and> c < nr_vars cc \<and>
                       cc_list cc ! a' = a' \<and> cc_list cc ! b' = b' \<and> lookup cc ! a' ! b' = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)}"
 
@@ -221,8 +225,9 @@ lemma pending_set_union':
   by (simp add: pending_set_union)
 
 lemma pending_set_Constant:
-"a \<in> pending_set xs \<Longrightarrow> (\<exists> b c . a = (b \<approx> c))"
-  apply(induction rule: pending_set.induct)
+  assumes "eq \<in> pending_set pe"
+  obtains a b where "eq = a \<approx> b"
+  using assms apply(induction rule: pending_set.induct)
   by auto
 
 subsection \<open>Invariants\<close>
@@ -388,8 +393,7 @@ abbreviation contains_similar_equation
     (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set ((use_list cc) ! a')
       \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
       \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2
-      \<and> Congruence_Closure (representativeE cc \<union> pending_set (pending cc)
-            \<union> set u_a) (b \<approx> c)
+      \<and> Congruence_Closure (representatives_set cc \<union> pending_set (pending cc)) (b \<approx> c)
   )
 "
 definition lookup_invar2' :: "congruence_closure \<Rightarrow> equation list \<Rightarrow> bool"
@@ -416,16 +420,16 @@ a' < nr_vars cc \<longrightarrow> b' < nr_vars cc \<longrightarrow> (cc_list cc)
     (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set ((use_list cc) ! a')
       \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
       \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2
-      \<and> Congruence_Closure (representativeE cc \<union> pending_set (pending cc)) (b \<approx> c)
+      \<and> Congruence_Closure (representatives_set cc \<union> pending_set (pending cc)) (b \<approx> c)
   )
  \<and>
   (\<exists> b\<^sub>1 b\<^sub>2 b.
     (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set ((use_list cc) ! b')
       \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
       \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2
-      \<and> Congruence_Closure (representativeE cc \<union> pending_set (pending cc)) (b \<approx> c)
+      \<and> Congruence_Closure (representatives_set cc \<union> pending_set (pending cc)) (b \<approx> c)
   )
-)"unfolding lookup_invar2'_def 
+)" unfolding lookup_invar2'_def 
   by auto
 
 text \<open>All equations in use_list are also in the congruence_closure of the data structure.\<close>
@@ -438,14 +442,12 @@ a' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a'
   (\<exists> b\<^sub>1 b\<^sub>2 b.
       (lookup_entry (lookup cc) (cc_list cc) c\<^sub>1 c\<^sub>2 = Some (F b\<^sub>1 b\<^sub>2 \<approx> b)
       \<and>
-      Congruence_Closure (representativeE cc \<union> pending_set (pending cc)
-                    \<union> set u_a) (b \<approx> c))
+      Congruence_Closure (representatives_set cc \<union> pending_set (pending cc)) (b \<approx> c))
     \<or>
       ((F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set u_a
       \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
       \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2)
-      \<and> Congruence_Closure (representativeE cc \<union> pending_set (pending cc)
-                    \<union> set u_a) (b \<approx> c)
+      \<and> Congruence_Closure (representatives_set cc \<union> pending_set (pending cc)) (b \<approx> c)
   )
 )"
 
@@ -461,9 +463,9 @@ a' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a'
   (\<exists> b\<^sub>1 b\<^sub>2 b.
       (lookup_entry (lookup cc) (cc_list cc) c\<^sub>1 c\<^sub>2 = Some (F b\<^sub>1 b\<^sub>2 \<approx> b)
       \<and>
-      Congruence_Closure (representativeE cc \<union> pending_set (pending cc)) (b \<approx> c))
+      Congruence_Closure (representatives_set cc \<union> pending_set (pending cc)) (b \<approx> c))
   )
-)"unfolding use_list_invar2'_def
+)" unfolding use_list_invar2'_def
   by simp
 
 text \<open>Invariant for the whole data structure.\<close>
@@ -543,23 +545,33 @@ qed
 
 subsection \<open>Lemmata for Congruence_Closure with our congruence_closure data structure\<close>
 
+lemma a_eq_rep_of_a_in_CC_representatives_set:
+  assumes "a < length (cc_list cc)"
+  shows
+"Congruence_Closure (representatives_set cc) (a \<approx> rep_of (cc_list cc) a)"
+"Congruence_Closure (representatives_set cc) (rep_of (cc_list cc) a \<approx> a)"
+proof-
+  have *: "rep_of (cc_list cc) a = a \<Longrightarrow> Congruence_Closure (representatives_set cc) a \<approx> rep_of (cc_list cc) a" 
+    using reflexive by simp
+  have "rep_of (cc_list cc) a \<noteq> a \<Longrightarrow> (a \<approx> rep_of (cc_list cc) a) \<in> (representatives_set cc)" 
+    unfolding representativeE_def
+    using assms rep_of_refl by force
+  then have "rep_of (cc_list cc) a \<noteq> a \<Longrightarrow> Congruence_Closure (representatives_set cc) a \<approx> rep_of (cc_list cc) a" 
+    using base by simp
+  with * show "Congruence_Closure (representatives_set cc) (a \<approx> rep_of (cc_list cc) a)" 
+    by blast
+  with symmetric show "Congruence_Closure (representatives_set cc) (rep_of (cc_list cc) a \<approx> a)" 
+    by simp
+qed
+
+
 lemma a_eq_rep_of_a_in_CC:
   assumes "a < length (cc_list cc)"
   shows
 "Congruence_Closure (representativeE cc) (a \<approx> rep_of (cc_list cc) a)"
 "Congruence_Closure (representativeE cc) (rep_of (cc_list cc) a \<approx> a)"
-proof-
-  have *: "rep_of (cc_list cc) a = a \<Longrightarrow> Congruence_Closure (representativeE cc) a \<approx> rep_of (cc_list cc) a" 
-    using reflexive by simp
-  have "rep_of (cc_list cc) a \<noteq> a \<Longrightarrow> (a \<approx> rep_of (cc_list cc) a) \<in> (representativeE cc)" unfolding representativeE_def
-    using assms rep_of_refl by force
-  then have "rep_of (cc_list cc) a \<noteq> a \<Longrightarrow> Congruence_Closure (representativeE cc) a \<approx> rep_of (cc_list cc) a" 
-    using base by simp
-  with * show "Congruence_Closure (representativeE cc) (a \<approx> rep_of (cc_list cc) a)" 
-    by blast
-  with symmetric show "Congruence_Closure (representativeE cc) (rep_of (cc_list cc) a \<approx> a)" 
-    by simp
-qed
+  unfolding representativeE_def using assms Congruence_Closure_union a_eq_rep_of_a_in_CC_representatives_set
+  by blast+
 
 lemma CC_F_rep_of_a_imp_F_a:
   assumes "Congruence_Closure (representativeE cc) 
@@ -611,18 +623,26 @@ proof-
     by fast
 qed
 
+lemma CC_same_rep_representatives_set:
+  assumes "rep_of (cc_list cc) a = rep_of (cc_list cc) b"
+"a < nr_vars cc" "b < nr_vars cc"
+shows "Congruence_Closure (representatives_set cc) (a \<approx> b)"
+proof-
+  have "Congruence_Closure (representatives_set cc) (a \<approx> rep_of (cc_list cc) a)"
+"Congruence_Closure (representatives_set cc) (rep_of (cc_list cc) b \<approx> b)"
+     apply (simp add: a_eq_rep_of_a_in_CC_representatives_set(1) assms(2))
+    by (simp add: a_eq_rep_of_a_in_CC_representatives_set(2) assms(3))
+  then show ?thesis 
+    by (metis (mono_tags, lifting) assms(1) transitive1)
+qed
+
 lemma CC_same_rep:
   assumes "rep_of (cc_list cc) a = rep_of (cc_list cc) b"
 "a < nr_vars cc" "b < nr_vars cc"
 shows "Congruence_Closure (representativeE cc) (a \<approx> b)"
-proof-
-  have "Congruence_Closure (representativeE cc) (a \<approx> rep_of (cc_list cc) a)"
-"Congruence_Closure (representativeE cc) (rep_of (cc_list cc) b \<approx> b)"
-     apply (simp add: a_eq_rep_of_a_in_CC(1) assms(2))
-    by (simp add: a_eq_rep_of_a_in_CC(2) assms(3))
-  then show ?thesis 
-    by (metis assms(1) transitive1)
-qed
+  using CC_same_rep_representatives_set assms Congruence_Closure_union
+  unfolding representativeE_def 
+  by blast
 
 lemma pending_a_b_in_Congruence_Closure:
   assumes "valid_vars_pending eq (cc_list cc)" "a = left eq" "b = right eq" 
