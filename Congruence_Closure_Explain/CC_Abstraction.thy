@@ -15,8 +15,10 @@ inductive Congruence_Closure :: "equation set \<Rightarrow> equation \<Rightarro
     base: "eqt \<in> S \<Longrightarrow> Congruence_Closure S eqt"
   | reflexive: "Congruence_Closure S (a \<approx> a)"
   | symmetric: "Congruence_Closure S (a \<approx> b) \<Longrightarrow> Congruence_Closure S (b \<approx> a)"
-  | transitive1: "Congruence_Closure S (a \<approx> b) \<Longrightarrow> Congruence_Closure S (b \<approx> c) \<Longrightarrow> Congruence_Closure S (a \<approx> c)"
-  | transitive2: "Congruence_Closure S (F a\<^sub>1 a\<^sub>2 \<approx> b) \<Longrightarrow> Congruence_Closure S (b \<approx> c) \<Longrightarrow> Congruence_Closure S (F a\<^sub>1 a\<^sub>2 \<approx> c)"
+  | transitive1: "Congruence_Closure S (a \<approx> b) \<Longrightarrow> Congruence_Closure S (b \<approx> c) 
+\<Longrightarrow> Congruence_Closure S (a \<approx> c)"
+  | transitive2: "Congruence_Closure S (F a\<^sub>1 a\<^sub>2 \<approx> b) \<Longrightarrow> Congruence_Closure S (b \<approx> c) 
+\<Longrightarrow> Congruence_Closure S (F a\<^sub>1 a\<^sub>2 \<approx> c)"
   | transitive3: "Congruence_Closure S (F a\<^sub>1 a\<^sub>2 \<approx> a)
 \<Longrightarrow> Congruence_Closure S (a\<^sub>1 \<approx> b\<^sub>1) \<Longrightarrow> Congruence_Closure S (a\<^sub>2 \<approx> b\<^sub>2)
 \<Longrightarrow> Congruence_Closure S (F b\<^sub>1 b\<^sub>2 \<approx> a)"
@@ -217,6 +219,11 @@ lemma pending_set_Cons:
 lemma pending_set_union':
  "a \<in> pending_set (xs @ ys) \<longleftrightarrow> a \<in> pending_set xs \<or> a \<in> pending_set ys" 
   by (simp add: pending_set_union)
+
+lemma pending_set_Constant:
+"a \<in> pending_set xs \<Longrightarrow> (\<exists> b c . a = (b \<approx> c))"
+  apply(induction rule: pending_set.induct)
+  by auto
 
 subsection \<open>Invariants\<close>
 text \<open>As described in the paper\<close>
@@ -875,7 +882,7 @@ lemma use_list_invar_less_n_in_set:
 lemma use_list_invar_less_n_in_set': 
   assumes "use_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe,  proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     "ufa_invar l" "i < length l" "eq \<in> set (u ! rep_of l i)" 
-obtains a\<^sub>1 a\<^sub>2 a where "eq = (F a\<^sub>1 a\<^sub>2 \<approx> a)" "a < length l" "a\<^sub>2 < length l" "a < length l"
+obtains a\<^sub>1 a\<^sub>2 a where "eq = (F a\<^sub>1 a\<^sub>2 \<approx> a)" "a\<^sub>1 < length l" "a\<^sub>2 < length l" "a < length l"
 proof-
   have "rep_of l i < length l" "l ! rep_of l i = rep_of l i"
      apply (simp add: assms(2) assms(3) rep_of_bound)
