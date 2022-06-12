@@ -15,9 +15,20 @@ lemma cc_\<alpha>_eq_CC_representativeE: "cc_\<alpha> cc (s \<approx> t) = Congr
 
 subsection \<open>Correctness of merge\<close>
 
+lemma pending_empty_after_propagate: 
+"propagate_dom cc \<Longrightarrow> pending cc = [] \<Longrightarrow> pending (propagate cc) = []"
+  apply(induction rule: propagate.pinduct)
+  by auto
+
 lemma pending_empty_after_merge: 
-"pending cc = [] \<Longrightarrow> pending (merge cc x) = []"
-  sorry
+"merge_dom (cc, x) \<Longrightarrow> pending cc = [] \<Longrightarrow> pending (merge cc x) = []"
+proof(induction rule: merge.induct)
+  case (1 l u t pe pf pfl ip a b)
+  then show ?case using pending_empty_after_propagate sorry
+next
+  case (2 l u t pe pf pfl ip a\<^sub>1 a\<^sub>2 a)
+  then show ?case using pending_empty_after_propagate sorry
+qed
 
 lemma 
 "valid_vars eq n \<Longrightarrow> cc_invar cc \<Longrightarrow> 
@@ -57,29 +68,27 @@ qed
 
 lemma CC_representativeE_valid_vars:
   assumes "Congruence_Closure (representativeE cc) eq" "cc_invar cc" 
+          "\<nexists> a . eq = a \<approx> a"
   shows "valid_vars eq (nr_vars cc)"
 using assms proof(induction "representativeE cc" eq rule: Congruence_Closure.induct)
   case (base eqt)
-  then show ?case sorry
-next
-  case (reflexive a)
-  then show ?case sorry
-next
-  case (symmetric a b)
-  then show ?case sorry
-next
-  case (transitive1 a b c)
-  then show ?case sorry
-next
-  case (transitive2 a\<^sub>1 a\<^sub>2 b c)
-  then show ?case sorry
-next
-  case (transitive3 a\<^sub>1 a\<^sub>2 a b\<^sub>1 b\<^sub>2)
-  then show ?case sorry
-next
-  case (monotonic a\<^sub>1 a\<^sub>2 a b\<^sub>1 b\<^sub>2 b)
-  then show ?case sorry
-qed
+  then consider a where "eqt = a \<approx> rep_of (cc_list cc) a" 
+    "a < nr_vars cc" "(cc_list cc) ! a \<noteq> a" 
+  | a' b' c c\<^sub>1 c\<^sub>2 where "eqt = F a' b' \<approx> rep_of (cc_list cc) c"  "a' < nr_vars cc"
+                      "b' < nr_vars cc"  "c < nr_vars cc"
+                      "cc_list cc ! a' = a'" "cc_list cc ! b' = b'"
+                      "lookup cc ! a' ! b' = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)"
+    unfolding representativeE_def by blast
+  then show ?case proof(cases)
+    case 1
+    then show ?thesis 
+      using base.prems cc_list_invar_def rep_of_bound by auto
+  next
+    case 2
+    then show ?thesis 
+      using base.prems cc_list_invar_def rep_of_bound valid_vars.simps(2) by blast
+  qed
+qed auto
 
 subsection \<open>Lemmas about are_congruent\<close>
 
@@ -161,7 +170,7 @@ using assms proof(induction cc "F a\<^sub>1 a\<^sub>2 \<approx> a" rule: are_con
     by auto
 qed
 
-lemma 
+lemma are_congruenct_correct: 
   assumes "valid_vars eq (nr_vars cc)" "cc_invar cc" "pending cc = []"
   shows "Congruence_Closure ((input cc)) eq = cc_\<alpha> cc eq"
 proof-
@@ -189,23 +198,26 @@ proof-
     next
       case (transitive1 a b c)
       then have "valid_vars a \<approx> b (nr_vars cc)" "valid_vars b \<approx> c (nr_vars cc)"
-        using CC_representativeE_valid_vars by blast+
+        using CC_representativeE_valid_vars 
+        by (metis equation.inject(1) valid_vars.simps(1))+
       then show ?case 
         using are_congruent_transitive1 cc_\<alpha>_def transitive1 by blast
     next
       case (transitive2 a\<^sub>1 a\<^sub>2 b c)
       then show ?case 
-        by (metis CC_representativeE_valid_vars are_congruent_transitive2 cc_\<alpha>_def cc_list_invar_def)
+        using CC_representativeE_valid_vars are_congruent_transitive2 cc_\<alpha>_def cc_list_invar_def by blast
     next
       case (transitive3 a\<^sub>1 a\<^sub>2 a b\<^sub>1 b\<^sub>2)
       then show ?case 
-        by (metis CC_representativeE_valid_vars are_congruent_transitive3 cc_\<alpha>_def cc_list_invar_def)
+        using CC_representativeE_valid_vars are_congruent_transitive2 cc_\<alpha>_def cc_list_invar_def 
+        by (smt (verit, ccfv_threshold) are_congruent_transitive3 equation.distinct(1) valid_vars.simps(1) valid_vars.simps(2))
     next
       case (monotonic a\<^sub>1 a\<^sub>2 a b\<^sub>1 b\<^sub>2 b)
       then have "valid_vars a \<approx> b (nr_vars cc)" 
         by blast
       with monotonic are_congruent_monotonic show ?case unfolding cc_\<alpha>_def 
-        using CC_representativeE_valid_vars cc_\<alpha>_def cc_list_invar_def monotonic.hyps(1) by blast
+        using CC_representativeE_valid_vars cc_\<alpha>_def cc_list_invar_def monotonic.hyps(1) 
+        by (smt (verit, ccfv_threshold) equation.distinct(1) valid_vars.simps(1) valid_vars.simps(2))
     qed
   next
     assume cc_\<alpha>: "cc_\<alpha> cc eq"

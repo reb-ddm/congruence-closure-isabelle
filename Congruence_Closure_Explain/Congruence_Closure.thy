@@ -168,6 +168,28 @@ function propagate :: "congruence_closure \<Rightarrow> congruence_closure"
 ))"
   by pat_completeness auto
 
+lemma propagate_simps1[simp]:
+  assumes "propagate_dom cc"
+"pending cc = []"
+shows "propagate cc = cc"
+  using assms propagate.psimps propagate.pelims by fastforce
+
+lemma propagate_simps2[simp]:
+  assumes "propagate_dom \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
+"rep_of l (left eq) = rep_of l (right eq)"
+shows "propagate 
+\<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, pf_labels = pfl, input = ip\<rparr>
+ = propagate \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
+  using assms propagate.psimps unfolding Let_def by auto
+
+lemma propagate_simps3[simp]:
+  assumes "propagate_dom \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
+"rep_of l (left eq) \<noteq> rep_of l (right eq)"
+shows "propagate 
+\<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, pf_labels = pfl, input = ip\<rparr>
+ = propagate (propagate_step l u t pe pf pfl ip (left eq) (right eq) eq)"
+  using assms propagate.psimps unfolding Let_def by auto
+
 fun merge :: "congruence_closure \<Rightarrow> equation \<Rightarrow> congruence_closure"
   where 
 "merge \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> 

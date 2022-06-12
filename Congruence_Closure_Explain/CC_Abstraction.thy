@@ -2,7 +2,9 @@ theory CC_Abstraction
   imports CC_Proofs
 begin
 
-section \<open>Abstract formalisation of congruence closure\<close>
+section \<open>Correctness of merge and are_congruent: \<close>
+
+subsection \<open>Abstract formalisation of congruence closure\<close>
 
 
 text \<open>S is the set of input equations.
@@ -184,16 +186,21 @@ definition cc_\<alpha> :: "congruence_closure \<Rightarrow> equation \<Rightarro
   where
     "cc_\<alpha> cc x \<equiv> valid_vars x (nr_vars cc) \<and> are_congruent cc x"
 
-
 abbreviation representatives_set :: "congruence_closure \<Rightarrow> equation set"
   where
 "representatives_set cc \<equiv> {a \<approx> rep_of (cc_list cc) a |a. a < nr_vars cc \<and> cc_list cc ! a \<noteq> a}"
+
+abbreviation lookup_entries_set :: "congruence_closure \<Rightarrow> equation set"
+  where
+"lookup_entries_set cc \<equiv> {F a' b' \<approx> rep_of (cc_list cc) c | a' b' c c\<^sub>1 c\<^sub>2 . a' < nr_vars cc 
+                      \<and> b' < nr_vars cc \<and> c < nr_vars cc \<and>
+                      cc_list cc ! a' = a' \<and> cc_list cc ! b' = b' 
+                      \<and> lookup cc ! a' ! b' = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)}"
+
+
 definition representativeE :: "congruence_closure \<Rightarrow> equation set"
   where
-    "representativeE cc = representatives_set cc
-\<union> {F a' b' \<approx> rep_of (cc_list cc) c | a' b' c c\<^sub>1 c\<^sub>2 . a' < nr_vars cc \<and> b' < nr_vars cc \<and> c < nr_vars cc \<and>
-                      cc_list cc ! a' = a' \<and> cc_list cc ! b' = b' \<and> lookup cc ! a' ! b' = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)}"
-
+    "representativeE cc = representatives_set cc \<union> lookup_entries_set cc"
 
 text \<open>Converts the list of pending equations to a set of pending equations.\<close>
 fun pending_set :: "pending_equation list \<Rightarrow> equation set"
@@ -209,7 +216,6 @@ proof
     by(simp_all)
   show "pe = [] \<Longrightarrow> pending_set pe = {}" by simp
 qed
-
 
 lemma pending_set_union: 
 "pending_set (xs @ ys) = pending_set xs \<union> pending_set ys"
@@ -235,6 +241,10 @@ text \<open>As described in the paper\<close>
 
 text \<open>For cc_list_invar we use ufa_invar\<close>
 
+definition cc_list_invar :: "congruence_closure \<Rightarrow> bool"
+  where
+    "cc_list_invar cc = ufa_invar (cc_list cc)"
+
 text \<open>for each representative i, UseList (i) is a list of input equations \<open>f(b\<^sub>1, b\<^sub>2)=b\<close>
 such that i is the representative of \<open>b\<^sub>1\<close> or of \<open>b\<^sub>2\<close> (or of both).\<close>
 abbreviation use_list_valid_element
@@ -245,9 +255,9 @@ abbreviation use_list_valid_element
       (b\<^sub>1 < length l \<and> b\<^sub>2 < length l \<and> b < length l)
   )"
 
-abbreviation use_list_invar_correctness :: "congruence_closure \<Rightarrow> bool"
+definition use_list_invar :: "congruence_closure \<Rightarrow> bool"
   where
-    "use_list_invar_correctness cc \<equiv> 
+    "use_list_invar cc \<equiv> 
 (\<forall> i < nr_vars cc . 
     (cc_list cc) ! i = i \<longrightarrow> (\<forall> j < length ((use_list cc) ! i) . 
       use_list_valid_element ((use_list cc) ! i ! j) (cc_list cc) i
@@ -266,17 +276,19 @@ abbreviation lookup_invar_correctness :: "congruence_closure \<Rightarrow> bool"
   )
 )"
 
-text \<open>These invariants are needed for the termination proofs:\<close>
-
-abbreviation proof_forest_invar_termination :: "congruence_closure \<Rightarrow> bool"
+text \<open>Lookup is also a square matrix.\<close>
+definition lookup_invar :: "congruence_closure \<Rightarrow> bool"
   where
-    "proof_forest_invar_termination cc \<equiv> ufa_invar (proof_forest cc)"
+    "lookup_invar cc \<equiv> lookup_invar_correctness cc 
+                        \<and> quadratic_table (lookup cc)"
 
-abbreviation cc_list_invar_termination :: "congruence_closure \<Rightarrow> bool"
+text \<open>This invariant is needed for the termination proof of add_edge:\<close>
+
+definition proof_forest_invar :: "congruence_closure \<Rightarrow> bool"
   where
-    "cc_list_invar_termination cc \<equiv> ufa_invar (cc_list cc)"
+    "proof_forest_invar cc \<equiv> ufa_invar (proof_forest cc)"
 
-text \<open>These invariants are needed for the validity proofs:\<close>
+text \<open>The equations in pending can only be of teo specific forms:\<close>
 
 definition pending_invar :: "congruence_closure \<Rightarrow> bool"
   where
@@ -323,32 +335,7 @@ lemma pending_left_right_valid:
   unfolding pending_invar_def congruence_closure.select_convs
   by (metis in_set_conv_nth list.set_intros(1))
 
-text \<open>Here the invariants are put together:\<close>
-
-definition cc_list_invar :: "congruence_closure \<Rightarrow> bool"
-  where
-    "cc_list_invar cc = cc_list_invar_termination cc"
-
-definition use_list_invar :: "congruence_closure \<Rightarrow> bool"
-  where
-    "use_list_invar cc = use_list_invar_correctness cc"
-
-definition lookup_invar :: "congruence_closure \<Rightarrow> bool"
-  where
-    "lookup_invar cc \<equiv> lookup_invar_correctness cc \<and> quadratic_table (lookup cc)"
-
-definition proof_forest_invar :: "congruence_closure \<Rightarrow> bool"
-  where
-    "proof_forest_invar cc = proof_forest_invar_termination cc"
-
-text \<open>TODO: 
-Inv1: RepresentativeE is in standard form;
-A set of equations E is in standard form if its equations are of the form a = b or
-of the form f(a, b) = c whose (respective) left hand side terms a and f(a, b) only occur once
-in E.\<close>
-definition inv1 :: "congruence_closure \<Rightarrow> bool"
-  where
-    "inv1 cc = True"
+text \<open>The second invariant from the article, very important for the correctness proof.\<close>
 
 definition inv2 :: "congruence_closure \<Rightarrow> bool"
   where
@@ -383,6 +370,8 @@ definition inv_same_length :: "congruence_closure \<Rightarrow> nat \<Rightarrow
 (((nr_vars cc = n \<and> length (use_list cc) = n) \<and> length (lookup cc) = n) \<and> 
 length (proof_forest cc) = n) \<and> length (pf_labels cc) = n"
 
+
+text \<open>The following two invariants are important for the proofs about inv2:\<close>
 text \<open>All equations in the lookup table are also present in both relevant use_lists.\<close>
 
 abbreviation contains_similar_equation
@@ -396,6 +385,7 @@ abbreviation contains_similar_equation
       \<and> Congruence_Closure (representatives_set cc \<union> pending_set (pending cc)) (b \<approx> c)
   )
 "
+
 definition lookup_invar2' :: "congruence_closure \<Rightarrow> equation list \<Rightarrow> bool"
   where
 "lookup_invar2' cc u_a = (\<forall> a' b' c c\<^sub>1 c\<^sub>2.
@@ -432,7 +422,7 @@ a' < nr_vars cc \<longrightarrow> b' < nr_vars cc \<longrightarrow> (cc_list cc)
 )" unfolding lookup_invar2'_def 
   by auto
 
-text \<open>All equations in use_list are also in the congruence_closure of the data structure.\<close>
+text \<open>All equations in use_list are also in the lookup table.\<close>
 definition use_list_invar2' :: "congruence_closure \<Rightarrow> equation list \<Rightarrow> bool"
   where
 "use_list_invar2' cc u_a = (\<forall> a' c\<^sub>1 c\<^sub>2 c.
@@ -455,7 +445,6 @@ abbreviation use_list_invar2 :: "congruence_closure \<Rightarrow> bool"
   where
 "use_list_invar2 cc \<equiv> use_list_invar2' cc []"
 
-
 lemma use_list_invar2_def: "use_list_invar2 cc = (\<forall> a' c\<^sub>1 c\<^sub>2 c.
 a' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a'
 \<longrightarrow> (F c\<^sub>1 c\<^sub>2 \<approx> c) \<in> set ((use_list cc) ! a')
@@ -469,19 +458,23 @@ a' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a'
   by simp
 
 text \<open>Invariant for the whole data structure.\<close>
+abbreviation cc_invar' 
+  where
+    "cc_invar' cc u_a \<equiv> ((((((((cc_list_invar cc \<and> use_list_invar cc) \<and> lookup_invar cc) 
+        \<and> proof_forest_invar cc) \<and> inv2 cc) \<and> inv_same_rep_classes cc) 
+        \<and> inv_same_length cc (nr_vars cc)) \<and> pending_invar cc) \<and> lookup_invar2' cc u_a) 
+        \<and> use_list_invar2' cc u_a"
+
 abbreviation cc_invar :: "congruence_closure \<Rightarrow> bool"
   where
-    "cc_invar cc \<equiv> (((((((cc_list_invar cc \<and> use_list_invar cc) \<and> lookup_invar cc) 
-        \<and> proof_forest_invar cc) \<and> inv1 cc) \<and> inv2 cc) \<and> inv_same_rep_classes cc) 
-        \<and> inv_same_length cc (nr_vars cc)) \<and> pending_invar cc"
-
-
-
+    "cc_invar cc \<equiv> ((((((((cc_list_invar cc \<and> use_list_invar cc) \<and> lookup_invar cc) 
+        \<and> proof_forest_invar cc) \<and> inv2 cc) \<and> inv_same_rep_classes cc) 
+        \<and> inv_same_length cc (nr_vars cc)) \<and> pending_invar cc) \<and> lookup_invar2 cc) 
+        \<and> use_list_invar2 cc"
 
 text \<open>
-(1) Prove that the invariant is preserved by the two cases of propagate_loop.
-(2) Then prove that it holds for a generic input of propagate_loop.
-(3) Prove that it works for this specific input.
+(1) Prove that it works for the "mini_step".
+(2) Prove that the invariant is preserved by the two cases of propagate_loop.
 \<close>
 lemma propagate_step_induct[consumes 3, case_names base update_pending update_lookup]:
   assumes 
@@ -799,6 +792,8 @@ lemma rep_of_add_edge_invar:
   shows "rep_of (add_edge l x1 x2) a = rep_of (add_edge l x1 x2) b"
   by (simp add: assms rep_of_add_edge_aux)
 
+subsection \<open>These functions preserve the length of the parameters.\<close>
+
 lemma add_edge_preserves_length:
   "add_edge_dom (pf, a, b) \<Longrightarrow> length (add_edge pf a b) = length pf"
   apply(induction pf a b rule: add_edge.pinduct)
@@ -808,6 +803,21 @@ lemma add_edge_preserves_length':
   assumes "ufa_invar pf" "a < length pf" "b < length pf" "rep_of pf a \<noteq> rep_of pf b" 
   shows "length (add_edge pf a b) = length pf"
   using add_edge_domain add_edge_preserves_length assms by blast
+
+lemma add_label_preserves_length:
+  "add_label_dom (pfl, pf, a, eq) \<Longrightarrow> length (add_label pfl pf a eq) = length pfl"
+  apply(induction pfl pf a eq rule: add_label.pinduct)
+  by (simp add: add_label.psimps)
+
+lemma add_label_preserves_length':
+  assumes "ufa_invar pf" "a < length pf"  
+  shows "length (add_label pfl pf a eq) = length pfl"
+  using add_label_domain add_label_preserves_length assms by blast
+
+lemma update_lookup_preserves_length:
+  shows "length (update_lookup t l eq) = length t"
+apply(cases eq)
+  by auto
 
 lemma add_edge_inv_same_rep_classes_invar:  
   assumes  "pf_l_same_eq_classes pf l" "ufa_invar pf" "ufa_invar l"
