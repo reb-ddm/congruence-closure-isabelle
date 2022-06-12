@@ -8,26 +8,26 @@ fun apply_merges :: "congruence_closure \<Rightarrow> equation list \<Rightarrow
 "apply_merges cc (eq # xs) = apply_merges (merge cc eq) xs"
 | "apply_merges cc [] = cc"
 
-
-
-lemma cc_\<alpha>_eq_CC_representativeE: "cc_\<alpha> cc (s \<approx> t) = Congruence_Closure (representativeE cc) (s \<approx> t)"
-  oops
-
 subsection \<open>Correctness of merge\<close>
 
 lemma pending_empty_after_propagate: 
-"propagate_dom cc \<Longrightarrow> pending cc = [] \<Longrightarrow> pending (propagate cc) = []"
+"propagate_dom cc \<Longrightarrow> pending (propagate cc) = []"
   apply(induction rule: propagate.pinduct)
-  by auto
+   apply simp
+  by (metis propagate_simps2 propagate_simps3)
 
 lemma pending_empty_after_merge: 
-"merge_dom (cc, x) \<Longrightarrow> pending cc = [] \<Longrightarrow> pending (merge cc x) = []"
-proof(induction rule: merge.induct)
+"cc_invar cc \<Longrightarrow> valid_vars x (nr_vars cc) \<Longrightarrow> pending cc = [] \<Longrightarrow> pending (merge cc x) = []"
+proof(induction cc x rule: merge.induct)
   case (1 l u t pe pf pfl ip a b)
-  then show ?case using pending_empty_after_propagate sorry
+  then show ?case using pending_empty_after_propagate cc_invar_merge1 propagate_domain 
+    using merge.simps(1) by presburger
 next
   case (2 l u t pe pf pfl ip a\<^sub>1 a\<^sub>2 a)
-  then show ?case using pending_empty_after_propagate sorry
+  then show ?case using pending_empty_after_propagate apply(cases "lookup_Some t l (F a\<^sub>1 a\<^sub>2 \<approx> a)")
+    using pending_empty_after_propagate cc_invar_merge2 propagate_domain 
+    using merge.simps(2) apply presburger
+    using merge.simps(2) by simp
 qed
 
 lemma 
@@ -112,7 +112,6 @@ next
     by auto
 qed
 
-(* Derived the lemma "False" from "CC_representativeE_valid_vars", "Congruence_Closure.reflexive", "congruence_closure.select_convs(1)", "len_greater_imp_nonempty", and "valid_vars.simps(1)", which could be due to a bug in Sledgehammer or to inconsistent axioms (including "sorry"s) *)
 lemma are_congruent_transitive1:
   assumes "are_congruent cc (a \<approx> b)" "are_congruent cc (b \<approx> c)" 
   shows "are_congruent cc (a \<approx> c)"
@@ -261,7 +260,6 @@ cc: "cc = \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_for
   qed
   finally show ?thesis .
 qed
-  
 
 subsection \<open>Correctness of are_congruent\<close>
 lemma "valid_vars eq (nr_vars cc) \<Longrightarrow> are_congruent cc eq = cc_\<alpha> cc eq"
