@@ -11,134 +11,120 @@ The Congruence Closure is the smallest relation that includes S and is closed un
 symmetry, transitivity, and under function application.
 Source: \<open>https://drops.dagstuhl.de/opus/volltexte/2021/14253/pdf/LIPIcs-FSCD-2021-15.pdf\<close>\<close>
          
-inductive Congruence_Closure :: "equation set \<Rightarrow> equation \<Rightarrow> bool"
+inductive_set Congruence_Closure :: "equation set \<Rightarrow> equation set" for S
   where
-    base: "eqt \<in> S \<Longrightarrow> Congruence_Closure S eqt"
-  | reflexive: "Congruence_Closure S (a \<approx> a)"
-  | symmetric: "Congruence_Closure S (a \<approx> b) \<Longrightarrow> Congruence_Closure S (b \<approx> a)"
-  | transitive1: "Congruence_Closure S (a \<approx> b) \<Longrightarrow> Congruence_Closure S (b \<approx> c) 
-\<Longrightarrow> Congruence_Closure S (a \<approx> c)"
-  | transitive2: "Congruence_Closure S (F a\<^sub>1 a\<^sub>2 \<approx> b) \<Longrightarrow> Congruence_Closure S (b \<approx> c) 
-\<Longrightarrow> Congruence_Closure S (F a\<^sub>1 a\<^sub>2 \<approx> c)"
-  | transitive3: "Congruence_Closure S (F a\<^sub>1 a\<^sub>2 \<approx> a)
-\<Longrightarrow> Congruence_Closure S (a\<^sub>1 \<approx> b\<^sub>1) \<Longrightarrow> Congruence_Closure S (a\<^sub>2 \<approx> b\<^sub>2)
-\<Longrightarrow> Congruence_Closure S (F b\<^sub>1 b\<^sub>2 \<approx> a)"
-| monotonic: "Congruence_Closure S (F a\<^sub>1 a\<^sub>2 \<approx> a) \<Longrightarrow> Congruence_Closure S (F b\<^sub>1 b\<^sub>2 \<approx> b)
-\<Longrightarrow> Congruence_Closure S (a\<^sub>1 \<approx> b\<^sub>1) \<Longrightarrow> Congruence_Closure S (a\<^sub>2 \<approx> b\<^sub>2)
-\<Longrightarrow> Congruence_Closure S (a \<approx> b)"
+    base: "eqt \<in> S \<Longrightarrow> eqt \<in> Congruence_Closure S"
+  | reflexive: "(a \<approx> a) \<in> Congruence_Closure S"
+  | symmetric: "(a \<approx> b) \<in> Congruence_Closure S \<Longrightarrow> (b \<approx> a) \<in> Congruence_Closure S"
+  | transitive1: "(a \<approx> b) \<in> Congruence_Closure S \<Longrightarrow> (b \<approx> c) \<in> Congruence_Closure S  
+\<Longrightarrow> (a \<approx> c) \<in> Congruence_Closure S"
+  | transitive2: "(F a\<^sub>1 a\<^sub>2 \<approx> b) \<in> Congruence_Closure S \<Longrightarrow> (b \<approx> c) \<in> Congruence_Closure S  
+\<Longrightarrow> (F a\<^sub>1 a\<^sub>2 \<approx> c) \<in> Congruence_Closure S"
+  | transitive3: "(F a\<^sub>1 a\<^sub>2 \<approx> a) \<in> Congruence_Closure S
+\<Longrightarrow> (a\<^sub>1 \<approx> b\<^sub>1) \<in> Congruence_Closure S \<Longrightarrow> (a\<^sub>2 \<approx> b\<^sub>2) \<in> Congruence_Closure S
+\<Longrightarrow> (F b\<^sub>1 b\<^sub>2 \<approx> a) \<in> Congruence_Closure S"
+| monotonic: "(F a\<^sub>1 a\<^sub>2 \<approx> a) \<in> Congruence_Closure S \<Longrightarrow> (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> Congruence_Closure S 
+\<Longrightarrow> (a\<^sub>1 \<approx> b\<^sub>1) \<in> Congruence_Closure S \<Longrightarrow> (a\<^sub>2 \<approx> b\<^sub>2) \<in> Congruence_Closure S 
+\<Longrightarrow> (a \<approx> b) \<in> Congruence_Closure S"
 
-definition CC_union :: "(equation \<Rightarrow> bool) \<Rightarrow> equation \<Rightarrow> equation \<Rightarrow> bool"
+declare Congruence_Closure.intros[intro]
+
+definition CC_union :: "equation set \<Rightarrow> equation \<Rightarrow> equation set"
   where
-    "CC_union CC eq' = Congruence_Closure ({eq | eq. CC eq} \<union> {eq'})"
+    "CC_union CC eq' = Congruence_Closure (CC \<union> {eq'})"
 
 lemma Congruence_Closure_union:
-  "Congruence_Closure S eqt \<Longrightarrow> Congruence_Closure (S \<union> S') eqt"
+  "Congruence_Closure S \<subseteq> Congruence_Closure (S \<union> S')"
+proof
+  fix x 
+  show "x \<in> Congruence_Closure S \<Longrightarrow> x \<in> Congruence_Closure (S \<union> S')"
   apply(induction rule: Congruence_Closure.induct)
-  using base apply blast
-  using reflexive apply blast
-  using symmetric apply blast
-  using transitive1 apply blast
-  using transitive2 apply blast
-  using transitive3 apply blast
-  using monotonic apply blast
-  done
+    by auto
+qed
 
 lemma Congruence_Closure_union':
-  "Congruence_Closure S eqt \<Longrightarrow> Congruence_Closure (S' \<union> S) eqt"
+  "Congruence_Closure S \<subseteq> Congruence_Closure (S' \<union> S)"
   by (metis Congruence_Closure_union sup_commute)
 
 lemma Congruence_Closure_split_rule:
-  assumes "k \<notin> B \<Longrightarrow> Congruence_Closure A k"
-  shows "Congruence_Closure (A \<union> B) k"
-  using assms
-  by (metis Congruence_Closure_union base sup_commute)
+  assumes "k \<notin> B \<Longrightarrow> k \<in> Congruence_Closure A"
+  shows "k \<in> Congruence_Closure (A \<union> B)"
+  using assms Congruence_Closure_union by blast
 
 lemma CC_union_correct: 
-  "CC_union (Congruence_Closure S) eq' eq = Congruence_Closure (S \<union> {eq'}) eq"
+  "CC_union (Congruence_Closure S) eq' = Congruence_Closure (S \<union> {eq'})"
 proof
-  show "CC_union (Congruence_Closure S) eq' eq \<Longrightarrow> Congruence_Closure (S \<union> {eq'}) eq"
+  show "CC_union (Congruence_Closure S) eq' \<subseteq> Congruence_Closure (S \<union> {eq'})"
+  proof
+    fix x
+    show "x \<in> CC_union (Congruence_Closure S) eq' \<Longrightarrow> x \<in> Congruence_Closure (S \<union> {eq'})"
     unfolding CC_union_def
-    apply(induction "{eqa |eqa. Congruence_Closure S eqa} \<union> {eq'}" eq rule: Congruence_Closure.induct)
-    using base Congruence_Closure_union apply blast
-    using reflexive apply blast
-    using symmetric apply blast
-    using transitive1 apply blast
-    using transitive2 apply blast
-    using transitive3 apply blast
-    using monotonic apply blast
-    done
+    apply(induction x rule: Congruence_Closure.induct)
+    using base Congruence_Closure_union by blast+
+qed
 next
-  show "Congruence_Closure (S \<union> {eq'}) eq \<Longrightarrow> CC_union (Congruence_Closure S) eq' eq"
-    apply(induction "S \<union> {eq'}" eq rule: Congruence_Closure.induct)
-    unfolding CC_union_def 
-    using base apply auto[1]
-    using reflexive apply auto[1]
-    using symmetric apply auto[1]
-    using transitive1 apply blast
-    using transitive2 apply blast
-    using transitive3 apply blast
-    using monotonic apply blast
-    done
+  show "Congruence_Closure (S \<union> {eq'}) \<subseteq> CC_union (Congruence_Closure S) eq'"
+  proof
+    fix x 
+    show "x \<in> Congruence_Closure (S \<union> {eq'}) \<Longrightarrow> x \<in> CC_union (Congruence_Closure S) eq'"
+    apply(induction x rule: Congruence_Closure.induct)
+      unfolding CC_union_def 
+      by auto
+qed
 qed
 thm Congruence_Closure.induct
 
 lemma Congruence_Closure_not_empty_F:
-"Congruence_Closure A (F a b \<approx> c) \<Longrightarrow> A \<noteq> {}"
-  apply(induction A "(F a b \<approx> c)" arbitrary: a b c rule: Congruence_Closure.induct)
-   apply auto[1]
-  by simp
+"(F a b \<approx> c) \<in> Congruence_Closure A \<Longrightarrow> A \<noteq> {}"
+  apply(induction "(F a b \<approx> c)" arbitrary: a b c rule: Congruence_Closure.induct)
+   by auto
 
 lemma Congruence_Closure_not_empty:
-"Congruence_Closure A (a \<approx> b) \<Longrightarrow> a \<noteq> b \<Longrightarrow> A \<noteq> {}"
-  apply(induction A "(a \<approx> b)" arbitrary: a b rule: Congruence_Closure.induct)
-      apply auto[2]
-  using symmetric apply blast
-  using transitive1 apply blast
-  using Congruence_Closure_not_empty_F apply simp
-  done
+"(a \<approx> b) \<in> Congruence_Closure A \<Longrightarrow> a \<noteq> b \<Longrightarrow> A \<noteq> {}"
+  apply(induction "(a \<approx> b)" arbitrary: a b rule: Congruence_Closure.induct)
+  using Congruence_Closure_not_empty_F by auto
 
 lemma Congruence_Closure_empty_aux:
-"Congruence_Closure A x \<Longrightarrow> A = {} \<Longrightarrow> (\<exists> a . x = (a \<approx> a))"
-  apply(induction A x arbitrary: rule: Congruence_Closure.induct)
+"x \<in> Congruence_Closure A \<Longrightarrow> A = {} \<Longrightarrow> (\<exists> a . x = (a \<approx> a))"
+  apply(induction x arbitrary: rule: Congruence_Closure.induct)
   by auto
 
 lemma Congruence_Closure_empty:
-"Congruence_Closure {} x \<longleftrightarrow> (\<exists> a . x = (a \<approx> a))"
+"x \<in> Congruence_Closure {} \<longleftrightarrow> (\<exists> a . x = (a \<approx> a))"
 proof
-  from Congruence_Closure_empty_aux show "Congruence_Closure {} x \<Longrightarrow> \<exists>a. x = a \<approx> a" 
+  from Congruence_Closure_empty_aux show "x \<in> Congruence_Closure {} \<Longrightarrow> \<exists>a. x = (a \<approx> a)" 
     by blast
-  from Congruence_Closure.intros show "\<exists>a. x = a \<approx> a \<Longrightarrow> Congruence_Closure {} x"
+  from Congruence_Closure.intros show "\<exists>a. x = (a \<approx> a) \<Longrightarrow> x \<in> Congruence_Closure {}"
     by blast
 qed
 
 text \<open>Rule to find if the congruence closure of two sets is equal\<close>
 lemma Congruence_Closure_imp: 
-  assumes "Congruence_Closure A x" "\<And> a. a \<in> A \<Longrightarrow> Congruence_Closure B a"
-  shows "Congruence_Closure B x"
-  using assms apply(induction A x rule: Congruence_Closure.induct)
-        apply auto[1]
-    using reflexive apply simp
-    using symmetric apply blast
-    using transitive1 apply blast
-    using transitive2 apply blast
-    using transitive3 apply blast
-    using monotonic apply blast
-    done
+  assumes "x \<in> Congruence_Closure A" "\<And> a. a \<in> A \<Longrightarrow> a \<in> Congruence_Closure B"
+  shows "x \<in> Congruence_Closure B"
+  using assms apply(induction x rule: Congruence_Closure.induct)
+  by auto
 
 lemma Congruence_Closure_eq[case_names left right]:
-  assumes "\<And> a. a \<in> A \<Longrightarrow> Congruence_Closure B a"
-"\<And> b. b \<in> B \<Longrightarrow> Congruence_Closure A b"
+  assumes "\<And> a. a \<in> A \<Longrightarrow> a \<in> Congruence_Closure B"
+"\<And> b. b \<in> B \<Longrightarrow> b \<in> Congruence_Closure A"
 shows "Congruence_Closure A = Congruence_Closure B"
-proof(standard, standard)
+proof(standard)
+  show "Congruence_Closure A \<subseteq> Congruence_Closure B"
+  proof
   fix x 
-  assume CC_A: "Congruence_Closure A x"
-  show "Congruence_Closure B x"
+  assume CC_A: "x \<in> Congruence_Closure A"
+  show "x \<in> Congruence_Closure B"
     using CC_A Congruence_Closure_imp assms(1) by blast
+qed
 next 
+  show "Congruence_Closure B \<subseteq> Congruence_Closure A"
+  proof
   fix x
-  assume CC_B: "Congruence_Closure B x"
-  show "Congruence_Closure A x"
+  assume CC_B: "x \<in> Congruence_Closure B"
+  show "x \<in> Congruence_Closure A"
     using CC_B Congruence_Closure_imp assms(2) by blast
+qed
 qed
 
 fun valid_vars :: "equation \<Rightarrow> nat \<Rightarrow> bool"
@@ -181,13 +167,13 @@ abbreviation nr_vars :: "congruence_closure \<Rightarrow> nat"
   where
     "nr_vars cc \<equiv> length (cc_list cc)"
 
-definition cc_\<alpha> :: "congruence_closure \<Rightarrow> equation \<Rightarrow> bool"
+definition cc_\<alpha> :: "congruence_closure \<Rightarrow> equation set"
   where
-    "cc_\<alpha> cc x \<equiv> valid_vars x (nr_vars cc) \<and> are_congruent cc x"
+    "cc_\<alpha> cc \<equiv> {x . valid_vars x (nr_vars cc) \<and> are_congruent cc x}"
 
-abbreviation representatives_set :: "congruence_closure \<Rightarrow> equation set"
+abbreviation representatives_set :: "nat list \<Rightarrow> equation set"
   where
-"representatives_set cc \<equiv> {a \<approx> rep_of (cc_list cc) a |a. a < nr_vars cc \<and> cc_list cc ! a \<noteq> a}"
+"representatives_set l \<equiv> {a \<approx> rep_of l a |a. a < length l \<and> l ! a \<noteq> a}"
 
 abbreviation lookup_entries_set :: "congruence_closure \<Rightarrow> equation set"
   where
@@ -199,13 +185,13 @@ abbreviation lookup_entries_set :: "congruence_closure \<Rightarrow> equation se
 
 definition representativeE :: "congruence_closure \<Rightarrow> equation set"
   where
-    "representativeE cc = representatives_set cc \<union> lookup_entries_set cc"
+    "representativeE cc = representatives_set (cc_list cc) \<union> lookup_entries_set cc"
 
 text \<open>Converts the list of pending equations to a set of pending equations.\<close>
 fun pending_set :: "pending_equation list \<Rightarrow> equation set"
   where
 "pending_set [] = {}"
-| "pending_set (a#xs) = {left a \<approx> right a} \<union> pending_set xs"
+| "pending_set (a # xs) = {left a \<approx> right a} \<union> pending_set xs"
 
 lemma pending_set_empty_iff_pending_empty:
  "pending_set pe = {} \<longleftrightarrow> pe = []"
@@ -381,7 +367,7 @@ abbreviation contains_similar_equation
     (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set ((use_list cc) ! a')
       \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
       \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2
-      \<and> Congruence_Closure (representatives_set cc \<union> pending_set (pending cc)) (b \<approx> c)
+      \<and> (b \<approx> c) \<in> Congruence_Closure (representatives_set (cc_list cc) \<union> pending_set (pending cc))
   )
 "
 
@@ -409,14 +395,14 @@ a' < nr_vars cc \<longrightarrow> b' < nr_vars cc \<longrightarrow> (cc_list cc)
     (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set ((use_list cc) ! a')
       \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
       \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2
-      \<and> Congruence_Closure (representatives_set cc \<union> pending_set (pending cc)) (b \<approx> c)
+      \<and> (b \<approx> c) \<in> Congruence_Closure (representatives_set (cc_list cc) \<union> pending_set (pending cc)) 
   )
  \<and>
   (\<exists> b\<^sub>1 b\<^sub>2 b.
     (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set ((use_list cc) ! b')
       \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
       \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2
-      \<and> Congruence_Closure (representatives_set cc \<union> pending_set (pending cc)) (b \<approx> c)
+      \<and> (b \<approx> c) \<in> Congruence_Closure (representatives_set (cc_list cc) \<union> pending_set (pending cc)) 
   )
 )" unfolding lookup_invar2'_def 
   by auto
@@ -431,12 +417,12 @@ a' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a'
   (\<exists> b\<^sub>1 b\<^sub>2 b.
       (lookup_entry (lookup cc) (cc_list cc) c\<^sub>1 c\<^sub>2 = Some (F b\<^sub>1 b\<^sub>2 \<approx> b)
       \<and>
-      Congruence_Closure (representatives_set cc \<union> pending_set (pending cc)) (b \<approx> c))
+      (b \<approx> c) \<in> Congruence_Closure (representatives_set (cc_list cc) \<union> pending_set (pending cc)))
     \<or>
       ((F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set u_a
       \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
       \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2)
-      \<and> Congruence_Closure (representatives_set cc \<union> pending_set (pending cc)) (b \<approx> c)
+      \<and> (b \<approx> c) \<in> Congruence_Closure (representatives_set (cc_list cc) \<union> pending_set (pending cc)) 
   )
 )"
 
@@ -451,7 +437,7 @@ a' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a'
   (\<exists> b\<^sub>1 b\<^sub>2 b.
       (lookup_entry (lookup cc) (cc_list cc) c\<^sub>1 c\<^sub>2 = Some (F b\<^sub>1 b\<^sub>2 \<approx> b)
       \<and>
-      Congruence_Closure (representatives_set cc \<union> pending_set (pending cc)) (b \<approx> c))
+      (b \<approx> c) \<in> Congruence_Closure (representatives_set (cc_list cc) \<union> pending_set (pending cc)))
   )
 )" unfolding use_list_invar2'_def
   by simp
@@ -538,21 +524,22 @@ qed
 subsection \<open>Lemmata for Congruence_Closure with our congruence_closure data structure\<close>
 
 lemma a_eq_rep_of_a_in_CC_representatives_set:
-  assumes "a < length (cc_list cc)"
+  assumes "a < length l"
   shows
-"Congruence_Closure (representatives_set cc) (a \<approx> rep_of (cc_list cc) a)"
-"Congruence_Closure (representatives_set cc) (rep_of (cc_list cc) a \<approx> a)"
+"(a \<approx> rep_of l a) \<in> Congruence_Closure (representatives_set l)"
+"(rep_of l a \<approx> a) \<in> Congruence_Closure (representatives_set l)"
 proof-
-  have *: "rep_of (cc_list cc) a = a \<Longrightarrow> Congruence_Closure (representatives_set cc) a \<approx> rep_of (cc_list cc) a" 
-    using reflexive by simp
-  have "rep_of (cc_list cc) a \<noteq> a \<Longrightarrow> (a \<approx> rep_of (cc_list cc) a) \<in> (representatives_set cc)" 
+  have *: "rep_of l a = a \<Longrightarrow> (a \<approx> rep_of l a) \<in> Congruence_Closure (representatives_set l)" 
+    by auto
+  have "rep_of l a \<noteq> a \<Longrightarrow> (a \<approx> rep_of l a) \<in> (representatives_set l)" 
     unfolding representativeE_def
     using assms rep_of_refl by force
-  then have "rep_of (cc_list cc) a \<noteq> a \<Longrightarrow> Congruence_Closure (representatives_set cc) a \<approx> rep_of (cc_list cc) a" 
-    using base by simp
-  with * show "Congruence_Closure (representatives_set cc) (a \<approx> rep_of (cc_list cc) a)" 
+  then have "rep_of l a \<noteq> a \<Longrightarrow> (a \<approx> rep_of l a) 
+\<in> Congruence_Closure (representatives_set l)" 
+    by auto
+  with * show "(a \<approx> rep_of l a) \<in> Congruence_Closure (representatives_set l)" 
     by blast
-  with symmetric show "Congruence_Closure (representatives_set cc) (rep_of (cc_list cc) a \<approx> a)" 
+  with symmetric show "(rep_of l a \<approx> a) \<in> Congruence_Closure (representatives_set l)" 
     by simp
 qed
 
@@ -560,92 +547,95 @@ qed
 lemma a_eq_rep_of_a_in_CC:
   assumes "a < length (cc_list cc)"
   shows
-"Congruence_Closure (representativeE cc) (a \<approx> rep_of (cc_list cc) a)"
-"Congruence_Closure (representativeE cc) (rep_of (cc_list cc) a \<approx> a)"
+"(a \<approx> rep_of (cc_list cc) a) \<in> Congruence_Closure (representativeE cc)"
+"(rep_of (cc_list cc) a \<approx> a) \<in> Congruence_Closure (representativeE cc)"
   unfolding representativeE_def using assms Congruence_Closure_union a_eq_rep_of_a_in_CC_representatives_set
   by blast+
 
 lemma CC_F_rep_of_a_imp_F_a:
-  assumes "Congruence_Closure (representativeE cc) 
-(F (rep_of (cc_list cc) a) (rep_of (cc_list cc) b) \<approx> (rep_of (cc_list cc) c))"
+  assumes "(F (rep_of (cc_list cc) a) (rep_of (cc_list cc) b) \<approx> (rep_of (cc_list cc) c))
+\<in> Congruence_Closure (representativeE cc)"
 "a < nr_vars cc" "b < nr_vars cc" "c < nr_vars cc"
-  shows "Congruence_Closure (representativeE cc) (F a b \<approx> c)"
+  shows "(F a b \<approx> c) \<in> Congruence_Closure (representativeE cc)"
 proof-
-  from assms a_eq_rep_of_a_in_CC have "Congruence_Closure (representativeE cc) ((rep_of (cc_list cc) a) \<approx> a)"
-"Congruence_Closure (representativeE cc) ((rep_of (cc_list cc) b) \<approx> b)"
-"Congruence_Closure (representativeE cc) ((rep_of (cc_list cc) c) \<approx> c)"
+  from assms a_eq_rep_of_a_in_CC have 
+"((rep_of (cc_list cc) a) \<approx> a) \<in> Congruence_Closure (representativeE cc)"
+"((rep_of (cc_list cc) b) \<approx> b) \<in> Congruence_Closure (representativeE cc)"
+"((rep_of (cc_list cc) c) \<approx> c) \<in> Congruence_Closure (representativeE cc) "
     by blast+
-  with assms show ?thesis using Congruence_Closure.intros by metis 
+  with assms show ?thesis by blast
 qed
 
 lemma CC_rep_of_a_imp_a:
-  assumes "Congruence_Closure (representativeE cc) 
-(rep_of (cc_list cc) a \<approx> rep_of (cc_list cc) c)"
+  assumes "(rep_of (cc_list cc) a \<approx> rep_of (cc_list cc) c)
+\<in> Congruence_Closure (representativeE cc) "
 "a < nr_vars cc" "c < nr_vars cc"
-  shows "Congruence_Closure (representativeE cc) (a \<approx> c)"
+  shows "(a \<approx> c) \<in> Congruence_Closure (representativeE cc)"
 proof-
-  from assms a_eq_rep_of_a_in_CC have "Congruence_Closure (representativeE cc) ((rep_of (cc_list cc) a) \<approx> a)"
-"Congruence_Closure (representativeE cc) ((rep_of (cc_list cc) c) \<approx> c)"
+  from assms a_eq_rep_of_a_in_CC have 
+"((rep_of (cc_list cc) a) \<approx> a) \<in> Congruence_Closure (representativeE cc)"
+"((rep_of (cc_list cc) c) \<approx> c) \<in> Congruence_Closure (representativeE cc)"
     by blast+
-  with assms show ?thesis using Congruence_Closure.intros by metis 
+  with assms show ?thesis by blast 
 qed
 
 lemma CC_lookup_entry_in_CC:
   assumes "lookup_invar cc"
 "(cc_list cc) ! a = a" "(cc_list cc) ! b = b" "(lookup cc) ! a ! b = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)"
 "a < nr_vars cc" "b < nr_vars cc" "c < nr_vars cc"
-  shows "Congruence_Closure (representativeE cc) (F c\<^sub>1 c\<^sub>2 \<approx> c)"
+  shows "(F c\<^sub>1 c\<^sub>2 \<approx> c) \<in> Congruence_Closure (representativeE cc)"
 proof-
-  from assms base have base: "Congruence_Closure (representativeE cc) (F a b \<approx> rep_of (cc_list cc) c)"
+  from assms base have base: 
+"(F a b \<approx> rep_of (cc_list cc) c) \<in> Congruence_Closure (representativeE cc)"
     unfolding representativeE_def 
     by simp
   from assms  have "c\<^sub>1 < nr_vars cc" "c\<^sub>2 < nr_vars cc" "c < nr_vars cc"
     unfolding lookup_invar_def 
     by (metis equation.inject(2) option.distinct(1) option.inject)+
   with assms a_eq_rep_of_a_in_CC have rep:
-"Congruence_Closure (representativeE cc) ((rep_of (cc_list cc) c\<^sub>1) \<approx> c\<^sub>1)"
-"Congruence_Closure (representativeE cc) ((rep_of (cc_list cc) c\<^sub>2) \<approx> c\<^sub>2)"
-"Congruence_Closure (representativeE cc) ((rep_of (cc_list cc) c) \<approx> c)"
+"((rep_of (cc_list cc) c\<^sub>1) \<approx> c\<^sub>1) \<in> Congruence_Closure (representativeE cc)"
+"((rep_of (cc_list cc) c\<^sub>2) \<approx> c\<^sub>2) \<in> Congruence_Closure (representativeE cc)"
+"((rep_of (cc_list cc) c) \<approx> c) \<in> Congruence_Closure (representativeE cc)"
     by blast+
   from assms have a_b: "rep_of (cc_list cc) c\<^sub>1 = a" "rep_of (cc_list cc) c\<^sub>2 = b" unfolding lookup_invar_def  
     by (metis equation.inject(2) option.distinct(1) option.inject)+
-  have "Congruence_Closure (representativeE cc) (F c\<^sub>1 c\<^sub>2 \<approx> rep_of (cc_list cc) c)" 
-    using a_b(1) a_b(2) local.base rep transitive3 by blast
-  with assms show ?thesis using Congruence_Closure.intros rep 
+  have "(F c\<^sub>1 c\<^sub>2 \<approx> rep_of (cc_list cc) c) \<in> Congruence_Closure (representativeE cc)" 
+    using a_b(1) a_b(2) local.base rep by blast
+  with assms show ?thesis using rep 
     by fast
 qed
 
 lemma CC_same_rep_representatives_set:
-  assumes "rep_of (cc_list cc) a = rep_of (cc_list cc) b"
-"a < nr_vars cc" "b < nr_vars cc"
-shows "Congruence_Closure (representatives_set cc) (a \<approx> b)"
+  assumes "rep_of l a = rep_of l b"
+"a < length l" "b < length l"
+shows "(a \<approx> b) \<in> Congruence_Closure (representatives_set l)"
 proof-
-  have "Congruence_Closure (representatives_set cc) (a \<approx> rep_of (cc_list cc) a)"
-"Congruence_Closure (representatives_set cc) (rep_of (cc_list cc) b \<approx> b)"
+  have "(a \<approx> rep_of l a) \<in> Congruence_Closure (representatives_set l)"
+"(rep_of l b \<approx> b) \<in> Congruence_Closure (representatives_set l)"
      apply (simp add: a_eq_rep_of_a_in_CC_representatives_set(1) assms(2))
     by (simp add: a_eq_rep_of_a_in_CC_representatives_set(2) assms(3))
   then show ?thesis 
-    by (metis (mono_tags, lifting) assms(1) transitive1)
+    using assms(1) by auto
 qed
 
 lemma CC_same_rep:
   assumes "rep_of (cc_list cc) a = rep_of (cc_list cc) b"
 "a < nr_vars cc" "b < nr_vars cc"
-shows "Congruence_Closure (representativeE cc) (a \<approx> b)"
+shows "(a \<approx> b) \<in> Congruence_Closure (representativeE cc)"
   using CC_same_rep_representatives_set assms Congruence_Closure_union
   unfolding representativeE_def 
   by blast
 
 lemma pending_a_b_in_Congruence_Closure:
   assumes "valid_vars_pending eq (cc_list cc)" "a = left eq" "b = right eq" 
-  shows "Congruence_Closure (representativeE cc \<union> pending_set [eq]) (a \<approx> b)"
+  shows "(a \<approx> b) \<in> Congruence_Closure (representativeE cc \<union> pending_set [eq])"
   using assms(1) apply(induction rule: valid_vars_pending_cases)
   using assms base by auto
 
 lemma pending_a_b_in_Congruence_Closure':
-  assumes "valid_vars_pending eq (cc_list cc)" "a = left eq" "b = right eq" 
-  shows "Congruence_Closure (representativeE cc \<union> pending_set (eq#pe)) (a \<approx> b)"
-  by (metis Congruence_Closure_union assms pending_a_b_in_Congruence_Closure pending_set_Cons sup_assoc)
+  assumes "a = left eq" "b = right eq" 
+  shows "(a \<approx> b) \<in> Congruence_Closure (representativeE cc \<union> pending_set (eq # pe))"
+  using UnI1 assms by auto
 
 subsection \<open>add_edge correctness lemmata\<close>
 

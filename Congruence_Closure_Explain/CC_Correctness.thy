@@ -27,7 +27,7 @@ qed
 
 lemma representativeE_in_cc_\<alpha>: 
   assumes "cc_invar cc" "valid_vars eq (nr_vars cc)" "eq \<in> representativeE cc"
-  shows "cc_\<alpha> cc eq"
+  shows "eq \<in> cc_\<alpha> cc"
 proof-
   obtain l u t pe pf pfl ip where 
 cc: "cc = \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
@@ -57,10 +57,10 @@ cc: "cc = \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_for
 qed
 
 lemma CC_representativeE_valid_vars:
-  assumes "Congruence_Closure (representativeE cc) eq" "cc_invar cc" 
+  assumes "eq \<in> Congruence_Closure (representativeE cc)" "cc_invar cc" 
           "\<nexists> a . eq = a \<approx> a"
   shows "valid_vars eq (nr_vars cc)"
-using assms proof(induction "representativeE cc" eq rule: Congruence_Closure.induct)
+using assms proof(induction eq rule: Congruence_Closure.induct)
   case (base eqt)
   then consider a where "eqt = a \<approx> rep_of (cc_list cc) a" 
     "a < nr_vars cc" "(cc_list cc) ! a \<noteq> a" 
@@ -161,29 +161,30 @@ qed
 
 lemma are_congruenct_correct: 
   assumes "valid_vars eq (nr_vars cc)" "cc_invar cc" "pending cc = []"
-  shows "Congruence_Closure ((input cc)) eq = cc_\<alpha> cc eq"
+  shows "eq \<in> Congruence_Closure ((input cc)) \<longleftrightarrow> eq \<in> cc_\<alpha> cc"
 proof-
+  obtain l u t pe pf pfl ip where cc: "cc = 
+\<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
+    using congruence_closure.cases by blast
   have "inv2 cc" 
     by (simp add: assms(2))
-  then have "Congruence_Closure (input cc) eq = Congruence_Closure (representativeE cc) eq"
+  then have "eq \<in> Congruence_Closure (input cc) \<longleftrightarrow> eq \<in> Congruence_Closure (representativeE cc)"
     unfolding inv2_def using assms 
     by simp
-  also have "... = cc_\<alpha> cc eq"
+  also have "... \<longleftrightarrow> eq \<in> cc_\<alpha> cc"
   proof
-    assume CC: "Congruence_Closure (representativeE cc) eq"
-    from CC assms show "cc_\<alpha> cc eq"
-    proof(induction "(representativeE cc)" eq rule: Congruence_Closure.induct)
+    assume CC: "eq \<in> Congruence_Closure (representativeE cc)"
+    from CC assms show "eq \<in> cc_\<alpha> cc"
+    proof(induction eq rule: Congruence_Closure.induct)
       case (base eqt)
       with representativeE_in_cc_\<alpha> show ?case 
         by blast
     next
       case (reflexive a)
-      then show ?case 
-        by (metis are_congruent.simps(1) cc_\<alpha>_def congruence_closure.surjective old.unit.exhaust)
+      then show ?case unfolding cc_\<alpha>_def cc by simp
     next
       case (symmetric a b)
-      then show ?case 
-        by (metis are_congruent.simps(1) cc_\<alpha>_def congruence_closure.surjective old.unit.exhaust valid_vars.simps(1))
+      then show ?case unfolding cc_\<alpha>_def cc by simp
     next
       case (transitive1 a b c)
       then have "valid_vars a \<approx> b (nr_vars cc)" "valid_vars b \<approx> c (nr_vars cc)"
@@ -198,40 +199,37 @@ proof-
     next
       case (transitive3 a\<^sub>1 a\<^sub>2 a b\<^sub>1 b\<^sub>2)
       then show ?case 
-        using CC_representativeE_valid_vars are_congruent_transitive2 cc_\<alpha>_def cc_list_invar_def 
-        by (smt (verit, ccfv_threshold) are_congruent_transitive3 equation.distinct(1) valid_vars.simps(1) valid_vars.simps(2))
+        using CC_representativeE_valid_vars are_congruent_transitive3 cc_list_invar_def 
+        unfolding cc_\<alpha>_def  
+        by (metis (no_types, lifting) equation.distinct(1) mem_Collect_eq valid_vars.simps(1) valid_vars.simps(2))
     next
       case (monotonic a\<^sub>1 a\<^sub>2 a b\<^sub>1 b\<^sub>2 b)
       then have "valid_vars a \<approx> b (nr_vars cc)" 
         by blast
-      with monotonic are_congruent_monotonic show ?case unfolding cc_\<alpha>_def 
-        using CC_representativeE_valid_vars cc_\<alpha>_def cc_list_invar_def monotonic.hyps(1) 
-        by (smt (verit, ccfv_threshold) equation.distinct(1) valid_vars.simps(1) valid_vars.simps(2))
+      with monotonic are_congruent_monotonic show ?case unfolding cc_\<alpha>_def cc
+        by (smt (verit, ccfv_threshold) CC_representativeE_valid_vars cc_list_invar_def equation.distinct(1) mem_Collect_eq valid_vars.simps(1) valid_vars.simps(2))
     qed
   next
-    assume cc_\<alpha>: "cc_\<alpha> cc eq"
-    show "Congruence_Closure (representativeE cc) eq"
+    assume cc_\<alpha>: "eq \<in> cc_\<alpha> cc"
+    show "eq \<in> Congruence_Closure (representativeE cc)"
       proof(cases eq)
         case (Constants x11 x12)
         with cc_\<alpha> have "rep_of (cc_list cc) x11 = rep_of (cc_list cc) x12"
           using congruence_closure.cases unfolding cc_\<alpha>_def 
-          by (metis are_congruent.simps(1) congruence_closure.select_convs(1))
-        have "Congruence_Closure (representativeE cc) (x11 \<approx> rep_of (cc_list cc) x11)"
+          by (metis are_congruent.simps(1) congruence_closure.select_convs(1) mem_Collect_eq)
+        have "(x11 \<approx> rep_of (cc_list cc) x11) \<in> Congruence_Closure (representativeE cc)"
           using Constants a_eq_rep_of_a_in_CC(1) assms(1) valid_vars.simps(1) by blast
-        moreover have "Congruence_Closure (representativeE cc) (rep_of (cc_list cc) x12 \<approx> x12)"
+        moreover have "(rep_of (cc_list cc) x12 \<approx> x12) \<in> Congruence_Closure (representativeE cc)"
           using Constants a_eq_rep_of_a_in_CC(2) assms(1) valid_vars.simps(1) by blast
         ultimately show ?thesis 
           by (metis Constants \<open>rep_of (cc_list cc) x11 = rep_of (cc_list cc) x12\<close> transitive1)
       next
         case (Function x21 x22 x23)
-        then obtain l u t pe pf pfl ip where
-cc: "cc = \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
-          using congruence_closure.cases by blast
         then obtain b\<^sub>1 b\<^sub>2 b where 
 "(t ! rep_of l x21) ! rep_of l x22 = Some (F b\<^sub>1 b\<^sub>2 \<approx> b)" 
 "rep_of l x23 = rep_of l b"
           using cc_\<alpha> Function congruence_closure.cases unfolding cc_\<alpha>_def cc
-          by (metis are_congruent_Function assms(2) cc cc_list_invar_def congruence_closure.select_convs(1))
+          by (metis (no_types, lifting) are_congruent_Function assms(2) cc cc_list_invar_def congruence_closure.select_convs(1) mem_Collect_eq)
         then have "rep_of l x21 < nr_vars cc \<and> rep_of l x22 < nr_vars cc \<and> b < nr_vars cc \<and>
                       cc_list cc ! rep_of l x21 = rep_of l x21 
 \<and> cc_list cc ! rep_of l x22 = rep_of l x22 
@@ -240,9 +238,10 @@ cc: "cc = \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_for
         then have "F (rep_of l x21) (rep_of l x22) \<approx> rep_of l b \<in> representativeE cc"  
           unfolding representativeE_def 
           by (simp add: cc)
-        have "Congruence_Closure (representativeE cc) (rep_of l x21 \<approx> x21)" "Congruence_Closure (representativeE cc) (rep_of l x22 \<approx> x22)" 
+        have "(rep_of l x21 \<approx> x21) \<in> Congruence_Closure (representativeE cc)" 
+"(rep_of l x22 \<approx> x22) \<in> Congruence_Closure (representativeE cc)" 
           by (metis Function a_eq_rep_of_a_in_CC(2) assms(1) cc congruence_closure.select_convs(1) valid_vars.simps(2))+
-        then have "Congruence_Closure (representativeE cc) (F x21 x22 \<approx> rep_of l b)" 
+        then have "(F x21 x22 \<approx> rep_of l b) \<in> Congruence_Closure (representativeE cc)" 
           by (metis \<open>F rep_of l x21 rep_of l x22 \<approx> rep_of l b \<in> representativeE cc\<close> base transitive3)
         with Function show ?thesis 
           by (metis \<open>rep_of l x23 = rep_of l b\<close> a_eq_rep_of_a_in_CC(2) assms(1) cc congruence_closure.select_convs(1) transitive2 valid_vars.simps(2))

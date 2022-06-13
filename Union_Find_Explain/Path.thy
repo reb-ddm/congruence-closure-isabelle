@@ -406,7 +406,6 @@ next
   qed
 qed
 
-
 lemma nodes_path_lt_length_l:
   assumes "path l x p y"
     and "i < length p"
