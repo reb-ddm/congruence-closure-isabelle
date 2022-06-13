@@ -1,5 +1,5 @@
 chapter \<open>Union-Find Data-Structure with Explain Operation\<close>
-theory Explain
+theory Explain_Definition
   imports 
     "Separation_Logic_Imperative_HOL.Union_Find" 
     "HOL-Library.Sublist"

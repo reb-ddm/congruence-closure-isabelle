@@ -1,6 +1,6 @@
 section \<open>Path\<close>
 theory Path
-  imports Explain 
+  imports Explain_Definition
 begin 
 
 text \<open>A path is defined from a node to a descendant, 

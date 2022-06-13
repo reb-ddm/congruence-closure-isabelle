@@ -1,8 +1,7 @@
-theory CC_Abstraction
-  imports CC_Proofs
-begin
-
 section \<open>Correctness of merge and are_congruent: \<close>
+theory CC_Abstraction
+  imports CC_Helper_Functions
+begin
 
 subsection \<open>Abstract formalisation of congruence closure\<close>
 
@@ -236,7 +235,7 @@ lemma pending_set_Constant:
   using assms apply(induction rule: pending_set.induct)
   by auto
 
-subsection \<open>Invariants\<close>
+subsection \<open>Invariants  definitions\<close>
 text \<open>As described in the paper\<close>
 
 text \<open>For cc_list_invar we use ufa_invar\<close>

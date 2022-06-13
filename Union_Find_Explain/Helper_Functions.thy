@@ -1,5 +1,5 @@
 section \<open>Correctness proofs for the helper functions\<close>
-theory Proofs
+theory Helper_Functions
   imports Path 
 begin 
 

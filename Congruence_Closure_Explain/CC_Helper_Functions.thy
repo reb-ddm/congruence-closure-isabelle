@@ -1,5 +1,5 @@
-theory CC_Proofs
-  imports Congruence_Closure
+theory CC_Helper_Functions
+  imports CC_Definition
 begin
 
 subsection \<open>Termination and correctness of \<open>add_edge\<close>\<close>

@@ -2,7 +2,6 @@ theory CC_Invars
   imports CC_Abstraction
 begin
 
-
 subsection \<open>The invariants remain invariant after the loop of propagate\<close>
 
 paragraph \<open>Invariants after a step in the loop\<close>
@@ -4243,7 +4242,7 @@ next
             pf_labels = pfl, input = insert (F a\<^sub>1 a\<^sub>2 \<approx> a) ip\<rparr>"
       using cc_invar_merge2 "2.prems" by blast
     with True 2 propagate_domain show ?thesis 
-      using Congruence_Closure.merge.simps(2) cc_invar_propagate by presburger
+      using merge.simps(2) cc_invar_propagate by presburger
   next
     case False
     then have "cc_invar \<lparr>cc_list = l, 
@@ -4311,7 +4310,7 @@ proof(rule conjI)+
     by simp
   show "pending_invar (initial_cc n)" unfolding pending_invar_def
     by simp
-  show "lookup_invar2 (initial_cc n)" unfolding lookup_invar2_defs0
+  show "lookup_invar2 (initial_cc n)" unfolding lookup_invar2_def
     by simp
   show "use_list_invar2 (initial_cc n)" unfolding use_list_invar2_def 
     by auto

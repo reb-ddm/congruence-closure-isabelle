@@ -1,7 +1,7 @@
 chapter \<open>Congruence Closure Algorithm with Explain Operation\<close>
-theory Congruence_Closure
+theory CC_Definition
   imports 
-    "../Union_Find_Explain/Explain_Proofs2" 
+    "../Union_Find_Explain/Explain_Correctness" 
 begin
 
 section \<open>Definitions\<close>
