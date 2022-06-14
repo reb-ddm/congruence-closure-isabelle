@@ -604,4 +604,25 @@ proof-
     using \<open>p = butlast p @ [x]\<close> by auto
 qed
 
+lemma path_longer:
+  assumes "ufa_invar l" "path l b p1 a" "path l c p2 a" "length p1 > length p2"
+  shows "path l b (take (length p1 - length p2 + 1) p1) c"
+(is "path l b ?p3 c")
+proof-
+  let ?p4 = "(drop (length p1 - length p2 + 1) p1)"
+  have "path l b (?p3 @ ?p4) a" 
+    by (simp add: assms(2))
+  moreover have "?p3 \<noteq> []" 
+    by (metis Suc_eq_plus1_left Zero_not_Suc ab_semigroup_add_class.add.commute assms(4) len_greater_imp_nonempty take_eq_Nil)
+  ultimately have path_split: "path l b ?p3 (last ?p3)"  "path l (last ?p3) (last ?p3 # ?p4) a"
+    using path_divide1 by blast+
+  have "length (last ?p3 # ?p4) = length p2" 
+    by (metis (no_types, lifting) One_nat_def ab_semigroup_add_class.add.commute add_diff_cancel_right add_diff_inverse_nat assms(3) assms(4) length_drop length_greater_0_conv less_Suc_eq list.discI list.size(4) not_less_eq path.simps)
+  then have "(last ?p3) = c" 
+    using path_unique_if_length_eq assms path_split by blast
+  then show ?thesis 
+    using path_split(1) by blast
+qed
+
+
 end
