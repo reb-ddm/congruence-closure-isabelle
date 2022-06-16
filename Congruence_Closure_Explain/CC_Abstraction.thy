@@ -371,7 +371,7 @@ text \<open>All equations in the lookup table are also present in both relevant 
 
 abbreviation contains_similar_equation
   where
-    "contains_similar_equation cc a' c\<^sub>1 c\<^sub>2 c u_a
+    "contains_similar_equation cc a' c\<^sub>1 c\<^sub>2 c 
 \<equiv>
 (\<exists> b\<^sub>1 b\<^sub>2 b.
     (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set ((use_list cc) ! a')
@@ -381,41 +381,16 @@ abbreviation contains_similar_equation
   )
 "
 
-definition lookup_invar2' :: "congruence_closure \<Rightarrow> equation list \<Rightarrow> bool"
+definition lookup_invar2 :: "congruence_closure \<Rightarrow> bool"
   where
-    "lookup_invar2' cc u_a = (\<forall> a' b' c c\<^sub>1 c\<^sub>2.
+    "lookup_invar2 cc  = (\<forall> a' b' c c\<^sub>1 c\<^sub>2.
 a' < nr_vars cc \<longrightarrow> b' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a' \<longrightarrow> (cc_list cc) ! b' = b' 
 \<longrightarrow> (lookup cc) ! a' ! b' = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)
 \<longrightarrow>
-  contains_similar_equation cc a' c\<^sub>1 c\<^sub>2 c u_a
+  contains_similar_equation cc a' c\<^sub>1 c\<^sub>2 c
  \<and>
-  contains_similar_equation cc b' c\<^sub>1 c\<^sub>2 c u_a
+  contains_similar_equation cc b' c\<^sub>1 c\<^sub>2 c
 )"
-
-abbreviation lookup_invar2 :: "congruence_closure \<Rightarrow> bool"
-  where
-    "lookup_invar2 cc \<equiv> lookup_invar2' cc []"
-
-lemma lookup_invar2_def:
-  "lookup_invar2 cc = (\<forall> a' b' c c\<^sub>1 c\<^sub>2.
-a' < nr_vars cc \<longrightarrow> b' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a' \<longrightarrow> (cc_list cc) ! b' = b' 
-\<longrightarrow> (lookup cc) ! a' ! b' = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)
-\<longrightarrow>
-  (\<exists> b\<^sub>1 b\<^sub>2 b.
-    (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set ((use_list cc) ! a')
-      \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
-      \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2
-      \<and> (b \<approx> c) \<in> Congruence_Closure (representatives_set (cc_list cc) \<union> pending_set (pending cc)) 
-  )
- \<and>
-  (\<exists> b\<^sub>1 b\<^sub>2 b.
-    (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set ((use_list cc) ! b')
-      \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
-      \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2
-      \<and> (b \<approx> c) \<in> Congruence_Closure (representatives_set (cc_list cc) \<union> pending_set (pending cc)) 
-  )
-)" unfolding lookup_invar2'_def 
-  by auto
 
 text \<open>All equations in use_list are also in the lookup table.\<close>
 definition use_list_invar2' :: "congruence_closure \<Rightarrow> equation list \<Rightarrow> bool"
@@ -452,20 +427,28 @@ a' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a'
 )" unfolding use_list_invar2'_def
   by simp
 
-text \<open>Invariant for the whole data structure.\<close>
-abbreviation cc_invar' 
+text \<open>Invariants needed for the correctness proof of cc_explain\<close>
+
+abbreviation valid_labels_invar :: "pending_equation option list \<Rightarrow> nat list \<Rightarrow> bool"
   where
-    "cc_invar' cc u_a \<equiv> ((((((((cc_list_invar cc \<and> use_list_invar cc) \<and> lookup_invar cc) 
-        \<and> proof_forest_invar cc) \<and> inv2 cc) \<and> inv_same_rep_classes cc) 
-        \<and> inv_same_length cc (nr_vars cc)) \<and> pending_invar cc) \<and> lookup_invar2' cc u_a) 
-        \<and> use_list_invar2' cc u_a"
+"valid_labels_invar pfl pf \<equiv> (\<forall> n < length pf.
+    pf ! n \<noteq> n
+    \<longrightarrow> (\<exists> a a\<^sub>1 a\<^sub>2 b b\<^sub>1 b\<^sub>2 . (pfl ! n = Some (One (a \<approx> b)) \<or> 
+          pfl ! n = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> a) (F b\<^sub>1 b\<^sub>2 \<approx> b)))
+          \<and> (a = pf ! n \<and> b = n \<or> a = n \<and> b = pf ! n)
+        )
+)"
+
+definition pf_labels_invar :: "congruence_closure \<Rightarrow> bool"
+  where
+"pf_labels_invar cc \<equiv> valid_labels_invar (pf_labels cc) (proof_forest cc)"
 
 abbreviation cc_invar :: "congruence_closure \<Rightarrow> bool"
   where
-    "cc_invar cc \<equiv> ((((((((cc_list_invar cc \<and> use_list_invar cc) \<and> lookup_invar cc) 
+    "cc_invar cc \<equiv> (((((((((cc_list_invar cc \<and> use_list_invar cc) \<and> lookup_invar cc) 
         \<and> proof_forest_invar cc) \<and> inv2 cc) \<and> inv_same_rep_classes cc) 
         \<and> inv_same_length cc (nr_vars cc)) \<and> pending_invar cc) \<and> lookup_invar2 cc) 
-        \<and> use_list_invar2 cc"
+        \<and> use_list_invar2 cc) \<and> pf_labels_invar cc"
 
 text \<open>
 (1) Prove that it works for the "mini_step".

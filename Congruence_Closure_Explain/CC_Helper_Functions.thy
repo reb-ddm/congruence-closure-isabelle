@@ -58,6 +58,22 @@ proof-
     by blast
 qed
 
+lemma rep_of_fun_upd_aux1: 
+  assumes "ufa_invar l" "path l x p a" "x \<noteq> a"
+  shows "rep_of (l[a := b]) x = rep_of l x"
+proof-
+  obtain pR where pR: "path l (rep_of l x) pR x"
+    using assms(1) assms(2) path_nodes_lt_length_l path_to_root_correct by blast
+  then have "path l (rep_of l x) (pR @ tl p) a"
+    using assms(2) paths_iff by blast 
+  then have "a \<notin> set pR" 
+    by (metis pR assms(1,3) hd_rev in_set_butlast_appendI not_hd_in_tl path_last path_remove_right rev_butlast_is_tl_rev set_rev)
+  then show ?thesis 
+    using assms(1) pR rep_of_fun_upd by auto
+qed
+
+
+
 lemma ufa_invar_fun_upd: 
   assumes "ufa_invar l" "path l (rep_of l y) py y" "i \<notin> set py"
   shows "ufa_invar (CONST list_update l i y)"
@@ -157,6 +173,27 @@ proof-
     by (metis in_set_tlD path_fun_upd path_to_rep_y)
   from path1 path2 path3 assms path_rep_eq show ?thesis 
     by (metis \<open>rep_of l (rep_of l x) = rep_of l x\<close> rep_of_fun_upd' ufa_invar_fun_upd')
+qed
+
+lemma rep_of_fun_upd_aux2: 
+  assumes "ufa_invar l" "path l a p x" 
+"b < length l" "rep_of l a \<noteq> rep_of l b"
+shows "rep_of (l[a := b]) x = rep_of l b"
+  proof-
+  obtain pR where "path l (rep_of l b) pR b"
+    using assms(1,3) path_to_root_correct by blast
+  then have pR: "path (l[a := b]) (rep_of l b) pR b"
+    by (metis (no_types, lifting) assms(1,4) in_set_conv_nth length_list_update list.sel(3) nodes_path_rep_of(2) path.simps path_fun_upd)
+  have "a \<notin> set (tl p)" 
+    by (metis assms(1,2) distinct.simps(1) distinct_hd_tl hd_path list.collapse path_remove_left)
+  then have p: "path (l[a := b]) a p x"
+    using assms(2) path_fun_upd by blast
+  have "rep_of l b = rep_of (l[a := b]) b" 
+    using assms rep_of_fun_upd' by auto
+  have "ufa_invar (l[a := b])"using ufa_invar_fun_upd 
+    by (simp add: assms(1) assms(3) assms(4) ufa_invar_fun_upd')
+  then show ?thesis  using p pR path_rep_eq 
+    by (metis \<open>rep_of l b = rep_of (l[a := b]) b\<close> assms(2) assms(4) nth_list_update_eq path.step path_nodes_lt_length_l)
 qed
 
 lemma add_edge_domain: 
