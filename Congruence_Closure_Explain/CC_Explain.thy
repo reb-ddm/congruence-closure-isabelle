@@ -57,8 +57,8 @@ lemma explain_along_path_simp2:
      ((proof_forest cc) ! rep_of l a) c"
     "explain_along_path_dom (cc, l, a, c)"
   shows "explain_along_path cc l a c = ({a'} \<union> output, new_l, pend)"
- using explain_along_path.psimps unfolding Let_def
-    by (metis (no_types, lifting) assms case_prod_conv option.sel pending_equation.simps(5))
+  using explain_along_path.psimps unfolding Let_def
+  by (metis (no_types, lifting) assms case_prod_conv option.sel pending_equation.simps(5))
 
 
 lemma explain_along_path_simp3:
@@ -70,7 +70,7 @@ lemma explain_along_path_simp3:
   shows "explain_along_path cc l a c = ({(F a\<^sub>1 a\<^sub>2 \<approx> a'), (F b\<^sub>1 b\<^sub>2 \<approx> b')} \<union> output, 
          new_l, [(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)] @ pend)"
   using explain_along_path.psimps unfolding Let_def
-    by (metis (no_types, lifting) assms case_prod_conv option.sel pending_equation.simps(6) equation.simps(6))
+  by (metis (no_types, lifting) assms case_prod_conv option.sel pending_equation.simps(6) equation.simps(6))
 
 function cc_explain_aux :: "congruence_closure \<Rightarrow> nat list \<Rightarrow> (nat * nat) list \<Rightarrow> equation set"
   where
@@ -89,7 +89,80 @@ else cc_explain_aux cc l xs)
 
 fun cc_explain :: "congruence_closure \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> equation set"
   where
-"cc_explain cc a b = cc_explain_aux cc [0..<nr_vars cc] [(a, b)]"
+    "cc_explain cc a b = cc_explain_aux cc [0..<nr_vars cc] [(a, b)]"
+
+subsection \<open>Invariant for the additional union find in cc_explain\<close>
+
+definition explain_list_invar :: "nat list \<Rightarrow> nat list \<Rightarrow> bool"
+  where
+    "explain_list_invar l pf \<equiv> (\<forall> i < length l. 
+    (\<exists> p . path pf (l ! i) p i)) \<and> 
+(length l = length pf)"
+
+lemma explain_list_invar_paths: 
+  "path l a p b \<Longrightarrow> explain_list_invar l pf \<Longrightarrow> (\<exists> p2. path pf a p2 b)"
+proof(induction rule: path.induct)
+  case (single n l)
+  then show ?case 
+    by (metis explain_list_invar_def path.single)
+next
+  case (step r l u p v)
+  then show ?case unfolding explain_list_invar_def 
+    by (meson path_concat2 path_nodes_lt_length_l)
+qed
+
+lemma explain_list_invar_initial:
+  "explain_list_invar [0..<n] [0..<n]"
+  unfolding explain_list_invar_def 
+  by (metis path.step single ufa_init_invar ufa_invarD(2))
+
+lemma explain_list_invar_union:
+  assumes "explain_list_invar l pf" "a < length l" "ufa_invar l" "ufa_invar pf"
+  shows "explain_list_invar (ufa_union l a (pf ! rep_of l a)) pf"
+  unfolding explain_list_invar_def 
+proof(standard, standard, standard)
+  fix i
+  assume prems: "i < length (ufa_union l a (pf ! rep_of l a))"
+  show "\<exists>p. path pf (ufa_union l a (pf ! rep_of l a) ! i) p i"
+  proof(cases "i = rep_of l a")
+    case True
+    have "rep_of l a < length l" 
+      using True prems(1) by auto
+    with True have *: "ufa_union l a (pf ! rep_of l a) ! i = rep_of l (pf ! rep_of l a)" 
+      by simp
+    then obtain pR where  "path l (rep_of l (pf ! rep_of l a)) pR (pf ! rep_of l a)"
+      by (metis True assms(1) assms(3) assms(4) explain_list_invar_def length_list_update path_to_root_correct prems ufa_invarD(2))
+    then obtain pR2 where pR2: "path pf (rep_of l (pf ! rep_of l a)) pR2 (pf ! rep_of l a)"
+      by (meson assms(1) explain_list_invar_paths)
+    then show ?thesis proof(cases "(pf ! rep_of l a) = rep_of l a")
+      case True
+      then show ?thesis using pR2 * 
+        by (metis \<open>rep_of l a < length l\<close> assms(1) assms(3) explain_list_invar_paths list_update_id path_root path_to_root_correct prems rep_of_idx rep_of_min)
+    next
+      case False
+      have "path pf (pf ! rep_of l a) [pf ! rep_of l a, rep_of l a] (rep_of l a)"
+        using False True assms(1) explain_list_invar_def pR2 path.step path_nodes_lt_length_l prems single by auto
+      then have "path pf (rep_of l (pf ! rep_of l a)) (pR2 @ [rep_of l a]) (rep_of l a)"
+        by (simp add: False pR2 path_nodes_lt_length_l path_snoc)
+      then show ?thesis using assms unfolding explain_list_invar_def 
+        using "*" True by auto
+    qed
+
+  next
+    case False
+    then show ?thesis using assms(1) prems unfolding explain_list_invar_def by simp
+  qed
+next 
+  show "length (ufa_union l a (pf ! rep_of l a)) = length pf" 
+    using assms(1) unfolding explain_list_invar_def by simp
+qed
+
+lemma explain_list_invar_explain_along_path:
+  assumes "explain_list_invar l pf" "a < length l" "ufa_invar l" "ufa_invar pf"
+  shows "explain_list_invar (
+fst (snd (explain_along_path \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>
+l a c))) pf"
+  sorry
 
 text \<open>TODO: To show about pfl: left a = i and right a = pf ! i or opposite
 also it's never None if pf ! i ~= i.\<close>
@@ -109,7 +182,7 @@ lemma pending_set_explain_Cons:
 lemma explain_along_path_correctness:
   assumes "explain_along_path_dom (\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, 
 proof_forest = pf, pf_labels = pfl, input = ip\<rparr>, l, a, c)"
-(is "explain_along_path_dom (?cc, l, a, c)")
+    (is "explain_along_path_dom (?cc, l, a, c)")
     "ufa_invar pf"
     "a < length pf"
     "c < length pf"
@@ -117,8 +190,8 @@ proof_forest = pf, pf_labels = pfl, input = ip\<rparr>, l, a, c)"
     "length l = length pf"
     "explain_along_path \<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, 
 proof_forest = pf, pf_labels = pfl, input = ip\<rparr> l a c = (output, new_l, pend)"
-"path pf c pAC a"
-"pf_labels_invar \<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, 
+    "path pf c pAC a"
+    "pf_labels_invar \<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, 
 proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
   shows "(a \<approx> c) \<in> Congruence_Closure (representatives_set l \<union> output 
 \<union> pending_set_explain pend)"
@@ -144,7 +217,7 @@ proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     then have 4: "(a \<approx> (rep_of l a)) \<in> Congruence_Closure 
 (representatives_set l \<union> output \<union> pending_set_explain pend)"
       using Congruence_Closure_split_rule by auto
-    \<comment> \<open>If \<open>(pf ! rep_of l a) \<approx> c\<close> is in the congruence closure of the recursive call, 
+        \<comment> \<open>If \<open>(pf ! rep_of l a) \<approx> c\<close> is in the congruence closure of the recursive call, 
         then it will also be in the congruence closure of the output.\<close>
     let ?union = "(ufa_union l a (pf ! rep_of l a))"
     have cc_output: "((pf ! rep_of l a) \<approx> c) \<in>
@@ -202,15 +275,15 @@ proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     qed
     obtain pRAC where pRAC: "path pf c pRAC (rep_of l a)"sorry
     then have pRAC': "path pf c (butlast pRAC) (pf ! rep_of l a)"
-        by (metis "1.prems"(2) "1.prems"(4) "1.prems"(5) False path_butlast rep_of_idem)
-      from pRAC have "pf ! rep_of l a \<noteq> rep_of l a" using "1.prems"(7)
-        by (metis "1.prems"(2) "1.prems"(4) "1.prems"(5) False path_root rep_of_min rep_of_refl)
-      then obtain aa a\<^sub>1 a\<^sub>2 bb b\<^sub>1 b\<^sub>2 where valid_eq: "
+      by (metis "1.prems"(2) "1.prems"(4) "1.prems"(5) False path_butlast rep_of_idem)
+    from pRAC have "pf ! rep_of l a \<noteq> rep_of l a" using "1.prems"(7)
+      by (metis "1.prems"(2) "1.prems"(4) "1.prems"(5) False path_root rep_of_min rep_of_refl)
+    then obtain aa a\<^sub>1 a\<^sub>2 bb b\<^sub>1 b\<^sub>2 where valid_eq: "
 (pfl ! rep_of l a = Some (One (aa \<approx> bb)) \<or> 
           pfl ! rep_of l a = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb)))
           \<and> (aa = pf ! rep_of l a \<and> bb = rep_of l a \<or> aa = rep_of l a \<and> bb = pf ! rep_of l a)
         "using "1.prems" unfolding pf_labels_invar_def congruence_closure.select_convs(*3*) 
-        by (metis rep_of_less_length_l)
+      by (metis rep_of_less_length_l)
     show ?thesis proof(cases "the (pfl ! rep_of l a)")
       case (One a')
       from valid_eq have *: "pfl ! rep_of l a = Some (One a')" 
