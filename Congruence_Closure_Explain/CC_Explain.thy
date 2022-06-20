@@ -60,7 +60,6 @@ lemma explain_along_path_simp2:
   using explain_along_path.psimps unfolding Let_def
   by (metis (no_types, lifting) assms case_prod_conv option.sel pending_equation.simps(5))
 
-
 lemma explain_along_path_simp3:
   assumes "rep_of l a \<noteq> rep_of l c"
     "(pf_labels cc) ! rep_of l a = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> a') (F b\<^sub>1 b\<^sub>2 \<approx> b'))"
@@ -303,10 +302,6 @@ proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
   qed
 qed
 
-
-text \<open>TODO: To show about pfl: left a = i and right a = pf ! i or opposite
-also it's never None if pf ! i ~= i.\<close>
-
 subsection \<open>Correctness of \<open>explain_along_path\<close>\<close>
 
 text \<open>This function is needed in order to interpret the pending list of the explain
@@ -348,7 +343,6 @@ proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
       using Congruence_Closure_split_rule by auto
   next
     case False
-
     let ?cc = "\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl,
          input = ip\<rparr>"
     let ?union = "(l[rep_of l a := (pf ! rep_of l a)])"
@@ -499,8 +493,64 @@ Congruence_Closure (representatives_set l \<union> output \<union> pending_set_e
   qed
 qed
 
+subsection \<open>Invariants for the correctness of explain\<close>
 
-subsection \<open>Correctness of explain\<close>
+text \<open>We introduce new invariant of the congruence_closure in order to prove the correctness
+and validity of explain.\<close> 
+
+text \<open>These invars simply state that all the equations in the proof forest, the lookup table, 
+the use list and the pending list are in input.\<close>
+
+fun pending_eq_in_set :: "pending_equation \<Rightarrow> equation set \<Rightarrow> bool"
+  where
+ "pending_eq_in_set (One a) ip = (a \<in> ip)"
+| "pending_eq_in_set (Two a b) ip = (a \<in> ip \<and> b \<in> ip)"
+
+abbreviation pf_labels_validity_invar :: "pending_equation option list \<Rightarrow> equation set \<Rightarrow> bool"
+  where
+"pf_labels_validity_invar pfl ip \<equiv> (\<forall> eq \<in> set pfl . 
+    eq \<noteq> None \<longrightarrow> pending_eq_in_set (the eq) ip)"
+
+abbreviation lookup_validity_invar :: "equation option list list \<Rightarrow> equation set \<Rightarrow> bool"
+  where
+"lookup_validity_invar t ip \<equiv> (\<forall> row \<in> set t . ( \<forall> eq \<in> set row.
+    eq \<noteq> None \<longrightarrow> (the eq) \<in> ip
+  )
+)"
+
+abbreviation use_list_validity_invar :: "equation list list \<Rightarrow> equation set \<Rightarrow> bool"
+  where
+"use_list_validity_invar u ip \<equiv> (\<forall> row \<in> set u . ( \<forall> eq \<in> set row.
+    eq \<in> ip
+  )
+)"
+
+abbreviation pending_validity_invar :: "pending_equation list \<Rightarrow> equation set \<Rightarrow> bool"
+  where
+"pending_validity_invar pe ip \<equiv> (\<forall> eq \<in> set pe.
+    pending_eq_in_set eq ip)"
+
+definition validity_invar :: "congruence_closure \<Rightarrow> bool"
+  where
+"validity_invar cc = (pf_labels_validity_invar (pf_labels cc) (input cc)
+      \<and> (lookup_validity_invar (lookup cc) (input cc) 
+      \<and> (use_list_validity_invar (use_list cc) (input cc)
+      \<and> pending_validity_invar (pending cc) (input cc))
+  )
+)"
+
+text \<open>This invar shows the correctness of the explain function.
+      We can't directly show that it's correct, because the correctness of it
+      depends on how exactly the proof forest was built, aka in a way that the 
+      algorithms can terminate and the proofs of two different edges do not 
+      depend on each other.\<close>
+
+definition cc_explain_correctness_invar :: "congruence_closure \<Rightarrow> nat list \<Rightarrow> (nat * nat) list \<Rightarrow> bool"
+  where
+"cc_explain_correctness_invar cc l eqs \<equiv> (\<forall> (a, b) \<in> set eqs .
+  (a \<approx> b) \<in> Congruence_Closure (cc_explain_aux cc l eqs \<union> representatives_set l)
+)
+"
 
 lemma cc_explain_aux_correct:
   assumes "are_congruent cc (a \<approx> b)" "cc_invar cc"
