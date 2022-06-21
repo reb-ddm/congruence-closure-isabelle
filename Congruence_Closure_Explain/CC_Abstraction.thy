@@ -429,19 +429,20 @@ a' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a'
 
 text \<open>Invariants needed for the correctness proof of cc_explain\<close>
 
-abbreviation valid_labels_invar :: "pending_equation option list \<Rightarrow> nat list \<Rightarrow> bool"
+abbreviation valid_labels_invar :: "pending_equation option list \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> bool"
   where
-"valid_labels_invar pfl pf \<equiv> (\<forall> n < length pf.
+"valid_labels_invar pfl pf l \<equiv> (\<forall> n < length pf.
     pf ! n \<noteq> n
     \<longrightarrow> (\<exists> a a\<^sub>1 a\<^sub>2 b b\<^sub>1 b\<^sub>2 . (pfl ! n = Some (One (a \<approx> b)) \<or> 
           pfl ! n = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> a) (F b\<^sub>1 b\<^sub>2 \<approx> b)))
           \<and> (a = pf ! n \<and> b = n \<or> a = n \<and> b = pf ! n)
+          \<and> valid_vars_pending (the (pfl ! n)) l
         )
 )"
 
 definition pf_labels_invar :: "congruence_closure \<Rightarrow> bool"
   where
-"pf_labels_invar cc \<equiv> valid_labels_invar (pf_labels cc) (proof_forest cc)"
+"pf_labels_invar cc \<equiv> valid_labels_invar (pf_labels cc) (proof_forest cc) (cc_list cc)"
 
 abbreviation cc_invar :: "congruence_closure \<Rightarrow> bool"
   where

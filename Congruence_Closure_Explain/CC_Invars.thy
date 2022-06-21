@@ -1944,6 +1944,15 @@ lemma proof_forest_loop:
       arbitrary: l u t pe pf pfl ip rule: propagate_loop.induct)
   by auto
 
+lemma cc_list_loop: 
+"cc_list (propagate_loop rep_b u_a 
+\<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>)
+= l"
+  apply(induction rep_b u_a 
+      "\<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
+      arbitrary: l u t pe pf pfl ip rule: propagate_loop.induct)
+  by auto
+
 subsection \<open>The invariants remain invariant after propagate\<close>
 
 paragraph \<open>Invariants before entering the propagate_loop.\<close>
@@ -2798,17 +2807,18 @@ proof(standard,standard,standard,standard)
 qed
 
 lemma valid_labels_invar_fun_upd: 
-  assumes "valid_labels_invar pfl pf"
+  assumes "valid_labels_invar pfl pf l"
     "(\<exists> c\<^sub>1 c\<^sub>2 c d\<^sub>1 d\<^sub>2 d . (eq = (One (c \<approx> d)) \<or>
 eq = (Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d)))
 \<and> ((b = c \<and> a = d) \<or> (a = c \<and> b = d))
 \<and> c < length l \<and> d < length l
+\<and> valid_vars_pending eq l
 )"
     "ufa_invar pf"
     "length l = length pf"
     "length l = length pfl"
     "rep_of pf a \<noteq> rep_of pf b"
-  shows "valid_labels_invar (CONST list_update pfl a (Some eq)) (pf[a := b])"
+  shows "valid_labels_invar (CONST list_update pfl a (Some eq)) (pf[a := b]) l"
 proof(standard, standard, standard)
   fix n
   assume prems: "n < length (pf[a := b])" "pf[a := b] ! n \<noteq> n"
@@ -2817,18 +2827,50 @@ proof(standard, standard, standard)
           \<and> (aa = a \<and> bb = b \<or> bb = a \<and> aa = b))
 \<and> aa < length l \<and> bb < length l"
     using assms by auto
-  with assms(2,4,5) have "(pfl[a := Some eq] ! a = Some (One (aa \<approx> bb)) \<or>
+  have "the (pfl[a := Some eq] ! a) = eq" 
+    using assms(2) assms(5) by force
+  with assms(2,4,5) valid_eq have "(pfl[a := Some eq] ! a = Some (One (aa \<approx> bb)) \<or>
         pfl[a := Some eq] ! a = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))) \<and>
-(aa = a \<and> bb = pf[a := b] ! a \<or> bb = a \<and> aa = pf[a := b] ! a)"
-    by auto  
+(aa = a \<and> bb = pf[a := b] ! a \<or> bb = a \<and> aa = pf[a := b] ! a)
+\<and> (valid_vars_pending (the (pfl[a := Some eq] ! a)) l)"
+    by auto
   with assms prems show "\<exists>aa a\<^sub>1 a\<^sub>2 ba b\<^sub>1 b\<^sub>2.
             (pfl[a := Some eq] ! n = Some (One aa \<approx> ba) \<or>
              pfl[a := Some eq] ! n = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> ba))) \<and>
-            (aa = pf[a := b] ! n \<and> ba = n \<or> aa = n \<and> ba = pf[a := b] ! n)" 
+            (aa = pf[a := b] ! n \<and> ba = n \<or> aa = n \<and> ba = pf[a := b] ! n) \<and>
+            valid_vars_pending (the (pfl[a := Some eq] ! n)) l" 
     apply(cases "n = a")
-     apply blast 
-    by (metis length_list_update nth_list_update')
+     apply blast
+    by force
 qed  
+
+lemma valid_labels_invar_ufa_union: 
+  assumes "valid_labels_invar pfl pf l"
+    "ufa_invar l" "a < length l" "b < length l"
+  shows "valid_labels_invar pfl pf (ufa_union l a b)"
+proof(standard, standard, standard)
+  fix n
+  assume prems: "n < length pf" "pf ! n \<noteq> n"
+  then obtain a\<^sub>1 a\<^sub>2 b\<^sub>1 b\<^sub>2 aa bb where valid_eq: "((pfl ! n) = Some (One (aa \<approx> bb)) \<or> 
+          (pfl ! n) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))
+          \<and> (aa = pf ! n \<and> bb = n \<or> aa = n \<and> bb = pf ! n))
+\<and> valid_vars_pending (the (pfl ! n)) l"
+    using assms by blast
+  then show "\<exists>aa a\<^sub>1 a\<^sub>2 ba b\<^sub>1 b\<^sub>2.
+            (pfl ! n = Some (One aa \<approx> ba) \<or> pfl ! n = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> ba))) \<and>
+            (aa = pf ! n \<and> ba = n \<or> aa = n \<and> ba = pf ! n) \<and>
+            valid_vars_pending (the (pfl ! n)) (ufa_union l a b)" 
+  proof(cases "(pfl ! n) = Some (One (aa \<approx> bb))")
+    case True
+    then show ?thesis using valid_eq prems 
+      using assms(1) by force
+  next
+    case False
+    then show ?thesis using valid_eq prems 
+      using assms valid_vars_pending_cases length_list_update rep_of_ufa_union_invar 
+      by force
+  qed
+qed
 
 lemma add_label_fun_upd:
   assumes "ufa_invar pf"
@@ -2870,17 +2912,18 @@ qed
 
 
 lemma valid_labels_invar_mini_step:
-  assumes "valid_labels_invar pfl pf"
+  assumes "valid_labels_invar pfl pf l"
     "(\<exists> c\<^sub>1 c\<^sub>2 c d\<^sub>1 d\<^sub>2 d . (eq = (One (c \<approx> d)) \<or>
 eq = (Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d)))
 \<and> ((b = c \<and> a = d) \<or> (a = c \<and> b = d))
 \<and> c < length l \<and> d < length l
+\<and> valid_vars_pending eq l
 )"
     "ufa_invar pf"
     "length l = length pf"
     "length l = length pfl"
     "rep_of pf a \<noteq> rep_of pf b"
-  shows "valid_labels_invar (add_label pfl pf a eq) (add_edge pf a b)"
+  shows "valid_labels_invar (add_label pfl pf a eq) (add_edge pf a b) l"
 proof-
   have "a < length pf" "b < length pf" 
     using assms(2,4) by auto 
@@ -2888,7 +2931,7 @@ proof-
     using add_edge_domain add_label_domain assms by blast+
   show ?thesis
     using domains assms 
-  proof(induction arbitrary: pfl eq rule: add_edge.pinduct)
+  proof(induction arbitrary: pfl eq l rule: add_edge.pinduct)
     case (1 pf e e')
     then show ?case proof(cases "pf ! e = e")
       case True
@@ -2896,12 +2939,13 @@ proof-
         "add_edge pf e e' = pf[e := e']" 
         using add_label.psimps add_edge.psimps by metis+ 
       then show ?thesis 
-        using valid_labels_invar_fun_upd[OF "1.prems"(2-7)] by simp
+        using valid_labels_invar_fun_upd[OF "1.prems"(2-7)] 
+        by simp
     next
       case False
       then have "add_label pfl pf e eq = 
 add_label (pfl[e := Some eq]) pf (pf ! e) (the (pfl ! e))"
-        using "1.prems" add_label.psimps add_edge.psimps by metis
+        using "1.prems" add_label.psimps add_edge.psimps by presburger
       obtain pER where "path pf (rep_of pf e) pER e" 
         using "1.prems" path_to_root_correct by metis
       then have pER:  "path pf (rep_of pf e) (butlast pER) (pf ! e)" 
@@ -2914,14 +2958,15 @@ add_label (pfl[e := Some eq]) pf (pf ! e) (the (pfl ! e))"
 add_label (pfl[e := Some eq]) (pf[e := e']) (pf ! e) (the (pfl ! e))"
         using "1.prems" \<open>path pf (rep_of pf e) pER e\<close> add_label_fun_upd e_e'
         by (simp add: rep_of_idx ufa_invarD(2))
-      have 2: "valid_labels_invar (pfl[e := Some eq]) (pf[e := e'])"
+      have 2: "valid_labels_invar (pfl[e := Some eq]) (pf[e := e']) l"
         using valid_labels_invar_fun_upd[OF "1.prems"(2-7)] by simp
       have 3: "add_label_dom (pfl[e := Some eq], pf[e := e'], pf ! e, (the (pfl ! e)))"
         using "1.prems" add_label_domain ufa_invarD(2) ufa_invar_fun_upd' by auto
       let ?eq = "the (pfl ! e)"
       have 4: "\<exists>c\<^sub>1 c\<^sub>2 c d\<^sub>1 d\<^sub>2 d.
        (?eq = One c \<approx> d \<or> ?eq = Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d)) \<and>
-       (e = c \<and> pf ! e = d \<or> pf ! e = c \<and> e = d) \<and> c < length l \<and> d < length l " 
+       (e = c \<and> pf ! e = d \<or> pf ! e = c \<and> e = d) \<and> c < length l \<and> d < length l 
+\<and> valid_vars_pending ?eq l" 
         using "1.prems" False ufa_invarD(2) by auto
       then have "path pf (pf ! e) [pf ! e, e] e" 
         by (simp add: "1.prems"(4) False path.step single ufa_invarD(2) e_e')
@@ -2934,11 +2979,12 @@ add_label (pfl[e := Some eq]) (pf[e := e']) (pf ! e) (the (pfl ! e))"
         by (simp add: "1.prems"(4) "1.prems"(7) \<open>e' < length pf\<close> ufa_invar_fun_upd')
       have "valid_labels_invar (add_label (pfl[e := Some eq])
 (pf[e := e']) (pf ! e) (the (pfl ! e)))
-     (add_edge (pf[e := e']) (pf ! e) e)"
-        using 1(2)[OF False 3 2 4 6 _ _ 5] 
-        using "1.prems"(5) "1.prems"(6) by force
+     (add_edge (pf[e := e']) (pf ! e) e) l"
+        using 1(2)[OF False 3 2 4 6 _ _ 5] "1.prems"(5,6)
+        by auto
       then show ?thesis 
-        using "1.hyps" "5" \<open>add_label (pfl[e := (Some eq)]) pf (pf ! e) (the (pfl ! e)) = add_label (pfl[e := Some eq]) (pf[e := e']) (pf ! e) (the (pfl ! e))\<close> \<open>add_label pfl pf e eq = add_label (pfl[e := Some eq]) pf (pf ! e) (the (pfl ! e))\<close> add_edge.psimps by presburger
+        using "1.hyps" "5" \<open>add_label (pfl[e := (Some eq)]) pf (pf ! e) (the (pfl ! e)) = add_label (pfl[e := Some eq]) (pf[e := e']) (pf ! e) (the (pfl ! e))\<close> \<open>add_label pfl pf e eq = add_label (pfl[e := Some eq]) pf (pf ! e) (the (pfl ! e))\<close> add_edge.psimps
+        by presburger
     qed
   qed
 qed
@@ -3447,24 +3493,29 @@ lemma pf_labels_invar_step:
     "pf_labels_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
 "length l = length pf" "length l = length pfl"  
 "rep_of pf a \<noteq> rep_of pf b"
+"ufa_invar l" 
 shows "pf_labels_invar (propagate_step l u t pe pf pfl ip a b eq)"
 proof-
   have *: "\<exists>c\<^sub>1 c\<^sub>2 c d\<^sub>1 d\<^sub>2 d.
        (eq = One c \<approx> d \<or> eq = Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d)) \<and>
-       (b = c \<and> a = d \<or> a = c \<and> b = d) \<and> c < length l \<and> d < length l"
+       (b = c \<and> a = d \<or> a = c \<and> b = d) \<and> c < length l \<and> d < length l
+\<and> valid_vars_pending eq l"
     using assms pending_invar_Cons valid_vars_pending_cases by fastforce
- have "pf_labels_invar \<lparr>cc_list = ufa_union l a b, 
+  have "valid_labels_invar (add_label pfl pf a eq) (add_edge pf a b) l"
+    using valid_labels_invar_mini_step * assms(1,7,8,9,10,11) 
+    unfolding pf_labels_invar_def congruence_closure.select_convs by simp
+ then have "pf_labels_invar \<lparr>cc_list = ufa_union l a b, 
     use_list = u[rep_of l a := []], 
     lookup = t, 
     pending = pe,
     proof_forest = add_edge pf a b, 
     pf_labels = add_label pfl pf a eq, 
-    input = ip\<rparr>" using valid_labels_invar_mini_step * assms(1,7,8,9,10)
-  unfolding pf_labels_invar_def congruence_closure.select_convs
-  by blast
-  then show ?thesis using pf_labels_invar_loop proof_forest_loop
+    input = ip\<rparr>" using  assms(2,3,11) valid_labels_invar_ufa_union
+  unfolding pf_labels_invar_def congruence_closure.select_convs 
+  by auto
+  then show ?thesis using pf_labels_invar_loop proof_forest_loop cc_list_loop
     unfolding pf_labels_invar_def congruence_closure.select_convs
-    by presburger
+    by simp
 qed
 
 
@@ -3505,7 +3556,7 @@ proof (rule conjI)+
   show "use_list_invar2 (propagate_step l u t pe pf pfl ip a b eq)"
     using assms use_list_invar2_step a_b invar(1) same_length by blast
   show "pf_labels_invar (propagate_step l u t pe pf pfl ip a b eq)"
-    using assms pf_labels_invar_step a_b invar(2) same_length rep_pf by presburger
+    using assms pf_labels_invar_step a_b invar same_length rep_pf by auto
 qed
 
 subsection \<open>Invariants after propagate\<close>
