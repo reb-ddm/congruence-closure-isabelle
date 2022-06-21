@@ -125,7 +125,6 @@ proof(standard)+
   qed
 qed
 
-
 lemma inv2_loop1:
   assumes "lookup_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, 
 pf_labels = pfl, input = ip\<rparr>"
@@ -341,6 +340,7 @@ next
 qed
 
 
+
 lemma in_set_Cons_use_list:
   assumes "rep_b' < length u" 
     "i \<noteq> rep_of l a " "eq \<in> set (u ! i) "
@@ -359,6 +359,7 @@ next
   then show ?thesis 
     using assms by auto
 qed
+
 
 lemma lookup_invar2_loop1:
   assumes "ufa_invar l" 
@@ -463,6 +464,7 @@ proof(standard, standard, standard, standard, standard, standard, standard, stan
     using assms Congruence_Closure_split_rule  
     by meson
 qed
+
 
 lemma lookup_invar2_loop2:
   assumes "ufa_invar l" 
@@ -880,7 +882,6 @@ proof
     unfolding congruence_closure.select_convs by blast
 qed
 
-
 lemma lookup_invar2_prems_loop2:
   assumes "\<forall>eq'\<in>set (u1' # urest').
        \<exists>c\<^sub>1 c\<^sub>2 c.
@@ -1018,7 +1019,8 @@ pending = pe, proof_forest = pf,
     unfolding congruence_closure.select_convs by blast
 qed
 
-lemma F_in_set_imp_valid: 
+
+lemma F_in_set_imp_valid:
   assumes "(F b\<^sub>1 b\<^sub>2 \<approx> ba) \<in> set xs" 
     "\<forall>j<length xs. use_list_valid_element (xs ! j) (ufa_union l a b) rep_b'"
   shows "b\<^sub>1 < length l" "b\<^sub>2 < length l" "ba < length l" 
@@ -1028,6 +1030,7 @@ proof-
   then show "b\<^sub>1 < length l" "b\<^sub>2 < length l" "ba < length l"  using assms(2) 
     by (metis equation.inject(2) length_list_update)+
 qed
+
 
 
 lemma use_list_invar2_loop1:
@@ -1184,6 +1187,7 @@ Some (F e\<^sub>1 e\<^sub>2 \<approx> e)"
   qed
 qed
 
+
 lemma use_list_invar2_loop2:
   assumes "ufa_invar l" 
     "a < length l" "b < length l" 
@@ -1322,6 +1326,7 @@ proof(standard, standard, standard, standard, standard, standard, standard)
   qed
 qed
 
+
 paragraph \<open>Invariants after the entire loop\<close>
 
 lemma lookup_invar_loop: 
@@ -1368,7 +1373,8 @@ lemma lookup_invar_loop:
   qed
 qed simp
 
-lemma pending_invar_loop: 
+
+lemma pending_invar_loop:
   assumes "ufa_invar l"
     "pending_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>" 
     "lookup_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
@@ -1419,7 +1425,8 @@ lemma pending_invar_loop:
   qed
 qed simp
 
-lemma use_list_invar_loop: 
+
+lemma use_list_invar_loop:
   assumes "ufa_invar l" 
     "use_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     (is "use_list_invar ?base") 
@@ -1455,6 +1462,7 @@ use_list = u'[rep_b' := u1' # u' ! rep_b'], lookup = update_lookup t' l' u1', pe
       using "*" False by force
   qed
 qed simp
+
 
 lemma lookup_invar2_loop:
   assumes 
@@ -1653,6 +1661,7 @@ pending = link_to_lookup t' l' u1' # pe', proof_forest = pf,
 qed simp
 
 
+
 lemma use_list_invar2_loop:
   assumes 
     "ufa_invar l" "a < length l" "b < length l"
@@ -1789,7 +1798,8 @@ pending = link_to_lookup t' l' u1' # pe', proof_forest = pf,
   qed
 qed simp
 
-lemma inv2_loop: 
+
+lemma inv2_loop:
   assumes "a < length (cc_list cc)" "b < length (cc_list cc)" 
     "lookup_invar cc"
     "use_list_invar cc"
@@ -1904,7 +1914,6 @@ lookup = update_lookup t' l' u1',
   qed
 qed simp
 
-
 lemma cc_list_invar_loop: 
   assumes 
     "cc_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, 
@@ -1965,8 +1974,10 @@ next
     using assms lookup_invar_def by auto
 qed
 
+
 lemma use_list_invar_mini_step:
-  assumes "use_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
+  assumes "use_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), 
+proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     (is "use_list_invar ?base") "ufa_invar l" "a < length l" "b < length l" "length l = length u"
   shows "use_list_invar \<lparr>cc_list = ufa_union l a b,
     use_list = u[rep_of l a := []], 
@@ -1998,6 +2009,7 @@ proof(standard, standard, standard, standard, standard)
       by (metis \<open>cc_list \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, pf_labels = pfl, input = ip\<rparr> ! i = i\<close> congruence_closure.select_convs(1) i_j(1) i_j(2) i_j(3) length_list_update rep_of_iff rep_of_ufa_union_invar ufa_union_invar)
   qed
 qed
+
 
 
 lemma pending_invar_mini_step:
@@ -2036,6 +2048,7 @@ proof(standard, standard)
       by simp
   qed
 qed
+
 
 lemma inv2_mini_step1:
   assumes "ufa_invar l" "a < length l" "b < length l"
@@ -2260,7 +2273,6 @@ proof-
       using Congruence_Closure_split_rule eq by auto
   qed (simp add: base)
 qed
-
 
 lemma inv2_mini_step:
   assumes "ufa_invar l" "a < length l" "b < length l"
