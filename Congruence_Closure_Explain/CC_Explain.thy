@@ -110,6 +110,7 @@ lemma cc_explain_aux_simp3:
 abbreviation cc_explain :: "congruence_closure \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> equation set"
   where
     "cc_explain cc a b \<equiv> cc_explain_aux cc [0..<nr_vars cc] [(a, b)]"
+
 subsection \<open>Invariant for the additional union find in cc_explain\<close>
 
 definition explain_list_invar :: "nat list \<Rightarrow> nat list \<Rightarrow> bool"
@@ -572,10 +573,15 @@ text \<open>This invar shows the correctness of the explain function.
       algorithms can terminate and the proofs of two different edges do not 
       depend on each other.\<close>
 
-definition cc_explain_correctness_invar :: "congruence_closure \<Rightarrow> nat list \<Rightarrow> (nat * nat) list \<Rightarrow> bool"
+definition cc_explain_correctness_invar :: "congruence_closure \<Rightarrow> bool"
   where
-    "cc_explain_correctness_invar cc l eqs \<equiv> (\<forall> (a, b) \<in> set eqs .
-  (a \<approx> b) \<in> Congruence_Closure (cc_explain_aux cc l eqs \<union> representatives_set l)
+    "cc_explain_correctness_invar cc \<equiv> (\<forall> l eqs.
+explain_list_invar l (proof_forest cc)
+\<longrightarrow>  (\<forall> (a, b) \<in> set eqs . a < nr_vars cc \<and> b < nr_vars cc) 
+\<longrightarrow>
+  (\<forall> (a, b) \<in> set eqs .
+    are_congruent cc (a \<approx> b) \<longrightarrow>
+    (a \<approx> b) \<in> Congruence_Closure (cc_explain_aux cc l eqs \<union> representatives_set l))
 )
 "
 
@@ -1002,21 +1008,62 @@ qed
 
 subsection \<open>Initial cc\<close>
 
-lemma "validity_invar (initial_cc n)"
+theorem validity_invar_initial_cc: "validity_invar (initial_cc n)"
   unfolding validity_invar_def
   by fastforce
 
+lemma are_congruent_initial_cc:
+  assumes "valid_vars (a \<approx> b) n" "are_congruent (initial_cc n) (a \<approx> b)"  
+  shows "a = b"
+proof-
+  from assms have *: "rep_of (cc_list (initial_cc n)) a = rep_of (cc_list (initial_cc n)) b"
+    by fastforce
+  with assms(1) have "rep_of (cc_list (initial_cc n)) a = a"
+"rep_of (cc_list (initial_cc n)) b = b"
+    using rep_of_refl by auto
+  with * show ?thesis 
+    by argo
+qed
+
+theorem cc_explain_correctness_invar_initial_cc: 
+"cc_explain_correctness_invar (initial_cc n)"
+  unfolding cc_explain_correctness_invar_def
+proof(standard, standard, standard, standard, standard, standard, standard)
+  fix l eqs x a b
+  assume "explain_list_invar l (proof_forest (initial_cc n))"
+       "\<forall>(a, b)\<in>set eqs.
+          a < nr_vars (initial_cc n) \<and> b < nr_vars (initial_cc n)"
+       "x \<in> set eqs"
+       "x = (a, b)"
+       "are_congruent (initial_cc n) (a \<approx> b)"
+  then have "a = b" using are_congruent_initial_cc 
+    by auto
+  then show "(a \<approx> b)
+       \<in> Congruence_Closure
+           (cc_explain_aux (initial_cc n) l eqs \<union> representatives_set l)" 
+    by blast
+qed
+
 subsection \<open>Correctness of cc_explain\<close>
 
-lemma cc_explain_aux_correct:
-  assumes "are_congruent cc (a \<approx> b)" "cc_invar cc"
-  shows "(a \<approx> b) \<in> Congruence_Closure (cc_explain_aux cc ([0..<nr_vars cc]) [(a, b)])"
-  sorry
-
 theorem cc_explain_correct:
-  assumes "are_congruent cc (a \<approx> b)" "cc_invar cc"
+  assumes "are_congruent cc (a \<approx> b)" "cc_invar cc" "valid_vars (a \<approx> b) (nr_vars cc)"
+"cc_explain_correctness_invar cc"
   shows "(a \<approx> b) \<in> Congruence_Closure (cc_explain cc a b)"
-  sorry
+proof-
+  have "explain_list_invar [0..<nr_vars cc] (proof_forest cc)"
+    using explain_list_invar_initial assms(2) unfolding inv_same_length_def by blast
+  moreover have "(\<forall>(a, b)\<in>set [(a, b)]. a < nr_vars cc \<and> b < nr_vars cc)"
+    using assms by auto
+  moreover have "(a, b) \<in> set [(a, b)]" by simp
+  ultimately have *: "(a \<approx> b) \<in> Congruence_Closure 
+(cc_explain_aux cc [0..<nr_vars cc] [(a, b)] \<union> representatives_set [0..<nr_vars cc])"
+    using assms unfolding cc_explain_correctness_invar_def by blast
+  then have "representatives_set [0..<nr_vars cc] = {}"
+    by simp
+  then show ?thesis 
+    by (metis "*" Un_empty_right)
+qed
 
 subsection \<open>Validity of cc_explain\<close>
 
@@ -1191,7 +1238,7 @@ k < nr_vars cc \<and> j < nr_vars cc"
       with Two * have new_valid: "a\<^sub>1 < length cc_l" "a\<^sub>2 < length cc_l" "b\<^sub>1 < length cc_l" "b\<^sub>2 < length cc_l"  
         by auto
       from 1(3)[OF False] Two * "1.prems" recursive_step cc explain_list_invar pRAC' valid have 
-        " \<forall>a\<in>set (snd (snd (explain_along_path cc (l[rep_of l a := pf ! rep_of l a]) (pf ! rep_of l a) c))).
+        "\<forall>a\<in>set (snd (snd (explain_along_path cc (l[rep_of l a := pf ! rep_of l a]) (pf ! rep_of l a) c))).
        case a of (k, j) \<Rightarrow> k < nr_vars cc \<and> j < nr_vars cc" 
         unfolding cc congruence_closure.select_convs by simp
       with a'_b' result cc recursive_step new_valid show ?thesis
@@ -1203,7 +1250,7 @@ qed
 lemma cc_explain_aux_valid:
   assumes "cc_explain_aux_dom (cc, l, xs)" "cc_invar cc" "validity_invar cc"
     "explain_list_invar l (proof_forest cc)" 
-    "\<forall> (a,b)\<in> set xs . a < nr_vars cc \<and> b < nr_vars cc"
+    "\<forall> (a, b) \<in> set xs . a < nr_vars cc \<and> b < nr_vars cc"
   shows "cc_explain_aux cc l xs \<subseteq> input cc"
   using assms proof(induction rule: cc_explain_aux.pinduct)
   case (2 cc l a b xs)
