@@ -4381,7 +4381,6 @@ Congruence_Closure ({a \<approx> rep_of l a |a. a < length l \<and> l ! a \<note
   qed
 qed
 
-
 lemma cc_invar_merge3:
   assumes "cc_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, 
 pf_labels = pfl, input = ip\<rparr>"
@@ -4425,7 +4424,7 @@ qed
 lemma propagate_domain: "cc_invar cc \<Longrightarrow> propagate_dom cc"
   sorry
 
-lemma cc_invar_merge: 
+theorem cc_invar_merge: 
   assumes "cc_invar cc" "valid_vars eq (nr_vars cc)" 
   shows "cc_invar (merge cc eq)"
   using assms proof(induction cc eq rule: merge.induct)
@@ -4460,7 +4459,7 @@ qed
 
 subsection \<open>Initial cc\<close>
 
-lemma cc_invar_initial_cc: "cc_invar (initial_cc n)"
+theorem cc_invar_initial_cc: "cc_invar (initial_cc n)"
 proof(rule conjI)+
   show "cc_list_invar (initial_cc n)" unfolding cc_list_invar_def 
     by (simp add: ufa_init_invar)
