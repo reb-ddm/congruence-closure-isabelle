@@ -636,4 +636,11 @@ proof
   show "path l (p ! i) [p ! i] (p ! i)" 
     using assms nodes_path_lt_length_l single by blast
 qed
+
+lemma path_contains_no_root:
+  assumes "x \<in> set (tl p)" "ufa_invar l"
+"path l a p b"
+shows "l ! x \<noteq> x"
+  using assms 
+  by (smt (verit, best) gr_zeroI in_set_conv_nth length_pos_if_in_set less_numeral_extra(3) list.sel(3) list.size(3) nth_Cons_0 path.simps path_not_first_no_root)
 end
