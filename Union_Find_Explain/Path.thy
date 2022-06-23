@@ -624,5 +624,16 @@ proof-
     using path_split(1) by blast
 qed
 
-
+lemma path_take_two:
+  assumes "ufa_invar l" "i < length p" "i \<noteq> 0" "path l a p b"
+shows "path l (l ! (p ! i)) [l ! (p ! i), (p ! i)] (p ! i)"
+proof
+  show "l ! (p ! i) < length l" using assms 
+    by (simp add: nodes_path_lt_length_l ufa_invarD(2))
+  show "l ! (p ! i) = l ! (p ! i)" ..
+  show "l ! (p ! i) \<noteq> (p ! i)"
+    by (metis assms(2) assms(3) assms(4) bot_nat_0.not_eq_extremum path_not_first_no_root)
+  show "path l (p ! i) [p ! i] (p ! i)" 
+    using assms nodes_path_lt_length_l single by blast
+qed
 end
