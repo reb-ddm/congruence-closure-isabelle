@@ -639,7 +639,7 @@ lemma hd_tl_list: "length xs > 1 \<Longrightarrow> hd (tl xs) = xs ! 1"
 text \<open>If the representative changes after a list update, then it must be equal to 
       the representative of the updated element.\<close>
 lemma rep_of_fun_upd3:
-  assumes "ufa_invar l" "x < length l" "y < length l""x' < length l" "y' < length l"
+  assumes "ufa_invar l" "x < length l" "y < length l" "x' < length l" "y' < length l"
     "rep_of l x = rep_of l y" "rep_of (CONST list_update l x' y') x \<noteq> rep_of (CONST list_update l x' y') y"
     "rep_of l y = rep_of (CONST list_update l x' y') y"  "rep_of l x' \<noteq> rep_of l y'"
   shows "rep_of (CONST list_update l x' y') x = rep_of (CONST list_update l x' y') y'"
@@ -848,7 +848,6 @@ next
     by metis
 qed
 
-
 lemma lookup_step_unchanged_step:
   assumes "ufa_invar l" "a < length l" "b < length l"
     "t ! a' ! b' = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)"
@@ -925,5 +924,56 @@ lemma lookup_invar_valid:
     "(t ! i) ! j = Some (F f g \<approx> h)" "i < length l" "j < length l" "l ! i = i" "l ! j = j"
   shows "i = rep_of l f" "j = rep_of l g" 
   using assms unfolding lookup_invar_def by fastforce+
+
+
+lemma longest_common_prefix_concat: 
+"longest_common_prefix (a @ b) (a @ c) = a @ longest_common_prefix b c"
+proof(induction "(a @ b)" "(a @ c)" arbitrary: a b rule: longest_common_prefix.induct)
+  case (1 x xs y ys)
+  then show ?case 
+    apply(cases a)
+    by auto
+qed auto
+  
+lemma lowest_common_ancestor_fun_upd:
+  assumes "ufa_invar l" "x < length l" "y < length l"
+"l ! a = a" "rep_of l a \<noteq> rep_of l b" "rep_of l x = rep_of l y"
+"a < length l" "b < length l"
+  shows "lowest_common_ancestor l x y = lowest_common_ancestor (l[a := b]) x y"
+proof-
+  have a_root: "a = rep_of l a" 
+    by (simp add: assms rep_of_refl)
+  then show ?thesis
+  proof(cases "rep_of l x = rep_of l a")
+    case True
+    then have *: "path_to_root (l[a := b]) x = path_to_root l b @ path_to_root l x"
+"path_to_root (l[a := b]) y = path_to_root l b @ path_to_root l y"
+      using a_root assms path_to_root_fun_upd_root 
+      by metis+
+    then have *: "longest_common_prefix (path_to_root (l[a := b]) x) (path_to_root (l[a := b]) y)
+= path_to_root l b @
+longest_common_prefix (path_to_root l x) (path_to_root l y)" unfolding * 
+      by (simp add: longest_common_prefix_concat)
+    have "hd (path_to_root l x) = rep_of l x" "hd (path_to_root l y) = rep_of l y"
+      using assms path_hd path_to_root_correct by blast+
+    with assms have "(path_to_root l x) = [rep_of l x]@tl(path_to_root l x)"
+"(path_to_root l y) = [rep_of l y]@tl(path_to_root l y)"
+      by (metis Cons_eq_appendI  empty_append_eq_id len_greater_imp_nonempty list.collapse path_to_root_length)+
+    then have "longest_common_prefix (path_to_root l x) (path_to_root l y) = 
+[rep_of l x] @ longest_common_prefix (tl(path_to_root l x)) (tl(path_to_root l y)) "
+      using longest_common_prefix_concat by (metis assms(6))
+    then have "longest_common_prefix (path_to_root l x) (path_to_root l y) \<noteq> []"
+      by simp
+    then show ?thesis 
+      using * by fastforce
+  next
+    case False
+    then have "path_to_root (l[a := b]) x = path_to_root l x"
+"path_to_root (l[a := b]) y = path_to_root l y" 
+      by (auto simp add: assms path_to_root_fun_upd' ufa_invar_fun_upd')
+    then show ?thesis 
+      by fastforce
+  qed
+qed
 
 end

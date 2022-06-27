@@ -345,7 +345,7 @@ lemma pending_set_explain_Cons:
   "pending_set_explain ((a, b) # pend) = {(a \<approx> b)} \<union> pending_set_explain pend"
   by auto
 
-lemma explain_along_path_correctness:
+theorem explain_along_path_correctness:
   assumes "explain_along_path_dom (\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, 
 proof_forest = pf, pf_labels = pfl, input = ip\<rparr>, l, a, c)"
     (is "explain_along_path_dom (?cc, l, a, c)")
@@ -531,12 +531,21 @@ fun pending_set' :: "pending_equation list \<Rightarrow> equation set"
   | "pending_set' ((One a') # xs) = {a'} \<union> pending_set xs"
   | "pending_set' ((Two a' b') # xs) = {a', b'} \<union> pending_set xs"
 
-lemma explain_along_path_output_correct:
+
+lemma set_union_divide_lemma: "\<Union>{y | y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. k1 y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb }
+\<union> \<Union>{y| y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. k2 y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb } = 
+\<Union>{y | y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. k1 y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb  \<or> k2 y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb }" 
+  by fast
+
+lemma explain_along_path_output_pending_correct:
   assumes "explain_along_path_dom (cc, l, a, c)" "cc_invar cc" 
     "explain_list_invar l (proof_forest cc)"
     "path (proof_forest cc) c p a"
   shows "fst (explain_along_path cc l a c) 
-= \<Union>{pending_set' [the ((pf_labels cc) ! x)] | x. x \<in> set (tl p) \<and> l ! x = x}"
+= \<Union>{pending_set' [the ((pf_labels cc) ! x)] | x. x \<in> set (tl p) \<and> l ! x = x}
+\<and> set (snd (snd (explain_along_path cc l a c))) 
+= \<Union>{{(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)} | x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. x \<in> set (tl p) \<and> l ! x = x
+\<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))}"
   using assms proof(induction cc l a c arbitrary: p rule: explain_along_path.pinduct)
   case (1 cc l a c)
   then have invar: "ufa_invar l" "length l = length (proof_forest cc)"
@@ -574,10 +583,11 @@ lemma explain_along_path_output_correct:
     then have *: "x \<in> set (tl p) \<Longrightarrow> l ! x \<noteq> x" for x using path_contains_no_root "1.prems" 
       unfolding cc_list_invar_def 
       using invar(1) by blast
-    have "fst (explain_along_path cc l a c) = {}" using True explain_along_path_simp1 
-      by simp
+    have "fst (explain_along_path cc l a c) = {}"
+"set (snd (snd (explain_along_path cc l a c))) = {}" using True explain_along_path_simp1 
+      by simp+
     then show ?thesis using * 
-      by blast
+      by auto
   next
     case False
     then obtain cc_l u t pe pf pfl ip where cc: "cc = 
@@ -724,7 +734,7 @@ x \<in> set ?pRA" using prems
         using 1 explain_along_path_simp2[OF False] One False * recursive_step cc by simp 
       have "pf ! rep_of l a \<noteq> rep_of l a" 
         by (simp add: pRAC)
-
+ \<comment> \<open>Output, case One\<close>
       then have a': "{a'} = pending_set' [the (pf_labels cc ! rep_of l a)]" 
         using "1.prems" using One valid_eq * cc
         by simp
@@ -733,12 +743,32 @@ x \<in> set ?pRA" using prems
     \<Union> {pending_set' [the (pf_labels cc ! x)] |x. x \<in> set (tl (butlast pRAC)) \<and> 
 ?union ! x = x}" 
         by auto
-      with * union_cases have union: "\<Union> {pending_set' [the (pf_labels cc ! x)] |x. x \<in> set (tl p) \<and> l ! x = x}
+      from * union_cases have union: "\<Union> {pending_set' [the (pf_labels cc ! x)] |x. x \<in> set (tl p) \<and> l ! x = x}
 = (\<Union> {pending_set' [the (pf_labels cc ! x)] |x. x \<in> set (tl (butlast pRAC))  \<and> ?union ! x = x})
 \<union> pending_set' [the (pf_labels cc ! rep_of l a)]"
         by blast
+ \<comment> \<open>Pending, case One\<close>
+    from 1(2)[OF False] One "1.prems" recursive_step cc explain_list_invar pRAC' valid
+    have IH_p: "set pend' =
+        \<Union>{{(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)} | x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. x \<in> set (tl (butlast pRAC)) \<and> ?union ! x = x
+    \<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))}" 
+      by auto
+    from union_cases have union_cases_p: 
+"x \<in> set (tl (butlast pRAC)) \<and> ?union ! x = x \<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))
+\<longleftrightarrow> 
+(x \<in> set (tl p) \<and> l ! x = x \<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb)))" 
+for x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb
+      using * cc 
+      by (metis congruence_closure.select_convs(6) option.inject pending_equation.distinct(1))
+      with *  have union_p: 
+"\<Union>{{(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)} | x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. x \<in> set (tl p) \<and> l ! x = x
+\<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))}
+= \<Union>{{(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)} | x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. x \<in> set (tl (butlast pRAC)) \<and> ?union ! x = x
+\<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))}" 
+        by simp
+
       show ?thesis 
-        using  a' IH cc result union by auto 
+        using  a' IH IH_p cc result union union_p by auto 
     next
       case (Two x21 x22)
       then obtain a\<^sub>1 a\<^sub>2 a' b\<^sub>1 b\<^sub>2 b' where *: "(pfl ! rep_of l a)
@@ -753,8 +783,7 @@ x \<in> set ?pRA" using prems
         using valid_eq * by auto
       have "pf ! rep_of l a \<noteq> rep_of l a" 
         by (simp add: pRAC)
-
-
+ \<comment> \<open>Output, case Two\<close>
       then have a': "{(F a\<^sub>1 a\<^sub>2 \<approx> a'), (F b\<^sub>1 b\<^sub>2 \<approx> b')} = pending_set' [the (pf_labels cc ! rep_of l a)]" 
         unfolding cc  congruence_closure.select_convs Two pending_set'.simps
         using Two * by auto
@@ -767,11 +796,78 @@ x \<in> set ?pRA" using prems
 = (\<Union> {pending_set' [the (pf_labels cc ! x)] |x. x \<in> set (tl (butlast pRAC))  \<and> ?union ! x = x})
 \<union> pending_set' [the (pf_labels cc ! rep_of l a)]"
         by blast
+ \<comment> \<open>Pending, case Two\<close>
+      then have pend': "{(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)} \<union> set pend' = set (snd (snd (explain_along_path cc l a c)))" 
+        using result by simp
+      from 1(3)[OF False] Two * "1.prems" recursive_step cc explain_list_invar pRAC' valid
+      have IH_p: "set pend' =
+    \<Union>{{(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)} | x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. x \<in> set (tl (butlast pRAC)) \<and> ?union ! x = x
+    \<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))}" 
+        by simp
+from union_cases have union_cases_p: 
+"(x \<in> set (tl (butlast pRAC)) \<and> ?union ! x = x
+\<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb)))
+\<or> (x = rep_of l a \<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb)))
+\<longleftrightarrow> 
+(x \<in> set (tl p) \<and> l ! x = x \<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb)))" 
+for x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb
+  using * unfolding cc congruence_closure.select_convs 
+  by blast
+  with Two * have  
+2: "\<Union>{{(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)} | x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. x \<in> set (tl p) \<and> l ! x = x
+\<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))}
+= \<Union>{{(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)} | x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. x \<in> set (tl (butlast pRAC)) \<and> ?union ! x = x
+    \<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))
+\<or> x = rep_of l a
+\<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))}"
+    by simp
+   have 3: 
+"\<Union>{y | y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. x \<in> set (tl (butlast pRAC)) \<and> ?union ! x = x
+    \<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))\<and> y = {(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)}}
+\<union> \<Union>{y| y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. x = rep_of l a
+\<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))\<and> y = {(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)}}
+=
+\<Union>{y | y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. x \<in> set (tl (butlast pRAC)) \<and> ?union ! x = x
+    \<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb)) \<and> y = {(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)}
+\<or> x = rep_of l a
+\<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))
+\<and> y = {(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)}}" 
+     using set_union_divide_lemma .
+   have 4:"\<Union>{{(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)} | x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. x \<in> set (tl (butlast pRAC)) \<and> ?union ! x = x
+    \<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))
+\<or> x = rep_of l a
+\<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))}
+
+= 
+
+\<Union>{y | y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. x \<in> set (tl (butlast pRAC)) \<and> ?union ! x = x
+    \<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb)) \<and> y = {(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)}
+\<or> x = rep_of l a
+\<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))
+\<and> y = {(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)}}
+"
+     by blast
+
+   have 5:"\<Union>{y | y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. x \<in> set (tl (butlast pRAC)) \<and> ?union ! x = x
+    \<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))\<and> y = {(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)}}
+=
+\<Union>{{(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)} | x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. x \<in> set (tl (butlast pRAC)) \<and> ?union ! x = x
+    \<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))}"    
+"\<Union>{y| y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. x = rep_of l a
+\<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))\<and> y = {(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)}}
+= \<Union>{{(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)} | x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. x = rep_of l a
+\<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))}"
+     by blast+
+   have 6: "\<Union>{{(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)} | x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. x = rep_of l a
+\<and> ((pf_labels cc) ! x) = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb))} = {(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)}"
+     using * cc by simp
       show ?thesis 
-        using  a' IH cc result union by auto 
+        using  a' IH IH_p cc result union 2 3 4 5 6 by auto
     qed
   qed 
 qed
+
+
 
 subsection \<open>Invariants for the correctness of explain\<close>
 
@@ -844,11 +940,9 @@ lemma cc_explain_correctness_invar':
   shows "(a \<approx> b) \<in> Congruence_Closure (cc_explain_aux cc l eqs \<union> representatives_set l)"
   using assms unfolding cc_explain_correctness_invar_def by blast
 
-subsection \<open>The invariants remain invariant after the loop of propagate\<close>
+subsection \<open>Validity invar pf pf_labels\<close>
 
-paragraph \<open>Invariants after a step in the loop\<close>
-
-paragraph \<open>Invariants after the entire loop\<close>
+subsubsection \<open>The invariants remain invariant after the loop of propagate\<close>
 
 lemma validity_invar_loop:
   assumes "validity_invar cc" "rep_b < length l" "inv_same_length cc (nr_vars cc)"
@@ -909,9 +1003,9 @@ lemma validity_invar_loop:
   qed
 qed simp
 
-subsection \<open>The invariants remain invariant after propagate\<close>
+subsubsection \<open>The invariant remains invariant after propagate\<close>
 
-paragraph \<open>Invariants before entering the propagate_loop\<close>
+paragraph \<open>Invariant before entering the propagate_loop\<close>
 
 lemma pf_labels_validity_invar_add_label:
   assumes "ufa_invar pf" "a < length pf" "length pf = length pfl"
@@ -983,48 +1077,7 @@ proof(rule conjI)+
     by fastforce
 qed
 
-
-lemma cc_explain_correctness_invar_mini_step:
-  assumes "cc_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf,
- pf_labels = pfl, input = ip\<rparr>" 
-    "cc_explain_correctness_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), 
-proof_forest = pf, pf_labels = pfl, input = ip\<rparr>" 
-    (is "cc_explain_correctness_invar ?base")
-    "validity_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf,
- pf_labels = pfl, input = ip\<rparr>"
-  shows "cc_explain_correctness_invar \<lparr>cc_list = ufa_union l a b, 
-    use_list = u[rep_of l a := []], 
-    lookup = t, 
-    pending = pe,
-    proof_forest = add_edge pf a b, 
-    pf_labels = add_label pfl pf a eq, 
-    input = ip\<rparr>"
-    (is "cc_explain_correctness_invar ?step")
-  unfolding cc_explain_correctness_invar_def
-proof(standard, standard, standard, standard, standard, standard, standard)
-  fix la eqs x aa ba
-  assume prems: "explain_list_invar la (proof_forest ?step)"
-    "\<forall>(aa, ba)\<in>set eqs. aa < nr_vars ?step \<and> ba < nr_vars ?step"
-    "x \<in> set eqs" "x = (aa, ba)" 
-    "are_congruent ?step (aa \<approx> ba)"
-  then have explain_list_invar_base: "explain_list_invar la (proof_forest ?base)" 
-    "nr_vars ?step = nr_vars ?base"
-    unfolding congruence_closure.select_convs sorry
-  then show "(aa \<approx> ba) \<in> Congruence_Closure (cc_explain_aux ?step la eqs \<union> representatives_set la)"
-  proof(cases "are_congruent ?base (aa \<approx> ba)")
-    case True
-    then have 
-      "(aa \<approx> ba) \<in> Congruence_Closure (cc_explain_aux ?base la eqs \<union> representatives_set la)"
-      using assms cc_explain_correctness_invar' explain_list_invar_base prems 
-      by simp
-    then show ?thesis sorry
-  next
-    case False
-    then show ?thesis sorry
-  qed
-qed
-
-paragraph \<open>Invariants after one step of propagate\<close>
+paragraph \<open>Invariant after one step of propagate\<close>
 
 lemma validity_invar_step:
   assumes "validity_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), 
@@ -1071,9 +1124,9 @@ proof-
     using 2 3 4 5 6 assms(3) unfolding congruence_closure.select_convs by blast
 qed
 
-subsection \<open>Invariants after propagate\<close>
+subsubsection \<open>Invariant after propagate\<close>
 
-lemma cc_invar_propagate: 
+lemma validity_invar_propagate: 
   assumes "propagate_dom cc" "cc_invar cc" "validity_invar cc"
   shows "validity_invar (propagate cc)"
   using assms proof(induction cc rule: propagate.pinduct)
@@ -1104,7 +1157,7 @@ lemma cc_invar_propagate:
   qed            
 qed simp
 
-subsection \<open>Invariants after merge\<close>
+subsubsection \<open>Invariant after merge\<close>
 
 lemma validity_invar_merge1:
   assumes "valid_vars a \<approx> b
@@ -1273,7 +1326,7 @@ theorem validity_invar_merge:
       proof_forest = pf, pf_labels = pfl, input = insert (a \<approx> b) ip\<rparr>" 
     using validity_invar_merge1 "1.prems" by blast
   with 1 propagate_domain show ?case 
-    using merge.simps(1) cc_invar_propagate cc_invar by presburger
+    using merge.simps(1) validity_invar_propagate cc_invar by presburger
 next
   case (2 l u t pe pf pfl ip a\<^sub>1 a\<^sub>2 a)
   then show ?case 
@@ -1288,7 +1341,7 @@ next
             pf_labels = pfl, input = insert (F a\<^sub>1 a\<^sub>2 \<approx> a) ip\<rparr>"
       using validity_invar_merge2 "2.prems" True by blast
     with True cc_invar 2 propagate_domain show ?thesis 
-      using merge.simps(2) cc_invar_propagate by metis
+      using merge.simps(2) validity_invar_propagate by metis
   next
     case False
     then have "cc_invar \<lparr>cc_list = l, 
@@ -1306,64 +1359,12 @@ next
   qed
 qed
 
-subsection \<open>Initial cc\<close>
+subsubsection \<open>Initial cc\<close>
 
 theorem validity_invar_initial_cc: "validity_invar (initial_cc n)"
   unfolding validity_invar_def
   by fastforce
 
-lemma are_congruent_initial_cc:
-  assumes "valid_vars (a \<approx> b) n" "are_congruent (initial_cc n) (a \<approx> b)"  
-  shows "a = b"
-proof-
-  from assms have *: "rep_of (cc_list (initial_cc n)) a = rep_of (cc_list (initial_cc n)) b"
-    by fastforce
-  with assms(1) have "rep_of (cc_list (initial_cc n)) a = a"
-    "rep_of (cc_list (initial_cc n)) b = b"
-    using rep_of_refl by auto
-  with * show ?thesis 
-    by argo
-qed
-
-theorem cc_explain_correctness_invar_initial_cc: 
-  "cc_explain_correctness_invar (initial_cc n)"
-  unfolding cc_explain_correctness_invar_def
-proof(standard, standard, standard, standard, standard, standard, standard)
-  fix l eqs x a b
-  assume "explain_list_invar l (proof_forest (initial_cc n))"
-    "\<forall>(a, b)\<in>set eqs.
-          a < nr_vars (initial_cc n) \<and> b < nr_vars (initial_cc n)"
-    "x \<in> set eqs"
-    "x = (a, b)"
-    "are_congruent (initial_cc n) (a \<approx> b)"
-  then have "a = b" using are_congruent_initial_cc 
-    by auto
-  then show "(a \<approx> b)
-       \<in> Congruence_Closure
-           (cc_explain_aux (initial_cc n) l eqs \<union> representatives_set l)" 
-    by blast
-qed
-
-subsection \<open>Correctness of cc_explain\<close>
-
-theorem cc_explain_correct:
-  assumes "are_congruent cc (a \<approx> b)" "cc_invar cc" "valid_vars (a \<approx> b) (nr_vars cc)"
-    "cc_explain_correctness_invar cc"
-  shows "(a \<approx> b) \<in> Congruence_Closure (cc_explain cc a b)"
-proof-
-  have "explain_list_invar [0..<nr_vars cc] (proof_forest cc)"
-    using explain_list_invar_initial assms(2) unfolding inv_same_length_def by blast
-  moreover have "(\<forall>(a, b)\<in>set [(a, b)]. a < nr_vars cc \<and> b < nr_vars cc)"
-    using assms by auto
-  moreover have "(a, b) \<in> set [(a, b)]" by simp
-  ultimately have *: "(a \<approx> b) \<in> Congruence_Closure 
-(cc_explain_aux cc [0..<nr_vars cc] [(a, b)] \<union> representatives_set [0..<nr_vars cc])"
-    using assms unfolding cc_explain_correctness_invar_def by blast
-  then have "representatives_set [0..<nr_vars cc] = {}"
-    by simp
-  then show ?thesis 
-    by (metis "*" Un_empty_right)
-qed
 
 subsection \<open>Validity of cc_explain\<close>
 
@@ -1630,5 +1631,169 @@ proof-
   with cc_explain_aux_valid show ?thesis 
     using "*" "**" assms by presburger
 qed
+
+subsection \<open>Correctness invar of cc_explain\<close>
+
+
+lemma path_invariant_after_add_edge:
+  assumes "c = lowest_common_ancestor pf a b"
+"c' = lowest_common_ancestor (add_edge pf e e') a b"
+ "path pf c pAC a" "path pf c pBC b"  
+"path (add_edge pf e e') c' pAC' a" "path (add_edge pf e e') c' pBC' b" 
+"ufa_invar pf" "e < length pf" "e' < length pf" "rep_of pf e \<noteq> rep_of pf e'"
+shows
+"\<Union>{pending_set' [the (pfl ! x)] | x. x \<in> set (tl pAC) \<and> l ! x = x}
+\<union> \<Union>{pending_set' [the (pfl ! x)] | x. x \<in> set (tl pBC) \<and> l ! x = x}
+= \<Union>{pending_set' [the ((add_label pfl pf e lbl) ! x)] | x. x \<in> set (tl pAC') \<and> l ! x = x}
+\<union> \<Union>{pending_set' [the ((add_label pfl pf e lbl) ! x)] | x. x \<in> set (tl pBC') \<and> l ! x = x}"
+(is "?base = ?step")
+proof-
+  have dom: "add_label_dom (pfl, pf, e, lbl)"
+    using add_label_domain assms by blast
+  from dom assms show "?base = ?step"
+    proof(induction rule: add_label.pinduct)
+      case (1 pfl pf e lbl)
+      then show ?case 
+      proof(cases "pf ! e = e")
+        case True
+        with "1.prems" have "add_label pfl pf e lbl = (pfl[e := Some lbl])" 
+          using "1.hyps" add_label.psimps by auto
+        have dom': "add_edge_dom (pf, e, e')"
+          using add_edge_domain "1.prems" by blast
+        with "1.prems"  have "add_edge pf e e' = (pf[e := e'])" 
+          using "1.hyps" add_edge.psimps True by presburger
+        have "ufa_invar (add_edge pf e e')" 
+          by (simp add: "1.prems" add_edge_ufa_invar_invar)
+        have "e \<notin> set (tl pAC)" "e \<notin> set (tl pBC)" 
+          using "1.prems" True path_contains_no_root by blast+
+        then have paths: "path (pf[e := e']) c pAC a" "path (pf[e := e']) c pBC b"  
+          by (auto simp add: "1.prems"(3-) path_fun_upd)
+        from "1.prems" have "c = c'" using lowest_common_ancestor_fun_upd
+          by (metis True \<open>add_edge pf e e' = pf[e := e']\<close> path_nodes_lt_length_l path_rep_eq)
+        then have "pAC = pAC'"  "pBC = pBC'" 
+          using "1.prems" \<open>add_edge pf e e' = pf[e := e']\<close> paths \<open>ufa_invar (add_edge pf e e')\<close> path_unique by auto
+        have "x \<noteq> e \<Longrightarrow> pfl ! x = add_label pfl pf e lbl ! x" for x 
+          by (simp add: \<open>add_label pfl pf e lbl = pfl[e := Some lbl]\<close>)
+        then show ?thesis 
+          by (smt (verit, best) Collect_cong \<open>e \<notin> set (tl pAC)\<close> \<open>e \<notin> set (tl pBC)\<close> \<open>pAC = pAC'\<close> \<open>pBC = pBC'\<close> )
+      next
+        case False
+        have IH: 
+"\<Union> {pending_set' [the (pfl[e := Some lbl] ! x)] |x. x \<in> set (tl pAC) \<and> l ! x = x} \<union>
+    \<Union> {pending_set' [the (pfl[e := Some lbl] ! x)] |x. x \<in> set (tl pBC) \<and> l ! x = x}
+    = \<Union> {pending_set' [the (add_label (pfl[e := Some lbl]) pf (pf ! e) (the (pfl ! e)) ! x)] |x.
+          x \<in> set (tl pAC') \<and> l ! x = x} \<union>
+       \<Union> {pending_set' [the (add_label (pfl[e := Some lbl]) pf (pf ! e) (the (pfl ! e)) ! x)] |x.
+           x \<in> set (tl pBC') \<and> l ! x = x}"
+          sorry
+        have 2: "\<Union> {pending_set' [the (pfl[e := Some lbl] ! x)] |x. x \<in> set (tl pAC) \<and> l ! x = x} \<union>
+    \<Union> {pending_set' [the (pfl[e := Some lbl] ! x)] |x. x \<in> set (tl pBC) \<and> l ! x = x}
+= \<Union> {pending_set' [the (pfl ! x)] |x. x \<in> set (tl pAC) \<and> l ! x = x} \<union>
+    \<Union> {pending_set' [the (pfl ! x)] |x. x \<in> set (tl pBC) \<and> l ! x = x}"
+          sorry
+        from False have "add_label pfl pf e lbl = add_label (pfl[e := Some lbl]) pf (pf ! e) (the (pfl ! e))"
+          by (simp add: "1.hyps" add_label.psimps)
+        then show ?thesis using False 2 IH by simp
+      qed
+    qed
+qed
+
+
+lemma cc_explain_correctness_invar_mini_step:
+  assumes "cc_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf,
+ pf_labels = pfl, input = ip\<rparr>" 
+    "cc_explain_correctness_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), 
+proof_forest = pf, pf_labels = pfl, input = ip\<rparr>" 
+    (is "cc_explain_correctness_invar ?base")
+    "validity_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf,
+ pf_labels = pfl, input = ip\<rparr>"
+  shows "cc_explain_correctness_invar \<lparr>cc_list = ufa_union l a b, 
+    use_list = u[rep_of l a := []], 
+    lookup = t, 
+    pending = pe,
+    proof_forest = add_edge pf a b, 
+    pf_labels = add_label pfl pf a eq, 
+    input = ip\<rparr>"
+    (is "cc_explain_correctness_invar ?step")
+  unfolding cc_explain_correctness_invar_def
+proof(standard, standard, standard, standard, standard, standard, standard)
+  fix la eqs x aa ba
+  assume prems: "explain_list_invar la (proof_forest ?step)"
+    "\<forall>(aa, ba)\<in>set eqs. aa < nr_vars ?step \<and> ba < nr_vars ?step"
+    "x \<in> set eqs" "x = (aa, ba)" 
+    "are_congruent ?step (aa \<approx> ba)"
+  then have explain_list_invar_base: "explain_list_invar la (proof_forest ?base)" 
+    "nr_vars ?step = nr_vars ?base"
+    unfolding congruence_closure.select_convs sorry
+  then show "(aa \<approx> ba) \<in> Congruence_Closure (cc_explain_aux ?step la eqs \<union> representatives_set la)"
+  proof(cases "are_congruent ?base (aa \<approx> ba)")
+    case True
+    then have 
+      "(aa \<approx> ba) \<in> Congruence_Closure (cc_explain_aux ?base la eqs \<union> representatives_set la)"
+      using assms cc_explain_correctness_invar' explain_list_invar_base prems 
+      by simp
+    then show ?thesis sorry
+  next
+    case False
+    then show ?thesis sorry
+  qed
+qed
+
+
+subsubsection \<open>Initial cc\<close>
+
+lemma are_congruent_initial_cc:
+  assumes "valid_vars (a \<approx> b) n" "are_congruent (initial_cc n) (a \<approx> b)"  
+  shows "a = b"
+proof-
+  from assms have *: "rep_of (cc_list (initial_cc n)) a = rep_of (cc_list (initial_cc n)) b"
+    by fastforce
+  with assms(1) have "rep_of (cc_list (initial_cc n)) a = a"
+    "rep_of (cc_list (initial_cc n)) b = b"
+    using rep_of_refl by auto
+  with * show ?thesis 
+    by argo
+qed
+
+theorem cc_explain_correctness_invar_initial_cc: 
+  "cc_explain_correctness_invar (initial_cc n)"
+  unfolding cc_explain_correctness_invar_def
+proof(standard, standard, standard, standard, standard, standard, standard)
+  fix l eqs x a b
+  assume "explain_list_invar l (proof_forest (initial_cc n))"
+    "\<forall>(a, b)\<in>set eqs.
+          a < nr_vars (initial_cc n) \<and> b < nr_vars (initial_cc n)"
+    "x \<in> set eqs"
+    "x = (a, b)"
+    "are_congruent (initial_cc n) (a \<approx> b)"
+  then have "a = b" using are_congruent_initial_cc 
+    by auto
+  then show "(a \<approx> b)
+       \<in> Congruence_Closure
+           (cc_explain_aux (initial_cc n) l eqs \<union> representatives_set l)" 
+    by blast
+qed
+
+subsection \<open>Correctness of cc_explain\<close>
+
+theorem cc_explain_correct:
+  assumes "are_congruent cc (a \<approx> b)" "cc_invar cc" "valid_vars (a \<approx> b) (nr_vars cc)"
+    "cc_explain_correctness_invar cc"
+  shows "(a \<approx> b) \<in> Congruence_Closure (cc_explain cc a b)"
+proof-
+  have "explain_list_invar [0..<nr_vars cc] (proof_forest cc)"
+    using explain_list_invar_initial assms(2) unfolding inv_same_length_def by blast
+  moreover have "(\<forall>(a, b)\<in>set [(a, b)]. a < nr_vars cc \<and> b < nr_vars cc)"
+    using assms by auto
+  moreover have "(a, b) \<in> set [(a, b)]" by simp
+  ultimately have *: "(a \<approx> b) \<in> Congruence_Closure 
+(cc_explain_aux cc [0..<nr_vars cc] [(a, b)] \<union> representatives_set [0..<nr_vars cc])"
+    using assms unfolding cc_explain_correctness_invar_def by blast
+  then have "representatives_set [0..<nr_vars cc] = {}"
+    by simp
+  then show ?thesis 
+    by (metis "*" Un_empty_right)
+qed
+
 
 end

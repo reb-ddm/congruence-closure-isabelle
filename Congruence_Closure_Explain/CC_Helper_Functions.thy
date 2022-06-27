@@ -391,6 +391,31 @@ proof(rule path_to_root_fun_upd)
     by (metis in_set_conv_nth nodes_path_rep_of(2))
 qed(simp_all add: assms)
 
+lemma path_to_root_fun_upd_root: 
+  assumes "ufa_invar l" "li < length l"
+     "rep_of l li \<noteq> rep_of l y'" "y' < length l"
+  shows "path_to_root (l[(rep_of l li) := y']) li = path_to_root l y' @ path_to_root l li"
+proof-
+  have p1: "path l (rep_of l li) (path_to_root l li) li"
+ "path l (rep_of l y') (path_to_root l y') y'" 
+    using assms path_nodes_lt_length_l path_to_root_correct 
+    by auto
+   with assms have p2: "path (l[(rep_of l li) := y']) (rep_of l y') (path_to_root l y') y'"
+"path (l[(rep_of l li) := y']) (rep_of l li) (path_to_root l li) li"
+     apply (metis length_list_update path_to_root_correct path_to_root_fun_upd' rep_of_fun_upd' rep_of_idem ufa_invar_fun_upd')
+    using assms p1 path_fun_upd path_contains_no_root rep_of_root by blast
+  from assms p1 have "path (l[(rep_of l li) := y']) y' [y', rep_of l li] (rep_of l li)" 
+    by (metis length_list_update nth_list_update_eq path.step path_rep_eq rep_of_less_length_l single)
+  with p2 p1 assms have 
+"path (l[(rep_of l li) := y']) (rep_of l y') ((path_to_root l y') @ [rep_of l li]) (rep_of l li)"
+    by (metis nth_list_update_eq path_nodes_lt_length_l path_rep_eq path_snoc)
+  with p2 have 
+"path (l[(rep_of l li) := y']) (rep_of l y') (path_to_root l y' @ path_to_root l li) li"
+    using path_concat2 by fastforce
+  with p1 path_unique assms show ?thesis
+    by (metis path_nodes_lt_length_l path_rep_eq path_to_root_correct rep_of_fun_upd_rep_of ufa_invar_fun_upd')
+qed
+
 lemma nth_add_edge_e_eq_e': 
   assumes "ufa_invar pf" "e < length pf" "e' < length pf"
     "rep_of pf e \<noteq> rep_of pf e'"
