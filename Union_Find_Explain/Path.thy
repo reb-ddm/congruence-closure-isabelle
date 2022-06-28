@@ -238,7 +238,7 @@ qed
 
 text \<open>The path between two nodes is unique.\<close>
 
-lemma path_unique: "ufa_invar l \<Longrightarrow> path l u p1 v \<Longrightarrow> path l u p2 v \<Longrightarrow> p1 = p2"
+theorem path_unique: "ufa_invar l \<Longrightarrow> path l u p1 v \<Longrightarrow> path l u p2 v \<Longrightarrow> p1 = p2"
 proof-
   assume a1: "ufa_invar l" and a2: "path l u p1 v" and a3: "path l u p2 v"
   have a4: "v < length l"

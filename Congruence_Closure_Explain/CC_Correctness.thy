@@ -25,7 +25,7 @@ next
     using merge.simps(2) by simp
 qed
 
-lemma representativeE_in_cc_\<alpha>: 
+theorem representativeE_in_cc_\<alpha>: 
   assumes "cc_invar cc" "valid_vars eq (nr_vars cc)" "eq \<in> representativeE cc"
   shows "eq \<in> cc_\<alpha> cc"
 proof-
@@ -56,6 +56,8 @@ cc: "cc = \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_for
   qed
 qed
 
+subsection \<open>Lemmas about are_congruent\<close>
+
 lemma CC_representativeE_valid_vars:
   assumes "eq \<in> Congruence_Closure (representativeE cc)" "cc_invar cc" 
           "\<nexists> a . eq = a \<approx> a"
@@ -79,8 +81,6 @@ using assms proof(induction eq rule: Congruence_Closure.induct)
       using base.prems cc_list_invar_def rep_of_bound valid_vars.simps(2) by blast
   qed
 qed auto
-
-subsection \<open>Lemmas about are_congruent\<close>
 
 lemma are_congruent_Function: 
   assumes "valid_vars (F a\<^sub>1 a\<^sub>2 \<approx> a) (length l)"
@@ -159,7 +159,7 @@ using assms proof(induction cc "F a\<^sub>1 a\<^sub>2 \<approx> a" rule: are_con
     by auto
 qed
 
-lemma are_congruenct_correct: 
+theorem are_congruenct_correct: 
   assumes "valid_vars eq (nr_vars cc)" "cc_invar cc" "pending cc = []"
   shows "eq \<in> Congruence_Closure ((input cc)) \<longleftrightarrow> eq \<in> cc_\<alpha> cc"
 proof-

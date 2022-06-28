@@ -21,7 +21,7 @@ lemma path_to_root_domain: "rep_of_dom (l, i) \<longleftrightarrow> path_to_root
 
 subsection \<open>Correctness proof for \<open>path_to_root\<close>.\<close>
 
-lemma path_to_root_correct:
+theorem path_to_root_correct:
   assumes "ufa_invar l"
     and "x < length l"
   shows "path l (rep_of l x) (path_to_root l x) x"
@@ -64,7 +64,7 @@ abbreviation "Lowest_common_ancestor l x y ca \<equiv>
 (\<forall>r ca2 p3 p4. (path l r p3 ca \<and> path l r p4 ca2 \<and> common_ancestor l x y ca2 
 \<longrightarrow> length p3 \<ge> length p4)))"
 
-lemma lowest_common_ancestor_correct:    
+theorem lowest_common_ancestor_correct:    
   assumes "ufa_invar l"
     and "x < length l"
     and "y < length l"
@@ -173,7 +173,7 @@ next
   qed
 qed
 
-lemma find_newest_on_path_correct:
+theorem find_newest_on_path_correct:
   assumes path: "path l y p x"
     and invar: "ufa_invar l"
     and xy: "x \<noteq> y"
@@ -372,7 +372,7 @@ next
     by simp
 qed
 
-lemma apply_unions_ufe_invar:
+theorem apply_unions_ufe_invar:
   assumes "ufe_invar ufe"
     and "valid_unions u (length (uf_list ufe))"
   shows "ufe_invar (apply_unions u ufe)"
@@ -425,7 +425,7 @@ qed
 lemma ufe_invar_initial: "ufe_invar (initial_ufe n)"
   by simp
 
-lemma ufe_invar_imp_ufa_invar: "ufe_invar ufe \<Longrightarrow> ufa_invar (uf_list ufe)"
+theorem ufe_invar_imp_ufa_invar: "ufe_invar ufe \<Longrightarrow> ufa_invar (uf_list ufe)"
   by (metis apply_unions_length_uf_list ufa_init_invar ufe_data_structure.select_convs(1) ufe_invar_imp_ufa_invar_aux)
 
 paragraph \<open>Induction rule on the union find algorithm.\<close>
@@ -593,7 +593,7 @@ proof-
     by (simp add: that)
 qed
 
-paragraph "Lemmata about invariants wrt. \<open>ufe_union\<close>."
+paragraph \<open>Lemmata about invariants wrt. \<open>ufe_union\<close>.\<close>
 
 lemma rep_of_ufa_union_invar:
   assumes "ufa_invar l"
