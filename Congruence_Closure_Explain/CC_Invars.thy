@@ -23,9 +23,12 @@ proof(standard, standard, standard, standard, standard, standard)
   show "lookup_valid_element (lookup ?step) (cc_list ?step) i j"
   proof(cases "rep_of l a\<^sub>1 = i \<and> rep_of l a\<^sub>2 = j")
     case True
-    with assms i_j nth_list_update_eq nth_update_invalid show ?thesis 
+    let ?new_t = "upd t (rep_of l a\<^sub>1) (rep_of l a\<^sub>2) (Some (F a\<^sub>1 a\<^sub>2 \<approx> aa))"
+    from assms i_j nth_list_update_eq nth_update_invalid show ?thesis 
       unfolding congruence_closure.select_convs lookup_invar_def assms(2) update_lookup.simps
-      by (smt (verit, best))
+      apply(cases "rep_of l a\<^sub>1 < length ?new_t")
+      apply(cases "rep_of l a\<^sub>2 < length (?new_t ! rep_of l a\<^sub>1)")
+      using True by auto
   next
     case False
     then have "lookup ?base ! i ! j = lookup ?step ! i ! j" 
@@ -529,11 +532,18 @@ proof(standard, standard, standard, standard, standard, standard, standard, stan
     by (metis nth_list_update_eq)+
   have "update_lookup t (ufa_union l a b) u1' ! a' ! b' \<noteq> None" 
     using prems by fast
+with assms(5) prems(1-4) obtain k\<^sub>1 k\<^sub>2 k where 
+    "t ! a' ! b' = Some (F k\<^sub>1 k\<^sub>2 \<approx> k)" 
+    "rep_of (ufa_union l a b) k\<^sub>1 = a'" "rep_of (ufa_union l a b) k\<^sub>2 = b'"
+  if "t ! a' ! b' \<noteq> None" 
+  unfolding lookup_invar_def congruence_closure.select_convs 
+  by blast
   with assms(5) prems(1-4) obtain k\<^sub>1 k\<^sub>2 k where 
     "update_lookup t (ufa_union l a b) u1' ! a' ! b' = Some (F k\<^sub>1 k\<^sub>2 \<approx> k)" 
     "rep_of (ufa_union l a b) k\<^sub>1 = a'" "rep_of (ufa_union l a b) k\<^sub>2 = b'"
-    unfolding lookup_invar_def congruence_closure.select_convs
-    by (smt (verit, ccfv_threshold) "*"(3,4) assms(13,9) nth_list_update_eq update_lookup.simps(1) update_lookup_unchanged)
+    unfolding lookup_invar_def congruence_closure.select_convs apply(cases "t ! a' ! b'")
+    apply (metis "*"(3) "*"(4) \<open>update_lookup t (ufa_union l a b) u1' ! a' ! b' \<noteq> None\<close> assms(13) assms(9) nth_list_update_eq update_lookup.simps(1) update_lookup_unchanged)
+    using assms(8) assms(9) update_lookup_unchanged' by force
   then have a_b: "rep_of (ufa_union l a b) c\<^sub>1 = a'" "rep_of (ufa_union l a b) c\<^sub>2 = b'"
     using prems(5) by auto
   show "(\<exists>b\<^sub>1 b\<^sub>2 ba.
@@ -541,7 +551,7 @@ proof(standard, standard, standard, standard, standard, standard, standard, stan
            rep_of (ufa_union l a b) b\<^sub>1 = rep_of (ufa_union l a b) c\<^sub>1 \<and>
            rep_of (ufa_union l a b) b\<^sub>2 = rep_of (ufa_union l a b) c\<^sub>2 \<and>
            (ba \<approx> c) \<in> Congruence_Closure
-            ({(aa \<approx> rep_of (ufa_union l a b) aa) |aa.
+            ({(aa \<approx> (rep_of (ufa_union l a b) aa)) |aa.
               aa < length (ufa_union l a b) \<and> ufa_union l a b ! aa \<noteq> aa} \<union>
              pending_set pe)
             ) \<and>
@@ -550,7 +560,7 @@ proof(standard, standard, standard, standard, standard, standard, standard, stan
            rep_of (ufa_union l a b) b\<^sub>1 = rep_of (ufa_union l a b) c\<^sub>1 \<and>
            rep_of (ufa_union l a b) b\<^sub>2 = rep_of (ufa_union l a b) c\<^sub>2 \<and>
            (ba \<approx> c) \<in> Congruence_Closure
-            ({(aa \<approx> rep_of (ufa_union l a b) aa) |aa.
+            ({(aa \<approx> (rep_of (ufa_union l a b) aa)) |aa.
               aa < length (ufa_union l a b) \<and> ufa_union l a b ! aa \<noteq> aa} \<union>
              pending_set pe)
             )"

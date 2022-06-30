@@ -82,9 +82,8 @@ next
   qed
 qed
 
-
 lemma path_hd: "path l u p v \<Longrightarrow> hd p = u"
-    by(induction rule: path.induct, auto)
+  by(induction rule: path.induct, auto)
 lemma hd_path: "path l k p v \<Longrightarrow> hd p = u \<Longrightarrow> u = k"
   by(induction rule: path.induct, auto)
 
@@ -236,6 +235,40 @@ proof(rule ccontr)
     using path_nodes_lt_length_l ufa_invarD(1) by auto
 qed
 
+lemma path_to_root_has_length_1: "ufa_invar l \<Longrightarrow> path l u p1 v \<Longrightarrow> l ! v = v \<Longrightarrow> p1 = [v]"
+proof(induction "length p1" arbitrary: p1)
+  case 0
+  then show ?case 
+    by (simp add: path_not_empty)
+next
+  case (Suc x)
+  then show ?case 
+  proof(cases x)
+    case 0
+    with path_length_1 Suc show ?thesis 
+      by (metis length_0_conv length_Suc_conv)
+  next
+    case Suc':(Suc nat)
+    then have "path l u (butlast p1) (last (butlast p1))" 
+      using Suc path_divide1 path_divide2
+      by (metis butlast_snoc len_greater_imp_nonempty length_Suc_rev_conv lessI)
+    then have *: "path l u (butlast p1) (last (butlast p1))" 
+      using Suc path_divide1 path_divide2
+      by metis
+    with Suc have **: "l ! (p1 ! (length p1 - 1)) = (p1 ! (length p1 - 1 - 1))" 
+      by (metis diff_less length_butlast length_greater_0_conv path_properties zero_less_one)
+    with Suc have "l ! v = last (butlast p1)" 
+      by (metis (mono_tags, lifting) Suc.prems(2) * diff_less last_conv_nth length_butlast length_greater_0_conv nth_butlast path_last path_not_empty zero_less_one)
+    with Suc.prems have "v = last (butlast p1)" 
+      by auto
+    with Suc have "p1 ! (length p1 - 1) = p1 ! (length p1 - 1 - 1)"
+      by (metis ** last_conv_nth length_upt list.size(3) not_one_less_zero path_last upt_rec)
+    with path_properties Suc have "False" 
+      by (metis *  diff_less length_butlast length_greater_0_conv zero_less_one)
+    then show ?thesis by simp
+  qed
+qed
+
 text \<open>The path between two nodes is unique.\<close>
 
 theorem path_unique: "ufa_invar l \<Longrightarrow> path l u p1 v \<Longrightarrow> path l u p2 v \<Longrightarrow> p1 = p2"
@@ -247,41 +280,10 @@ proof-
     using a1 a4 a2 a3
   proof(induction arbitrary: p1 p2 rule: rep_of_induct)
     case (base i)
-    from base(4,5,1,2,3) have "i = u" 
-    proof(induction "length p1" arbitrary: p1 i)
-      case 0
-      then show ?case 
-        by (simp add: path_not_empty)
-    next
-      case (Suc x)
-      then show ?case 
-      proof(cases x)
-        case 0
-        with Suc show ?thesis 
-          by (metis length_0_conv length_Suc_conv list_tail_coinc path.cases path_not_empty)
-      next
-        case Suc':(Suc nat)
-        then have "path l u (butlast p1) (last (butlast p1))" 
-          using Suc path_divide1 path_divide2
-          by (metis butlast_snoc len_greater_imp_nonempty length_Suc_rev_conv lessI)
-        then have *: "path l u (butlast p2) (last (butlast p2))" 
-          using Suc path_divide1 path_divide2
-          by (metis a1 append_butlast_last_id append_self_conv2 butlast.simps(1) path_no_cycle path_last path_length_1)
-        with Suc have **: "l ! (p2 ! (length p2 - 1)) = (p2 ! (length p2 - 1 - 1))" 
-          by (metis diff_less length_butlast length_greater_0_conv path_properties zero_less_one)
-        with Suc have "l ! i = last (butlast p2)" 
-          by (metis (mono_tags, lifting) Suc.prems(2) * diff_less last_conv_nth length_butlast length_greater_0_conv nth_butlast path_last path_not_empty zero_less_one)
-        with Suc.prems have "i = last (butlast p2)" 
-          by auto
-        then have "p2 ! (length p2 - 1) = p2 ! (length p2 - 1 - 1)"
-          by (metis Suc.prems(2) Suc.prems(5) ** last_conv_nth length_upt list.size(3) not_one_less_zero path_last upt_rec)
-        with path_properties have "False" 
-          by (metis * base.prems(2) diff_less length_butlast length_greater_0_conv zero_less_one)
-        then show ?thesis by simp
-      qed
-    qed
+    then have "p1 = [i]" "p2 = [i]" using path_to_root_has_length_1 
+      by blast+
     then show ?case 
-      using a1 base path_no_cycle by blast
+      by blast
   next
     case (step i)
     then show ?case 
@@ -295,7 +297,7 @@ proof-
         by (metis True append_butlast_last_id length_butlast less_numeral_extra(3) less_or_eq_imp_le list.size(3) not_one_le_zero zero_less_diff)
       then have "l ! (p2 ! (length p2 - 1)) = (p2 ! (length p2 - 1 - 1))" 
         by (metis One_nat_def Suc_lessD True diff_less path_properties step.prems(2) zero_less_diff zero_less_one)
-      then have last_p2:"l ! i = last (butlast p2)" 
+      then have last_p2: "l ! i = last (butlast p2)" 
         by (metis (mono_tags, opaque_lifting) * butlast_update' last_list_update length_butlast list_update_id path_last path_not_empty step.prems(2))
       then have "l ! (p1 ! (length p1 - 1)) = (p1 ! (length p1 - 1 - 1))" 
         using True path_properties step.prems(1) by force
@@ -309,17 +311,11 @@ proof-
       case False
       with path_not_empty have length_p: "length p1 = 1 \<or> length p2 = 1" 
         by (metis length_0_conv less_one linorder_neqE_nat step.prems(1) step.prems(2))
-      show ?thesis 
-      proof-
-        from length_p have "u = i" 
-          by (metis list_decomp_1 path_length_1 step.prems(1) step.prems(2))
-        then have "p1 = [i]"
-          using a1 path_no_cycle step.prems path_nodes_lt_length_l by auto
-        then have "p2 = [i]" 
-          using \<open>u = i\<close> a1 path_no_cycle step.prems path_nodes_lt_length_l by blast
-        with \<open>p1 = [i]\<close> show ?thesis 
-          by auto
-      qed
+      then have "i = u" 
+        by (metis list_decomp_1 path_length_1 step.prems)
+      then have "p1 = [i] \<and> p2 = [i]" 
+        using a1 path_no_cycle step by blast
+      then show ?thesis by simp
     qed
   qed
 qed
@@ -361,7 +357,7 @@ qed
 lemma path_root: "path l x p r \<Longrightarrow> l ! r = r \<Longrightarrow> x = r"
   by(induction rule: path.induct, auto) 
 
-lemma path_no_root:"path l y p x \<Longrightarrow> x \<noteq> y \<Longrightarrow> l ! x \<noteq> x"
+lemma path_no_root: "path l y p x \<Longrightarrow> x \<noteq> y \<Longrightarrow> l ! x \<noteq> x"
   using path_root by auto
 
 lemma path_butlast: "path l y p v \<Longrightarrow> y \<noteq> v \<Longrightarrow> path l y (butlast p) (l ! v)"
@@ -464,7 +460,7 @@ qed
 lemma path_fun_upd:
   assumes "path l x p y" "i \<notin> set (tl p)"
   shows "path (CONST list_update l i k) x p y"
-using assms proof(induction rule: path.induct)
+  using assms proof(induction rule: path.induct)
   case (single n l)
   then show ?case 
     by (simp add: path.single)
@@ -478,10 +474,10 @@ text \<open>The paths of nodes with a different root are disjoint.\<close>
 
 lemma path_rep_of_neq_not_in_path: 
   assumes "path l y\<^sub>2 p\<^sub>2 x\<^sub>2"
-          "i\<^sub>2 < length p\<^sub>2"
-          "rep_of l n \<noteq> rep_of l x\<^sub>2"
-          "ufa_invar l"
-    shows "n \<noteq> p\<^sub>2 ! i\<^sub>2"
+    "i\<^sub>2 < length p\<^sub>2"
+    "rep_of l n \<noteq> rep_of l x\<^sub>2"
+    "ufa_invar l"
+  shows "n \<noteq> p\<^sub>2 ! i\<^sub>2"
 proof
   assume n_in_path: "n = p\<^sub>2 ! i\<^sub>2"
   then have "rep_of l (p\<^sub>2 ! i\<^sub>2) = rep_of l x\<^sub>2" 
@@ -494,11 +490,11 @@ qed
 
 lemma path_rep_of_neq_disjoint: 
   assumes "path l y\<^sub>1 p\<^sub>1 x\<^sub>1" "path l y\<^sub>2 p\<^sub>2 x\<^sub>2"
-          "i\<^sub>1 < length p\<^sub>1" "i\<^sub>2 < length p\<^sub>2"
-          "rep_of l x\<^sub>1 \<noteq> rep_of l x\<^sub>2"
-          "ufa_invar l"
-        shows "p\<^sub>1 ! i\<^sub>1 \<noteq> p\<^sub>2 ! i\<^sub>2"
-using assms proof(induction l y\<^sub>1 p\<^sub>1 x\<^sub>1 arbitrary: i\<^sub>1 rule: path.induct)
+    "i\<^sub>1 < length p\<^sub>1" "i\<^sub>2 < length p\<^sub>2"
+    "rep_of l x\<^sub>1 \<noteq> rep_of l x\<^sub>2"
+    "ufa_invar l"
+  shows "p\<^sub>1 ! i\<^sub>1 \<noteq> p\<^sub>2 ! i\<^sub>2"
+  using assms proof(induction l y\<^sub>1 p\<^sub>1 x\<^sub>1 arbitrary: i\<^sub>1 rule: path.induct)
   case (single n l)
   then have "[n] ! i\<^sub>1 = n" 
     by force
@@ -552,7 +548,6 @@ proof
     by (metis append_self_conv last_ConsL path_divide1 snoc_eq_iff_butlast)
 qed
 
-
 lemma path_remove_child: 
   assumes "path l ia pia (l ! i)"
     "ufa_invar l" "i < length l" "l ! i \<noteq> i"
@@ -568,8 +563,8 @@ qed
 
 lemma path_previous_node: 
   assumes "path l y p x" "i < length p - 1" "p ! (i + 1) = n"
-        shows "p ! i = l ! n"
-using assms proof(induction arbitrary: i rule: path.induct)
+  shows "p ! i = l ! n"
+  using assms proof(induction arbitrary: i rule: path.induct)
   case (single n l)
   then show ?case by auto 
 next
@@ -607,7 +602,7 @@ qed
 lemma path_longer:
   assumes "ufa_invar l" "path l b p1 a" "path l c p2 a" "length p1 > length p2"
   shows "path l b (take (length p1 - length p2 + 1) p1) c"
-(is "path l b ?p3 c")
+    (is "path l b ?p3 c")
 proof-
   let ?p4 = "(drop (length p1 - length p2 + 1) p1)"
   have "path l b (?p3 @ ?p4) a" 
@@ -626,7 +621,7 @@ qed
 
 lemma path_take_two:
   assumes "ufa_invar l" "i < length p" "i \<noteq> 0" "path l a p b"
-shows "path l (l ! (p ! i)) [l ! (p ! i), (p ! i)] (p ! i)"
+  shows "path l (l ! (p ! i)) [l ! (p ! i), (p ! i)] (p ! i)"
 proof
   show "l ! (p ! i) < length l" using assms 
     by (simp add: nodes_path_lt_length_l ufa_invarD(2))
@@ -639,8 +634,13 @@ qed
 
 lemma path_contains_no_root:
   assumes "x \<in> set (tl p)" "ufa_invar l"
-"path l a p b"
-shows "l ! x \<noteq> x"
-  using assms 
-  by (smt (verit, best) gr_zeroI in_set_conv_nth length_pos_if_in_set less_numeral_extra(3) list.sel(3) list.size(3) nth_Cons_0 path.simps path_not_first_no_root)
+    "path l a p b"
+  shows "l ! x \<noteq> x"
+proof-
+  from assms obtain i where "i < length (tl p)" "tl p ! i = x" 
+    by (meson in_set_conv_nth)
+  with path_not_first_no_root assms show ?thesis 
+    by (metis List.nth_tl Suc_mono gr0_conv_Suc in_set_tlD length_Suc_conv length_pos_if_in_set list.sel(3))
+qed
+
 end

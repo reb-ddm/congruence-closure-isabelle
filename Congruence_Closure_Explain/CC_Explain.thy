@@ -1,6 +1,6 @@
 section \<open>Explain for Congruence Closure\<close>
 theory CC_Explain
-  imports CC_Invars 
+  imports CC_Correctness
 begin 
 
 subsection \<open>Explain definition\<close>
@@ -674,8 +674,7 @@ lemma explain_along_path_output_pending_correct:
         using path_to_root_correct "1.prems" unfolding cc_list_invar_def 
         by (simp add: explain_list_invar_def path_nodes_lt_length_l)
       then have pRA3: "path pf (rep_of l a) (path_to_root l a) a" 
-        using  "1.prems" 
-        by (smt (verit, ccfv_SIG) "*" explain_list_invar_paths last_path pRA pRAC(1) pRAC2 path_divide1 path_unique proof_forest_invar_def) 
+        using  "1.prems" explain_list_invar_paths cc by simp
       then have p_eq: "(path_to_root l a) = ?pRA " 
         using invar pRA path_unique by blast
       have *: " p =  (butlast pRAC) @ ?pRA" using pRAC2 * 

@@ -41,7 +41,6 @@ next
     using step path_to_root.psimps path_concat1 rep_of_idx path_to_root_domain ufa_invarD(1) by fastforce
 qed
 
-
 lemma path_to_root_length: "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> length (path_to_root l x) > 0"
 proof-
   assume "ufa_invar l" "x < length l"
@@ -51,7 +50,6 @@ proof-
     apply(induction rule: path_to_root.pinduct)
     by (simp add: path_to_root.psimps)
 qed
-
 
 subsection \<open>Correctness of \<open>lowest_common_ancestor\<close>.\<close>
 
@@ -87,19 +85,19 @@ proof-
     using longest_common_prefix_prefix2 prefixE by blast
   from path_divide1 have path_lca_y: "path l ?lca (?lca # p2) y"
     using p2_def lcp_not_empty lowest_common_ancestor.simps path_root_y by presburger
-  then have commmon_ancestor:"common_ancestor l x y ?lca" 
+  then have commmon_ancestor: "common_ancestor l x y ?lca" 
     using path_lca_x by auto
   have "path l r p3 ?lca \<and> path l r p4 ca \<and> common_ancestor l x y ca
-\<Longrightarrow> length p3 \<ge> length p4 "
+\<Longrightarrow> length p3 \<ge> length p4"
     for r p3 p4 ca
   proof(rule ccontr)
-    assume assm:"path l r p3 (lowest_common_ancestor l x y) \<and> path l r p4 ca \<and> common_ancestor l x y ca"
-      and length:"\<not> length p4 \<le> length p3"
+    assume assm: "path l r p3 (lowest_common_ancestor l x y) \<and> path l r p4 ca \<and> common_ancestor l x y ca"
+      and length: "\<not> length p4 \<le> length p3"
     then obtain pCaY pCaX where pCaY: "path l ca pCaY y" and pCaX: "path l ca pCaX x"
       by blast
     then obtain pRootR where pRootR: "path l (rep_of l x) pRootR r" 
       by (metis assm assms(1) path_nodes_lt_length_l path_rep_eq path_to_root_correct)
-    have path_root_ca:"path l (rep_of l x) (pRootR @ tl p4) ca" 
+    have path_root_ca: "path l (rep_of l x) (pRootR @ tl p4) ca" 
       using assm pRootR path_concat1 by auto
     then have "path l (rep_of l x) (pRootR @ tl p4 @ tl pCaX) x" 
       using pCaX path_concat1 by fastforce 
@@ -112,7 +110,7 @@ proof-
     then have prefix1: "prefix (pRootR @ tl p4) (path_to_root l x)" 
       and prefix2: "prefix (pRootR @ tl p4) (path_to_root l y)"
       using * by fastforce+
-    have path_root_lca:"path l (rep_of l x) (pRootR @ tl p3) ?lca" 
+    have path_root_lca: "path l (rep_of l x) (pRootR @ tl p3) ?lca" 
       using assm pRootR path_concat1 by blast
     then have "path l (rep_of l x) (pRootR @ tl p3 @ p1) x" 
       using path_concat1 path_lca_x by fastforce
@@ -135,10 +133,10 @@ qed
 subsection \<open>Correctness of \<open>find_newest_on_path\<close>.\<close>
 
 abbreviation "Newest_on_path l a x y newest \<equiv>
-\<exists> p . path l y p x \<and> newest = (MAX i \<in> set [1..<length p]. a ! (p ! i))
-"
+\<exists> p . path l y p x \<and> newest = (MAX i \<in> set [1..<length p]. a ! (p ! i))"
 
-lemma find_newest_on_path_dom': "find_newest_on_path_dom (l, a, x, y) \<Longrightarrow> x \<noteq> y \<Longrightarrow> find_newest_on_path_dom (l, a, l ! x, y)"
+lemma find_newest_on_path_dom': 
+"find_newest_on_path_dom (l, a, x, y) \<Longrightarrow> x \<noteq> y \<Longrightarrow> find_newest_on_path_dom (l, a, l ! x, y)"
   apply(induction rule: find_newest_on_path.pinduct)
   using find_newest_on_path.domintros by blast
 
@@ -203,32 +201,28 @@ proof
         by fastforce
       then have "[1..<length p] = [1..<length p-1] @ [length p-1]" 
         by (metis Suc_1 Suc_lessD Suc_lessE diff_Suc_1 le_less_Suc_eq nat_le_linear upt_Suc_append)
-      then have *:"(\<lambda> i . a ! (p ! i)) `(set [1..<length p])= {a ! (p ! (length p-1))} \<union> ((\<lambda> i . a ! (p ! i)) `set [1..<length p-1])" 
+      then have *: "(\<lambda> i . a ! (p ! i)) `(set [1..<length p])= {a ! (p ! (length p-1))} \<union> ((\<lambda> i . a ! (p ! i)) `set [1..<length p-1])" 
         by force
       from length_p have "1 \<in> set [1..<length (butlast p)]"
         by simp
-      then have not_empty:"set [1..<length (butlast p)] \<noteq> {}"
-        by fastforce
-      have "finite {i . i \<in> set [1..<length (butlast p)]}"
-        by auto
       with * have **: "(MAX i \<in> set [1..<length p] . a ! (p ! i) ) = max (a ! (p ! (length p -1))) (MAX i\<in>set [1..<length p-1]. a ! (p ! i))"
-        using not_empty by auto
+        by auto
       have "p ! (length p - 1) = x" using path_last 1
         by (metis path_properties last_conv_nth)                              
-      then have ***: "find_newest_on_path l a x y = max ( a ! (p ! (length p - 1))) (MAX i \<in> set [1..<length (butlast p)]. a ! ((butlast p) ! i))"
+      then have ***: "find_newest_on_path l a x y = max (a ! (p ! (length p - 1))) (MAX i \<in> set [1..<length (butlast p)]. a ! ((butlast p) ! i))"
         using 1 ih find_newest_on_path.psimps by presburger
-      have " (\<lambda> i . a ! (p ! i)) ` (set [1..<length p-1]) = (\<lambda> i . a ! ((butlast p) ! i)) `(set [1..<length p-1])"
+      have "(\<lambda> i . a ! (p ! i)) ` (set [1..<length p-1]) = (\<lambda> i . a ! ((butlast p) ! i)) `(set [1..<length p-1])"
         by (simp add: nth_butlast)
       then show ?thesis 
         using ** *** by force
     next
       case False
-      have "l ! (l ! x) = l ! x \<Longrightarrow> l ! x = y" using path_y_l_x path_root 
-        by auto
-      with False have parent:"l ! x = y" by blast
+      have "l ! (l ! x) = l ! x \<Longrightarrow> l ! x = y" 
+        using path_y_l_x path_root by auto
+      with False have parent: "l ! x = y" by blast
       then have "find_newest_on_path l a (l ! x) y = None"
         using find_newest_on_path.psimps find_newest_on_path.domintros by presburger
-      with 1 have result:"find_newest_on_path l a x y = a ! x" 
+      with 1 have result: "find_newest_on_path l a x y = a ! x" 
         by (simp add: find_newest_on_path.psimps)
       have "path l (l ! x) [l ! x, x] x"  
         using 1 parent path.step single by auto
@@ -238,8 +232,8 @@ proof
         by simp
     qed
   qed
-  with path show "path l y p x \<and> find_newest_on_path l a x y  = (MAX i\<in>set [1..<length p]. a ! (p ! i))"
-    by simp
+  then show "path l y p x \<and> find_newest_on_path l a x y  = (MAX i\<in>set [1..<length p]. a ! (p ! i))"
+    using path by simp
 qed
 
 subsection \<open>Properties of the functions when invoked with valid parameters\<close>
@@ -737,10 +731,17 @@ lemma path_to_root_ufa_union2:
     by (metis append_same_eq length_list_update path_no_cycle path_to_root_correct rep_of_idx rep_of_less_length_l ufa_union_aux ufa_union_invar)   
 next
   case (step i)
-  then have *: "rep_of l (l ! i) = rep_of l x2" 
+  let ?new_l = "ufa_union l x2 y2"
+  let ?path_root_i = "path_to_root ?new_l i"
+  let ?path_root_l_i = "path_to_root ?new_l (?new_l ! i)"
+  from step have *: "rep_of l (l ! i) = rep_of l x2" 
     by (metis rep_of_step)
-  with step have "path_to_root (ufa_union l x2 y2) i = path_to_root (ufa_union l x2 y2) ((ufa_union l x2 y2) ! i) @ [i]" 
-    by (smt (verit) length_list_update nth_list_update_neq path_snoc path_to_root_correct path_unique rep_of_min rep_of_step ufa_invarD(2) ufa_union_invar)
+  have 1: "path ?new_l (rep_of ?new_l i) ?path_root_i i"
+    by (simp add: path_to_root_correct step ufa_union_invar)
+  from step have 2: "path ?new_l (rep_of ?new_l i) (?path_root_l_i @ [i]) i"
+    by (metis "1" path_nodes_lt_length_l path_snoc path_to_root_correct rep_of_idx ufa_invarD(2) ufa_union_invar ufa_union_root)
+  from 1 2 path_unique step have "?path_root_i = ?path_root_l_i @ [i]" 
+    using ufa_union_invar by blast
   with step show ?case 
     by (metis Cons_eq_appendI * empty_append_eq_id nth_list_update_neq path_snoc path_to_root_correct path_unique rep_of_min ufa_invarD(2))
 qed

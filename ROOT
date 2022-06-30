@@ -1,4 +1,8 @@
 session "Congruence_Closure" = HOL +
+  options [
+     document = "pdf",
+     document_output = "generated",
+     quick_and_dirty]
   sessions
     "HOL-Library"
     Separation_Logic_Imperative_HOL

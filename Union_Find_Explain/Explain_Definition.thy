@@ -35,7 +35,7 @@ fun ufe_union :: "ufe_data_structure \<Rightarrow> nat \<Rightarrow> nat \<Right
 if (rep_of l x \<noteq> rep_of l y) then
     \<lparr>uf_list = ufa_union l x y, 
      unions = u @ [(x,y)],
-     au =  a[rep_of l x := Some (length u)]\<rparr>
+     au = a[rep_of l x := Some (length u)]\<rparr>
 else \<lparr>uf_list = l, unions = u, au = a\<rparr>)"
 
 text \<open>Helper lemmata for \<open>ufe_union\<close>.\<close>

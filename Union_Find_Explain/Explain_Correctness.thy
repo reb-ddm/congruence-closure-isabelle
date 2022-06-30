@@ -510,48 +510,50 @@ lemma paths_lca_disjoint:
     and "i1 \<noteq> 0"
   shows "pX ! i1 \<noteq> pY ! i2"
 proof
+  let ?lca = "lowest_common_ancestor l x y"
+  let ?prefixX = "path_to_root l ?lca @ tl (take i1 pX @ [pX ! i1])"
+  let ?prefixY = "path_to_root l ?lca @ tl (take i2 pY @ [pY ! i2])"
+  let ?pathX = "path_to_root l ?lca @ tl pX"
+  let ?pathY = "path_to_root l ?lca @ tl pY"
   assume assm: "pX ! i1 = pY ! i2"
   have "pX = take i1 pX @ drop i1 pX" by simp
   with path_divide2 assms have 
-    p1: "path l (lowest_common_ancestor l x y) (take i1 pX @ [pX ! i1]) (pX ! i1)" 
+    p1: "path l ?lca (take i1 pX @ [pX ! i1]) (pX ! i1)" 
     and "path l (pX ! i1) (drop i1 pX) x"
     by (metis Cons_nth_drop_Suc hd_drop_conv_nth list.discI)+
   from path_divide2 assms have 
-    "path l (lowest_common_ancestor l x y) (take i2 pY @ [pY ! i2]) (pY ! i2)" 
+    "path l ?lca (take i2 pY @ [pY ! i2]) (pY ! i2)" 
     and "path l (pY ! i2) (drop i2 pY) y"
     by (metis append_take_drop_id drop_eq_Nil2 hd_drop_conv_nth le_antisym less_imp_le_nat nat_neq_iff)+
-  with p1 path_unique have pY_pX_eq:"take i2 pY @ [pY ! i2] = take i1 pX @ [pX ! i1]" 
+  with p1 path_unique have pY_pX_eq: "take i2 pY @ [pY ! i2] = take i1 pX @ [pX ! i1]" 
     by (metis assm assms(1))
-  let ?prefixX = "path_to_root l (lowest_common_ancestor l x y) @ tl (take i1 pX @ [pX ! i1])"
-  let ?prefixY = "path_to_root l (lowest_common_ancestor l x y) @ tl (take i2 pY @ [pY ! i2])"
-  let ?pathX = "path_to_root l (lowest_common_ancestor l x y) @ tl pX"
-  let ?pathY = "path_to_root l (lowest_common_ancestor l x y) @ tl pY"
-  have path_rep_lca: "path l (rep_of l x) (path_to_root l (lowest_common_ancestor l x y)) (lowest_common_ancestor l x y)"
+  have path_rep_lca: "path l (rep_of l x) (path_to_root l ?lca) ?lca"
     by (metis assms(1) assms(2) path_nodes_lt_length_l path_rep_eq path_to_root_correct)
   then have "path l (rep_of l x) ?pathX x"
     and "path l (rep_of l x) ?pathY y"
     using assms path_concat1 by auto
-  then have "path_to_root l x = ?pathX" 
+  then have paths_to_root: "path_to_root l x = ?pathX" 
     "path_to_root l y = ?pathY"
-    using assms path_to_root_correct path_unique
-    by (metis path_nodes_lt_length_l path_rep_eq)+
+    using assms path_to_root_correct path_unique path_rep_eq
+    by (metis path_nodes_lt_length_l)+
   have "?pathX = ?prefixX @ tl(drop i1 pX)" 
-    and "?pathY = ?prefixY @ tl(drop i2 pY)"
-    by (metis append_assoc append_take_drop_id assms(4,5) take_Suc_conv_app_nth take_tl tl_drop)+
+    and "?pathY = ?prefixY @ tl(drop i2 pY)" using assms
+    by (metis append_assoc append_take_drop_id take_Suc_conv_app_nth take_tl tl_drop)+
   then have *: "prefix ?prefixX ?pathX" "prefix ?prefixY ?pathY" 
     using prefixI by blast+
   have "?prefixX = ?prefixY" 
     using pY_pX_eq by auto
-  with * have "prefix ?prefixX (longest_common_prefix ?pathX ?pathY)"
+  with * have prefix2: "prefix ?prefixX (longest_common_prefix ?pathX ?pathY)"
     by (metis longest_common_prefix_max_prefix)
   then obtain path_lca where "longest_common_prefix ?pathX ?pathY = ?prefixX @ path_lca" 
     using prefixE by blast
-  with path_rep_lca path_divide1 have "path l (rep_of l x) (longest_common_prefix ?pathX ?pathY) (last (longest_common_prefix ?pathX ?pathY))"
+  with path_rep_lca path_divide1 
+  have "path l (rep_of l x) (longest_common_prefix ?pathX ?pathY) (last (longest_common_prefix ?pathX ?pathY))"
     by (smt (verit, ccfv_SIG) append_is_Nil_conv assms(2) longest_common_prefix_prefix1 paths_iff prefix_def)
-  with path_rep_lca have "longest_common_prefix ?pathX ?pathY = path_to_root l (lowest_common_ancestor l x y)"
-    by (metis \<open>path_to_root l x = path_to_root l (lowest_common_ancestor l x y) @ tl pX\<close> \<open>path_to_root l y = path_to_root l (lowest_common_ancestor l x y) @ tl pY\<close> assms(1) lowest_common_ancestor.simps path_unique)
+  with path_rep_lca have "longest_common_prefix ?pathX ?pathY = path_to_root l ?lca"
+    by (metis paths_to_root assms(1) lowest_common_ancestor.simps path_unique)
   then show "False" 
-    using \<open>prefix (path_to_root l (lowest_common_ancestor l x y) @ tl (take i1 pX @ [pX ! i1])) (longest_common_prefix (path_to_root l (lowest_common_ancestor l x y) @ tl pX) (path_to_root l (lowest_common_ancestor l x y) @ tl pY))\<close> assms(4) assms(6) path_concat1 by force
+    using prefix2 assms(4,6) path_concat1 by force
 qed
 
 lemma explain_index_neq:
