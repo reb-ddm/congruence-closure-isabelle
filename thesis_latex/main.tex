@@ -1,0 +1,59 @@
+\RequirePackage[l2tabu,orthodox]{nag}
+
+% TODO: decide if one-sided/two-sided
+%\documentclass[headsepline,footsepline,footinclude=false,fontsize=11pt,paper=a4,listof=totoc,bibliography=totoc,BCOR=12mm,DIV=12]{scrbook} % two-sided
+\documentclass[headsepline,footsepline,footinclude=false,oneside,fontsize=11pt,paper=a4,listof=totoc,bibliography=totoc]{scrbook} % one-sided
+
+% TODO: change citation style in settings
+\input{settings}
+
+\newcommand*{\getUniversity}{Technical University of Munich}
+\newcommand*{\getFaculty}{Department of Informatics}
+\newcommand*{\getTitle}{Formalisation of a Congruence Closure Algorithm in Isabelle/HOL}
+\newcommand*{\getTitleGer}{Formalisierung eines Kongruenzhüllen-Algorithmus in Isabelle/HOL}
+\newcommand*{\getAuthor}{Rebecca Ghidini}
+\newcommand*{\getDoctype}{Bachelor's Thesis in Informatics}
+\newcommand*{\getSupervisor}{Prof. Dr. Tobias Nipkow}
+\newcommand*{\getAdvisor}{Lukas Stevens}
+\newcommand*{\getSubmissionDate}{15.09.2022}
+\newcommand*{\getSubmissionLocation}{Munich}
+
+\begin{document}
+
+% Set page numbering to avoid "destination with the same identifier has been already used" warning for cover page.
+% (see https://en.wikibooks.org/wiki/LaTeX/Hyperlinks#Problems_with_Links_and_Pages).
+\pagenumbering{alph}
+\input{pages/cover}
+
+\frontmatter{}
+
+\input{pages/title}
+\input{pages/disclaimer}
+\input{pages/acknowledgments}
+\input{pages/abstract}
+\microtypesetup{protrusion=false}
+\tableofcontents{}
+\microtypesetup{protrusion=true}
+
+\mainmatter{}
+
+\input{chapters/01_introduction}
+
+\input{chapters/02_preliminaries}
+
+\input{chapters/03_union_find}
+
+\input{chapters/04_congruence_closure}
+
+\input{chapters/05_conclusion}
+
+\appendix{}
+
+\microtypesetup{protrusion=false}
+\listoffigures{}
+%why is it missing from index
+%\listoftables{}
+\microtypesetup{protrusion=true}
+\printbibliography{}
+
+\end{document}
