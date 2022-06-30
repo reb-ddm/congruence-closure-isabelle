@@ -236,10 +236,18 @@ proof
     using path by simp
 qed
 
-subsection \<open>Properties of the functions when invoked with valid parameters\<close>
+subsection \<open>Invariant for the Union Find Data Structure\<close>
+
+text \<open>This section introduces an invariant for the union find data structure and proves
+several properties of the functions when invoked with valid parameters.\<close>
 
 abbreviation "valid_unions u n \<equiv>
 (\<forall> i < length u. fst (u ! i) < n \<and> snd (u ! i) < n)"
+
+text \<open>The validity invariant of the data structure expresses that the data structure derived 
+from subsequent union with \<open>ufe_union\<close>, starting from the initial empty data structure. 
+It also says that the unions were made with valid variables, aka the numbers are less than 
+the length of the union find list.\<close>
 
 abbreviation "ufe_invar ufe \<equiv> 
 valid_unions (unions ufe) (length (uf_list ufe)) \<and>
@@ -358,9 +366,10 @@ next
     with assms show ?thesis 
       by (metis ufe_data_structure.select_convs(1) ufe_union_length_uf_list)
   qed
-  then have "apply_unions (u @ [(x,y)]) (initial_ufe (length l)) = apply_unions [(x,y)] ufe" 
+  then have "apply_unions (u @ [(x,y)]) (initial_ufe (length l)) = apply_unions [(x, y)] ufe" 
     using apply_unions_cons assms by fastforce
-  then have "apply_unions (unions (ufe_union ufe x y)) (initial_ufe (length (uf_list (ufe_union ufe x y))))  = ufe_union ufe x y" 
+  then have "apply_unions (unions (ufe_union ufe x y)) 
+(initial_ufe (length (uf_list (ufe_union ufe x y)))) = ufe_union ufe x y" 
     by (metis apply_unions.simps(1,2) assms(1) ufe_data_structure.select_convs(1,2) ufe_union_length_uf_list unions)
   with ** show ?thesis 
     by simp
@@ -406,9 +415,11 @@ proof(induction u ufe rule: apply_unions.induct)
 next
   case (2 x y u p)
   from 2(3) have x: "x < length (uf_list p)" and y: "y < length (uf_list p)" by force+
-  with 2(2) ufa_union_invar ufe_union2_uf_list have *: "rep_of (uf_list p) x \<noteq> rep_of (uf_list p) y \<Longrightarrow> ufa_invar (uf_list (ufe_union p x y))"
+  with 2(2) ufa_union_invar ufe_union2_uf_list have *: "rep_of (uf_list p) x \<noteq> rep_of (uf_list p) y 
+\<Longrightarrow> ufa_invar (uf_list (ufe_union p x y))"
     by presburger
-  from x y 2(2) ufe_union1_uf_list have "rep_of (uf_list p) x = rep_of (uf_list p) y \<Longrightarrow> ufa_invar (uf_list (ufe_union p x y))"
+  from x y 2(2) ufe_union1_uf_list have "rep_of (uf_list p) x = rep_of (uf_list p) y 
+\<Longrightarrow> ufa_invar (uf_list (ufe_union p x y))"
     by presburger
   with * 2 ufe_union_length_uf_list have "ufa_invar (uf_list (apply_unions u (ufe_union p x y)))"
     by (metis Suc_less_eq2 length_Cons nth_Cons_Suc)
@@ -473,14 +484,14 @@ next
       using apply_unions_ufe_invar length_uf_list_initial pufe ufe_invar_initial un_valid by presburger
     with Suc have "P pufe" 
       using \<open>x = length (unions pufe)\<close> length_eq by fastforce
-    from Suc(3) u have "x2 < length (uf_list pufe)" and "y2 < length (uf_list pufe)"
-      by (metis length_eq fst_conv snd_conv length_Suc_rev_conv lessI nth_append_length)+
+    from Suc(3) u fst_conv snd_conv have "x2 < length (uf_list pufe)" "y2 < length (uf_list pufe)"
+      by (metis length_eq length_Suc_rev_conv lessI nth_append_length)+
     with Suc show ?thesis 
       using \<open>P pufe\<close> \<open>ufe_invar pufe\<close> pufe2 by blast
   qed
 qed
 
-paragraph \<open>Properties of some functions when \<open>ufe_invar\<close> holds\<close>
+paragraph \<open>Properties of some functions when \<open>ufe_invar\<close> holds.\<close>
 
 lemma no_redundant_unions:
   assumes invar: "ufe_invar a"
@@ -636,7 +647,8 @@ next
     and x: "x < length (uf_list ufe)" and y: "y < length (uf_list ufe)"
   obtain l1 u1 a1 where ufe:"ufe = \<lparr>uf_list = l1, unions = u1, au = a1\<rparr>" 
     using ufe_data_structure.cases by blast
-  with False have *:"au (ufe_union \<lparr>uf_list = l1, unions = u1, au = a1\<rparr> x y) = a1[rep_of l1 x := Some (length u1)]" 
+  with False have *:
+"au (ufe_union \<lparr>uf_list = l1, unions = u1, au = a1\<rparr> x y) = a1[rep_of l1 x := Some (length u1)]" 
     by auto
   then show ?thesis
   proof(cases "i = rep_of l1 x")
@@ -937,7 +949,7 @@ proof-
         with False have rep_of_neq: "rep_of l1 x2 \<noteq> rep_of l1 y"
           by simp
         with pufe have au:
-          "au (ufe_union pufe x2 y) = a1 [rep_of l1 x2 := Some (length u1)]"
+          "au (ufe_union pufe x2 y) = a1[rep_of l1 x2 := Some (length u1)]"
           by simp
         with None pufe have i: "i = rep_of l1 x2" 
           by (metis not_None_eq nth_list_update_neq ufe_data_structure.select_convs(3) union.prems(2))
@@ -992,7 +1004,7 @@ proof-
     with au_none_iff_root have *: "a ! v \<noteq> None"
       using step by auto
     with * step apply_unions_length_au au_Some_valid have valid_au: "the (a ! v) < length un"
-      by (metis \<open>v < length l\<close> option.exhaust_sel ufe_data_structure.select_convs length_replicate)    
+      by (metis \<open>v < length l\<close> option.exhaust_sel ufe_data_structure.select_convs(1-3) length_replicate)    
     then show ?case
     proof(cases "y = l ! v")
       case True
