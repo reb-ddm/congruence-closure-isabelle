@@ -24,7 +24,7 @@ datatype pending_equation = One equation
   | Two equation equation
 
 term "a \<approx> b"
-term "if F a b \<approx> c = F a b \<approx> c then False else True"
+term "if (F a b \<approx> c) = F a b \<approx> c then False else True"
 term "(F a b \<approx> c) = (F a b \<approx> c)"
 
 text \<open>Data structure for the congruence closure operations (merge, are_congruent and explain):
@@ -39,7 +39,7 @@ text \<open>Data structure for the congruence closure operations (merge, are_con
              (f(a1, a2)=a, f(b1, b2)=b) where ai and bi are already congruent for i in {1, 2}. 
   \<open>proof_forest\<close>: tree-shaped graph, with the sequence of merge operations as edges
   \<open>pf_labels\<close>: for each edge in the \<open>proof_forest\<close>, a label with the input equations
-  \<open>input\<close>: a list of the input equation, useful for proofs
+  \<open>input\<close>: a set of the input equation, useful for proofs
 \<close>
 record congruence_closure =
   cc_list :: "nat list"
@@ -118,12 +118,10 @@ function (domintros) add_label :: "pending_equation option list \<Rightarrow> na
   where
 "add_label pfl pf e lbl = (if pf ! e = e then (pfl[e := Some lbl]) else add_label (pfl[e := Some lbl]) pf (pf ! e) (the (pfl ! e)))"
   by pat_completeness auto
-text \<open>To show: pfl ! e = None iff pf ! e = e\<close>
-
 
 fun propagate_loop
   where
-"propagate_loop rep_b (u1#urest) 
+"propagate_loop rep_b (u1 # urest) 
 \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>
 =
   propagate_loop rep_b urest (
@@ -134,7 +132,7 @@ fun propagate_loop
             proof_forest = pf, pf_labels = pfl, input = ip\<rparr>
     else
       \<lparr>cc_list = l,
-            use_list = u[rep_b := u1#(u ! rep_b)],
+            use_list = u[rep_b := u1 # (u ! rep_b)],
             lookup = update_lookup t l u1, 
             pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>
 )"

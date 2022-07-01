@@ -221,36 +221,40 @@ proof-
       case (Suc n)
       then have "length (path_to_root l y) > 1" 
         using IH.hyps(2) by linarith
-      then have path_root_divided: "path_to_root l y = rep_of l y # (tl(butlast(path_to_root l y))) @ [y]" 
+      then have path_root_divided: 
+        "path_to_root l y = rep_of l y # (tl (butlast (path_to_root l y))) @ [y]" 
         using IH.prems(1) path_hd_and_last by blast
       with IH have "l ! y \<noteq> y" 
         by (metis append_is_Nil_conv list_tail_coinc not_Cons_self2 path_no_cycle path_root)
 
-      with IH have "path l (rep_of l y) (rep_of l y # (tl(butlast(path_to_root l y)))) (l ! y)"
+      with IH have path_to_parent: 
+        "path l (rep_of l y) (rep_of l y # (tl (butlast (path_to_root l y)))) (l ! y)"
         by (metis butlast_eq_cons_conv path_butlast path_root_divided rep_of_min)
-      have "y \<notin> set (rep_of l y # (tl(butlast(path_to_root l y))))" 
+      have y_notin_path: "y \<notin> set (rep_of l y # (tl(butlast(path_to_root l y))))" 
         by (metis IH.prems(1) IH.prems(2) butlast_eq_cons_conv path_remove_right path_root_divided)
-      then have "path (l[y := y']) (rep_of l y) (rep_of l y # (tl(butlast(path_to_root l y)))) (l ! y)"
-        by (simp add: \<open>path l (rep_of l y) (rep_of l y # tl (butlast (path_to_root l y))) (l ! y)\<close> path_fun_upd)
-      have "rep_of l y = rep_of (l[y := y']) (l ! y)" 
-        by (metis IH.prems(2) IH.prems(3) \<open>path l (rep_of l y) (rep_of l y # tl (butlast (path_to_root l y))) (l ! y)\<close> \<open>y \<notin> set (rep_of l y # tl (butlast (path_to_root l y)))\<close> rep_of_fun_upd rep_of_step)
+      then have path_to_parent_update: 
+        "path (l[y := y']) (rep_of l y) (rep_of l y # (tl (butlast (path_to_root l y)))) (l ! y)"
+        by (simp add: path_to_parent path_fun_upd)
+      have rep_of_update: "rep_of l y = rep_of (l[y := y']) (l ! y)" 
+        by (metis IH.prems(2) IH.prems(3) path_to_parent y_notin_path rep_of_fun_upd rep_of_step)
 
-      have "path l (rep_of l y') (path_to_root l y') y'" 
+      have path_y': "path l (rep_of l y') (path_to_root l y') y'" 
         by (simp add: IH.prems(2) IH.prems(4) path_to_root_correct)
       have "y \<notin> set (path_to_root l y')" 
-        by (metis IH.prems(2) IH.prems(5) \<open>path l (rep_of l y') (path_to_root l y') y'\<close> in_set_conv_nth nodes_path_rep_of(2))
-      from ufa_invar_fun_upd[of l y' _ y] have "ufa_invar (l[y := y'])" 
-        using IH.prems(2) IH.prems(4) \<open>path l (rep_of l y') (path_to_root l y') y'\<close> \<open>y \<notin> set (path_to_root l y')\<close> by blast
-      then have "path (l[y := y']) (rep_of (l[y := y']) (l ! y)) (path_to_root (l[y := y']) (l ! y)) (l ! y)" 
-        using \<open>path (l[y := y']) (rep_of l y) (rep_of l y # tl (butlast (path_to_root l y))) (l ! y)\<close> path_nodes_lt_length_l path_to_root_correct by blast
-      have "l ! y < length (l[y := y'])" 
-        using \<open>path (l[y := y']) (rep_of (l[y := y']) (l ! y)) (path_to_root (l[y := y']) (l ! y)) (l ! y)\<close> path_nodes_lt_length_l by blast
+        by (metis IH.prems(2) IH.prems(5) path_y' in_set_conv_nth nodes_path_rep_of(2))
+      with ufa_invar_fun_upd have "ufa_invar (l[y := y'])" 
+        using IH.prems(2) IH.prems(4) path_y' by blast
+      then have path_to_parent2: 
+        "path (l[y := y']) (rep_of (l[y := y']) (l ! y)) (path_to_root (l[y := y']) (l ! y)) (l ! y)" 
+        using path_to_parent_update path_nodes_lt_length_l path_to_root_correct by blast
+      then have "l ! y < length (l[y := y'])" 
+        using path_nodes_lt_length_l by blast
 
       have "a = length (path_to_root (l[y := y']) (l ! y)) "
-        by (metis IH.hyps(2) \<open>path (l[y := y']) (rep_of (l[y := y']) (l ! y)) (path_to_root (l[y := y']) (l ! y)) (l ! y)\<close> \<open>path (l[y := y']) (rep_of l y) (rep_of l y # tl (butlast (path_to_root l y))) (l ! y)\<close> \<open>rep_of l y = rep_of (l[y := y']) (l ! y)\<close> \<open>ufa_invar (l[y := y'])\<close> length_Cons length_append_singleton old.nat.inject path_root_divided path_unique)
+        by (metis IH.hyps(2) path_to_parent2 path_to_parent_update rep_of_update \<open>ufa_invar (l[y := y'])\<close> length_Cons length_append_singleton old.nat.inject path_root_divided path_unique)
 
-      with IH(1)[of "(l[y := y'])" "l ! y" y] have "add_edge_dom (l[y := y'], l ! y, y)"
-        by (metis IH.prems(2) IH.prems(3) IH.prems(5) \<open>l ! y < length (l[y := y'])\<close> \<open>path (l[y := y']) (rep_of (l[y := y']) (l ! y)) (path_to_root (l[y := y']) (l ! y)) (l ! y)\<close> \<open>path l (rep_of l y') (path_to_root l y') y'\<close> \<open>rep_of l y = rep_of (l[y := y']) (l ! y)\<close> \<open>ufa_invar (l[y := y'])\<close> \<open>y \<notin> set (path_to_root l y')\<close> length_list_update nth_list_update_eq rep_of_fun_upd rep_of_idx)
+      with IH(1) have "add_edge_dom (l[y := y'], l ! y, y)"
+        by (metis IH.prems(2) IH.prems(3) IH.prems(5) \<open>l ! y < length (l[y := y'])\<close> path_to_parent2 path_y' rep_of_update \<open>ufa_invar (l[y := y'])\<close> \<open>y \<notin> set (path_to_root l y')\<close> length_list_update nth_list_update_eq rep_of_fun_upd rep_of_idx)
       then show ?thesis 
         using add_edge.domintros by blast
     qed

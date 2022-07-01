@@ -143,9 +143,9 @@ using assms proof(induction cc "F a\<^sub>1 a\<^sub>2 \<approx> a" rule: are_con
 qed
 
 lemma are_congruent_monotonic:
-  assumes "are_congruent cc (F a\<^sub>1 a\<^sub>2 \<approx> a)" "are_congruent cc (F b\<^sub>1 b\<^sub>2 \<approx> b)"
+  assumes "lookup_invar cc" 
+"are_congruent cc (F a\<^sub>1 a\<^sub>2 \<approx> a)" "are_congruent cc (F b\<^sub>1 b\<^sub>2 \<approx> b)"
 "are_congruent cc (a\<^sub>1 \<approx> b\<^sub>1)" "are_congruent cc (a\<^sub>2 \<approx> b\<^sub>2)" 
-"lookup_invar cc" 
 "valid_vars (F a\<^sub>1 a\<^sub>2 \<approx> a) (nr_vars cc)" "valid_vars (F b\<^sub>1 b\<^sub>2 \<approx> b) (nr_vars cc)"
 "valid_vars (a\<^sub>2 \<approx> b\<^sub>2) (nr_vars cc)" "valid_vars (a\<^sub>1 \<approx> b\<^sub>1) (nr_vars cc)" 
 "ufa_invar (cc_list cc)"
@@ -204,28 +204,37 @@ proof-
         by (metis (no_types, lifting) equation.distinct(1) mem_Collect_eq valid_vars.simps(1) valid_vars.simps(2))
     next
       case (monotonic a\<^sub>1 a\<^sub>2 a b\<^sub>1 b\<^sub>2 b)
-      then have "valid_vars a \<approx> b (nr_vars cc)" 
-        by blast
-      with monotonic are_congruent_monotonic show ?case unfolding cc_\<alpha>_def cc
-        by (smt (verit, ccfv_threshold) CC_representativeE_valid_vars cc_list_invar_def equation.distinct(1) mem_Collect_eq valid_vars.simps(1) valid_vars.simps(2))
+      then have valid_vars1: "valid_vars a \<approx> b (nr_vars cc)"  
+        "valid_vars (F a\<^sub>1 a\<^sub>2 \<approx> a) (nr_vars cc)""valid_vars (F b\<^sub>1 b\<^sub>2 \<approx> b) (nr_vars cc)" 
+        using monotonic CC_representativeE_valid_vars by blast+
+      then have valid_vars2: "valid_vars (a\<^sub>2 \<approx> b\<^sub>2) (nr_vars cc)"
+        "valid_vars (a\<^sub>1 \<approx> b\<^sub>1) (nr_vars cc)"
+        by auto
+      with monotonic have "are_congruent cc (F a\<^sub>1 a\<^sub>2 \<approx> a)" 
+        "are_congruent cc (F b\<^sub>1 b\<^sub>2 \<approx> b)"
+        "are_congruent cc (a\<^sub>1 \<approx> b\<^sub>1)"
+        "are_congruent cc (a\<^sub>2 \<approx> b\<^sub>2)"
+        unfolding cc_\<alpha>_def by auto
+      with monotonic are_congruent_monotonic show ?case unfolding cc_\<alpha>_def
+        using cc_list_invar_def valid_vars1 valid_vars2 by blast
     qed
   next
     assume cc_\<alpha>: "eq \<in> cc_\<alpha> cc"
     show "eq \<in> Congruence_Closure (representativeE cc)"
-      proof(cases eq)
-        case (Constants x11 x12)
-        with cc_\<alpha> have "rep_of (cc_list cc) x11 = rep_of (cc_list cc) x12"
-          using congruence_closure.cases unfolding cc_\<alpha>_def 
-          by (metis are_congruent.simps(1) congruence_closure.select_convs(1) mem_Collect_eq)
-        have "(x11 \<approx> rep_of (cc_list cc) x11) \<in> Congruence_Closure (representativeE cc)"
-          using Constants a_eq_rep_of_a_in_CC(1) assms(1) valid_vars.simps(1) by blast
-        moreover have "(rep_of (cc_list cc) x12 \<approx> x12) \<in> Congruence_Closure (representativeE cc)"
-          using Constants a_eq_rep_of_a_in_CC(2) assms(1) valid_vars.simps(1) by blast
-        ultimately show ?thesis 
-          by (metis Constants \<open>rep_of (cc_list cc) x11 = rep_of (cc_list cc) x12\<close> transitive1)
-      next
-        case (Function x21 x22 x23)
-        then obtain b\<^sub>1 b\<^sub>2 b where 
+    proof(cases eq)
+      case (Constants x11 x12)
+      with cc_\<alpha> have "rep_of (cc_list cc) x11 = rep_of (cc_list cc) x12"
+        using congruence_closure.cases unfolding cc_\<alpha>_def 
+        by (metis are_congruent.simps(1) congruence_closure.select_convs(1) mem_Collect_eq)
+      have "(x11 \<approx> rep_of (cc_list cc) x11) \<in> Congruence_Closure (representativeE cc)"
+        using Constants a_eq_rep_of_a_in_CC(1) assms(1) valid_vars.simps(1) by blast
+      moreover have "(rep_of (cc_list cc) x12 \<approx> x12) \<in> Congruence_Closure (representativeE cc)"
+        using Constants a_eq_rep_of_a_in_CC(2) assms(1) valid_vars.simps(1) by blast
+      ultimately show ?thesis 
+        by (metis Constants \<open>rep_of (cc_list cc) x11 = rep_of (cc_list cc) x12\<close> transitive1)
+    next
+      case (Function x21 x22 x23)
+      then obtain b\<^sub>1 b\<^sub>2 b where 
 "(t ! rep_of l x21) ! rep_of l x22 = Some (F b\<^sub>1 b\<^sub>2 \<approx> b)" 
 "rep_of l x23 = rep_of l b"
           using cc_\<alpha> Function congruence_closure.cases unfolding cc_\<alpha>_def cc

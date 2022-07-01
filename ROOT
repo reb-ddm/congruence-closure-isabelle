@@ -1,8 +1,5 @@
-session "Congruence_Closure" = HOL +
-  options [
-     document = "pdf",
-     document_output = "generated",
-     quick_and_dirty]
+session Isabelle = HOL +
+  options [document = pdf, document_output = "output"]
   sessions
     "HOL-Library"
     Separation_Logic_Imperative_HOL
@@ -16,9 +13,9 @@ session "Congruence_Closure" = HOL +
     Explain_Correctness
     CC_Definition
     CC_Helper_Functions
+  theories [quick_and_dirty]
     CC_Invars
     CC_Correctness
     CC_Explain
-    
-    
-
+  document_files
+    "root.tex"

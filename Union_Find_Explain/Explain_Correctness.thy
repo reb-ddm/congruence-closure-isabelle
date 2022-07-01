@@ -1877,7 +1877,6 @@ proof-
   qed
 qed
 
-
 text \<open>Invariant: the edges near the root are newer.\<close>
 
 lemma edges_near_root_newer:
@@ -1950,7 +1949,5 @@ next
     with a b c show ?thesis by auto
   qed
 qed
-
-
 
 end
