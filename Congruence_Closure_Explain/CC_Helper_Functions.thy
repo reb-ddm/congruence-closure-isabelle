@@ -72,8 +72,6 @@ proof-
     using assms(1) pR rep_of_fun_upd by auto
 qed
 
-
-
 lemma ufa_invar_fun_upd: 
   assumes "ufa_invar l" "path l (rep_of l y) py y" "i \<notin> set py"
   shows "ufa_invar (CONST list_update l i y)"
@@ -490,37 +488,40 @@ proof-
       case False
       then have add_edge: "add_edge pf e e' = add_edge (pf[e := e']) (pf ! e) e" 
         by (simp add: "1.hyps" add_edge.psimps)
-      from 1 have "rep_of (pf[e := e']) e = rep_of (pf[e := e']) e'" 
+      from 1 have reps: "rep_of (pf[e := e']) e = rep_of (pf[e := e']) e'" 
         by (metis length_list_update nth_list_update_eq rep_of_idx ufa_invar_fun_upd')
       have path_e': "path pf (rep_of pf e') (path_to_root pf e') e'" "e \<notin> set (path_to_root pf e')" 
          apply (simp add: "1.prems" path_to_root_correct)
         by (metis "1.prems" in_set_conv_nth path_rep_of_neq_not_in_path path_to_root_correct)
-      have path_pf_e: "path pf (rep_of pf (pf ! e)) (butlast (path_to_root pf e)) (pf ! e)" "e \<notin> set (butlast (path_to_root pf e))" 
+      have path_pf_e: "path pf (rep_of pf (pf ! e)) (butlast (path_to_root pf e)) (pf ! e)" 
+        "e \<notin> set (butlast (path_to_root pf e))" 
          apply (metis "1.prems" False path_butlast path_to_root_correct rep_of_min rep_of_step)
         by (metis "1.prems" path_remove_right path_to_root_correct)
-      with rep_of_fun_upd path_e' 1 have "rep_of (pf[e := e']) e' = rep_of pf e'" "rep_of (pf[e := e']) (pf ! e) = rep_of pf (pf ! e)" 
+      with rep_of_fun_upd path_e' 1 have reps2: "rep_of (pf[e := e']) e' = rep_of pf e'" 
+        "rep_of (pf[e := e']) (pf ! e) = rep_of pf (pf ! e)" 
         by auto
       then have "rep_of (pf[e := e']) (pf ! e) \<noteq> rep_of (pf[e := e']) e" 
-        by (simp add: 1 \<open>rep_of (pf[e := e']) e = rep_of (pf[e := e']) e'\<close> rep_of_idx)
-      with 1 have path_add_edge: "path (add_edge (pf[e := e']) (pf ! e) e) e ([e] @ rev (path_to_root (pf[e := e']) (pf ! e)))
-     (rep_of (pf[e := e']) (pf ! e))" 
+        by (simp add: 1 reps rep_of_idx)
+      with 1 have path_add_edge: "path (add_edge (pf[e := e']) (pf ! e) e) e 
+      ([e] @ rev (path_to_root (pf[e := e']) (pf ! e))) (rep_of (pf[e := e']) (pf ! e))" 
         by (metis length_list_update ufa_invarD(2) ufa_invar_fun_upd')
       have "path pf (rep_of pf e) (path_to_root pf e) e" 
         by (simp add: "1.prems" path_to_root_correct)
-      then have "last (path_to_root pf e) = e" 
+      then have last_path_to_root: "last (path_to_root pf e) = e" 
         using path_last by auto
-      have "(add_edge pf e e') ! e = e'" 
+      have add_edge_e: "(add_edge pf e e') ! e = e'" 
         by (simp add: "1.prems" nth_add_edge_e_eq_e')
-      from "1.prems" have *: "path_to_root pf  (pf ! e) @ [e] = path_to_root pf e" 
+      from "1.prems" have *: "path_to_root pf (pf ! e) @ [e] = path_to_root pf e" 
         by (metis False append_butlast_last_id butlast.simps(1) last_path path_pf_e(1) path_to_root_correct path_unique ufa_invarD(2))
-      with path_pf_e "1.prems"(1) path_to_root_fun_upd have "path_to_root (pf[e := e']) (pf ! e) = path_to_root pf (pf ! e)" 
+      with path_pf_e "1.prems"(1) path_to_root_fun_upd have path_root_parent: 
+        "path_to_root (pf[e := e']) (pf ! e) = path_to_root pf (pf ! e)" 
         by (metis path_e' path_nodes_lt_length_l ufa_invar_fun_upd)
-      with * have **: "tl(rev (path_to_root pf e)) = rev (path_to_root (pf[e := e']) (pf ! e))" 
+      with * have **: "tl (rev (path_to_root pf e)) = rev (path_to_root (pf[e := e']) (pf ! e))" 
         by (metis butlast_snoc rev_butlast_is_tl_rev)
-      have "hd(rev (path_to_root pf e)) = e" 
-        by (simp add: \<open>last (path_to_root pf e) = e\<close> hd_rev)
+      have "hd (rev (path_to_root pf e)) = e" 
+        by (simp add: last_path_to_root hd_rev)
       with "1.prems" path_add_edge add_edge  ** show ?thesis 
-        by (metis "*" Cons_eq_appendI False \<open>add_edge pf e e' ! e = e'\<close> \<open>path_to_root (pf[e := e']) (pf ! e) = path_to_root pf (pf ! e)\<close> \<open>rep_of (pf[e := e']) (pf ! e) = rep_of pf (pf ! e)\<close> append_Nil2 butlast.simps(2) empty_append_eq_id invar last.simps list_tail_coinc path.step path_no_cycle path_nodes_lt_length_l rep_of_step rev.simps(1) rev.simps(2) rev_append rev_singleton_conv snoc_eq_iff_butlast ufa_invarD(2))
+        by (metis "*" Cons_eq_appendI add_edge_e empty_append_eq_id invar path.step path_nodes_lt_length_l path_root_parent rep_of_idx reps2(2) rev_append rev_singleton_conv ufa_invarD(2))
     qed
   qed
 qed
@@ -726,11 +727,6 @@ abbreviation lookup_valid_element :: "equation option list list \<Rightarrow> na
   rep_of l a\<^sub>1 = i \<and> rep_of l a\<^sub>2 = j \<and>
   a\<^sub>1 < length l \<and> a\<^sub>2 < length l \<and> aa < length l)"
 
-abbreviation set_lookup_valid_input :: "equation list \<Rightarrow> nat list \<Rightarrow> bool"
-  where
-    "set_lookup_valid_input xs l \<equiv> 
-\<forall> i < length xs . (\<exists>a\<^sub>1 a\<^sub>2 a. xs ! i = (F a\<^sub>1 a\<^sub>2 \<approx> a) \<and> a\<^sub>1 < length l \<and> a\<^sub>2 < length l \<and> a < length l)"
-
 abbreviation quadratic_table :: "'a list list \<Rightarrow> bool"
   where
     "quadratic_table xs \<equiv> \<forall> i < length xs . length (xs ! i) = length xs"
@@ -750,7 +746,5 @@ next
   then show ?thesis 
     by (metis (no_types, lifting) assms length_list_update nth_list_update_eq rep_of_less_length_l ufa_union_aux)
 qed
-
-
 
 end

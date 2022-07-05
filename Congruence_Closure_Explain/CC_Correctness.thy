@@ -25,9 +25,9 @@ next
     using merge.simps(2) by simp
 qed
 
-theorem representativeE_in_cc_\<alpha>: 
+theorem representativeE_are_congruent: 
   assumes "cc_invar cc" "valid_vars eq (nr_vars cc)" "eq \<in> representativeE cc"
-  shows "eq \<in> cc_\<alpha> cc"
+  shows "are_congruent cc eq"
 proof-
   obtain l u t pe pf pfl ip where 
 cc: "cc = \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
@@ -43,16 +43,12 @@ cc: "cc = \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_for
   then show ?thesis 
   proof(cases)
     case rep
-    with assms have "are_congruent cc eq" unfolding cc_\<alpha>_def rep(1) cc are_congruent.simps 
+    with assms show ?thesis unfolding rep(1) cc are_congruent.simps 
       using \<open>ufa_invar l\<close> rep_of_idem by presburger
-    with assms show ?thesis 
-      unfolding cc_\<alpha>_def by auto
   next
     case lookup
-    with assms have "are_congruent cc eq" unfolding cc_\<alpha>_def lookup(1) cc are_congruent.simps 
+    with assms show ?thesis unfolding lookup(1) cc are_congruent.simps 
       using \<open>ufa_invar l\<close> rep_of_idem by (simp add: rep_of_refl)
-    with assms show ?thesis 
-      unfolding cc_\<alpha>_def by auto
   qed
 qed
 
@@ -144,10 +140,8 @@ qed
 
 lemma are_congruent_monotonic:
   assumes "lookup_invar cc" 
-"are_congruent cc (F a\<^sub>1 a\<^sub>2 \<approx> a)" "are_congruent cc (F b\<^sub>1 b\<^sub>2 \<approx> b)"
-"are_congruent cc (a\<^sub>1 \<approx> b\<^sub>1)" "are_congruent cc (a\<^sub>2 \<approx> b\<^sub>2)" 
-"valid_vars (F a\<^sub>1 a\<^sub>2 \<approx> a) (nr_vars cc)" "valid_vars (F b\<^sub>1 b\<^sub>2 \<approx> b) (nr_vars cc)"
-"valid_vars (a\<^sub>2 \<approx> b\<^sub>2) (nr_vars cc)" "valid_vars (a\<^sub>1 \<approx> b\<^sub>1) (nr_vars cc)" 
+"are_congruent cc (F a\<^sub>1 a\<^sub>2 \<approx> a)" "are_congruent cc (F a\<^sub>1 a\<^sub>2 \<approx> b)"
+"valid_vars (F a\<^sub>1 a\<^sub>2 \<approx> a) (nr_vars cc)" "valid_vars (F a\<^sub>1 a\<^sub>2 \<approx> b) (nr_vars cc)"
 "ufa_invar (cc_list cc)"
   shows "are_congruent cc (a \<approx> b)"
 using assms proof(induction cc "F a\<^sub>1 a\<^sub>2 \<approx> a" rule: are_congruent.induct)
@@ -161,7 +155,7 @@ qed
 
 theorem are_congruenct_correct: 
   assumes "valid_vars eq (nr_vars cc)" "cc_invar cc" "pending cc = []"
-  shows "eq \<in> Congruence_Closure ((input cc)) \<longleftrightarrow> eq \<in> cc_\<alpha> cc"
+  shows "eq \<in> Congruence_Closure ((input cc)) \<longleftrightarrow> are_congruent cc eq"
 proof-
   obtain l u t pe pf pfl ip where cc: "cc = 
 \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
@@ -171,60 +165,54 @@ proof-
   then have "eq \<in> Congruence_Closure (input cc) \<longleftrightarrow> eq \<in> Congruence_Closure (representativeE cc)"
     unfolding inv2_def using assms 
     by simp
-  also have "... \<longleftrightarrow> eq \<in> cc_\<alpha> cc"
+  also have "... \<longleftrightarrow> are_congruent cc eq"
   proof
     assume CC: "eq \<in> Congruence_Closure (representativeE cc)"
-    from CC assms show "eq \<in> cc_\<alpha> cc"
+    from CC assms show "are_congruent cc eq"
     proof(induction eq rule: Congruence_Closure.induct)
       case (base eqt)
-      with representativeE_in_cc_\<alpha> show ?case 
+      with representativeE_are_congruent show ?case 
         by blast
     next
       case (reflexive a)
-      then show ?case unfolding cc_\<alpha>_def cc by simp
+      then show ?case unfolding cc by simp
     next
       case (symmetric a b)
-      then show ?case unfolding cc_\<alpha>_def cc by simp
+      then show ?case unfolding cc by simp
     next
       case (transitive1 a b c)
       then have "valid_vars a \<approx> b (nr_vars cc)" "valid_vars b \<approx> c (nr_vars cc)"
         using CC_representativeE_valid_vars 
         by (metis equation.inject(1) valid_vars.simps(1))+
       then show ?case 
-        using are_congruent_transitive1 cc_\<alpha>_def transitive1 by blast
+        using are_congruent_transitive1 transitive1 by blast
     next
       case (transitive2 a\<^sub>1 a\<^sub>2 b c)
       then show ?case 
-        using CC_representativeE_valid_vars are_congruent_transitive2 cc_\<alpha>_def cc_list_invar_def by blast
+        using CC_representativeE_valid_vars are_congruent_transitive2 cc_list_invar_def by blast
     next
       case (transitive3 a\<^sub>1 a\<^sub>2 a b\<^sub>1 b\<^sub>2)
       then show ?case 
         using CC_representativeE_valid_vars are_congruent_transitive3 cc_list_invar_def 
-        unfolding cc_\<alpha>_def  
-        by (metis (no_types, lifting) equation.distinct(1) mem_Collect_eq valid_vars.simps(1) valid_vars.simps(2))
+        by (metis (no_types, lifting) equation.distinct(1) valid_vars.simps)
     next
-      case (monotonic a\<^sub>1 a\<^sub>2 a b\<^sub>1 b\<^sub>2 b)
+      case (monotonic a\<^sub>1 a\<^sub>2 a b)
       then have valid_vars1: "valid_vars a \<approx> b (nr_vars cc)"  
-        "valid_vars (F a\<^sub>1 a\<^sub>2 \<approx> a) (nr_vars cc)""valid_vars (F b\<^sub>1 b\<^sub>2 \<approx> b) (nr_vars cc)" 
+        "valid_vars (F a\<^sub>1 a\<^sub>2 \<approx> a) (nr_vars cc)""valid_vars (F a\<^sub>1 a\<^sub>2 \<approx> b) (nr_vars cc)" 
         using monotonic CC_representativeE_valid_vars by blast+
-      then have valid_vars2: "valid_vars (a\<^sub>2 \<approx> b\<^sub>2) (nr_vars cc)"
-        "valid_vars (a\<^sub>1 \<approx> b\<^sub>1) (nr_vars cc)"
-        by auto
       with monotonic have "are_congruent cc (F a\<^sub>1 a\<^sub>2 \<approx> a)" 
-        "are_congruent cc (F b\<^sub>1 b\<^sub>2 \<approx> b)"
-        "are_congruent cc (a\<^sub>1 \<approx> b\<^sub>1)"
-        "are_congruent cc (a\<^sub>2 \<approx> b\<^sub>2)"
-        unfolding cc_\<alpha>_def by auto
-      with monotonic are_congruent_monotonic show ?case unfolding cc_\<alpha>_def
-        using cc_list_invar_def valid_vars1 valid_vars2 by blast
+        "are_congruent cc (F a\<^sub>1 a\<^sub>2 \<approx> b)"
+        by auto
+      with monotonic are_congruent_monotonic show ?case 
+        using cc_list_invar_def valid_vars1 by blast
     qed
   next
-    assume cc_\<alpha>: "eq \<in> cc_\<alpha> cc"
+    assume are_congruent: "are_congruent cc eq"
     show "eq \<in> Congruence_Closure (representativeE cc)"
     proof(cases eq)
       case (Constants x11 x12)
-      with cc_\<alpha> have "rep_of (cc_list cc) x11 = rep_of (cc_list cc) x12"
-        using congruence_closure.cases unfolding cc_\<alpha>_def 
+      with are_congruent have "rep_of (cc_list cc) x11 = rep_of (cc_list cc) x12"
+        using congruence_closure.cases
         by (metis are_congruent.simps(1) congruence_closure.select_convs(1) mem_Collect_eq)
       have "(x11 \<approx> rep_of (cc_list cc) x11) \<in> Congruence_Closure (representativeE cc)"
         using Constants a_eq_rep_of_a_in_CC(1) assms(1) valid_vars.simps(1) by blast
@@ -237,8 +225,8 @@ proof-
       then obtain b\<^sub>1 b\<^sub>2 b where 
 "(t ! rep_of l x21) ! rep_of l x22 = Some (F b\<^sub>1 b\<^sub>2 \<approx> b)" 
 "rep_of l x23 = rep_of l b"
-          using cc_\<alpha> Function congruence_closure.cases unfolding cc_\<alpha>_def cc
-          by (metis (no_types, lifting) are_congruent_Function assms(2) cc cc_list_invar_def congruence_closure.select_convs(1) mem_Collect_eq)
+        using are_congruent congruence_closure.cases assms
+        by (metis are_congruent_Function cc cc_list_invar_def congruence_closure.select_convs(1))
         then have "rep_of l x21 < nr_vars cc \<and> rep_of l x22 < nr_vars cc \<and> b < nr_vars cc \<and>
                       cc_list cc ! rep_of l x21 = rep_of l x21 
 \<and> cc_list cc ! rep_of l x22 = rep_of l x22 

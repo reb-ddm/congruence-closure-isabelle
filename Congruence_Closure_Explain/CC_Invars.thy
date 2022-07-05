@@ -198,7 +198,7 @@ proof-
       with new_pending assms(4) entry have eq: "eq = a \<approx> b" 
         by auto
       with eq f1 f2 a_c monotonic show ?thesis 
-        by simp
+        by blast
     qed (auto simp add: representativeE_def)
   next
     fix eq' 
@@ -3948,7 +3948,7 @@ pending_set pe \<union> {?new_pending}"
     then show ?case proof(cases)
       case 4
       then show ?thesis
-        using Congruence_Closure_split_rule cc1 cc2 cc3 monotonic 
+        using Congruence_Closure_split_rule cc1 cc2 cc3 monotonic transitive3
         unfolding congruence_closure.select_convs 4 by meson
     qed (simp_all add: base representativeE_def)
   next

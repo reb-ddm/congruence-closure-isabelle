@@ -58,17 +58,12 @@ abbreviation upd :: "'a list list \<Rightarrow> nat \<Rightarrow> nat \<Rightarr
 text \<open>Finds the entry in the lookup table for the representatives of \<open>a\<^sub>1\<close> and \<open>a\<^sub>2\<close>.\<close>
 abbreviation lookup_entry :: "equation option list list \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> equation option"
   where
-"lookup_entry t l a\<^sub>1 a\<^sub>2 \<equiv> ((t ! (rep_of l a\<^sub>1)) ! (rep_of l a\<^sub>2))"
+"lookup_entry t l a\<^sub>1 a\<^sub>2 \<equiv> t ! rep_of l a\<^sub>1 ! rep_of l a\<^sub>2"
 
 fun lookup_Some :: "equation option list list \<Rightarrow> nat list \<Rightarrow> equation \<Rightarrow> bool"
   where
 "lookup_Some t l (F a\<^sub>1 a\<^sub>2 \<approx> a) = (\<not>Option.is_none (lookup_entry t l a\<^sub>1 a\<^sub>2))"
 | "lookup_Some t l (a \<approx> b) = False"
-
-fun lookup_None :: "equation option list list \<Rightarrow> nat list \<Rightarrow> equation \<Rightarrow> bool"
-  where
-"lookup_None t l (F a\<^sub>1 a\<^sub>2 \<approx> a) = (Option.is_none (lookup_entry t l a\<^sub>1 a\<^sub>2))"
-| "lookup_None t l (a \<approx> b) = False"
 
 \<comment> \<open>Should only be used if \<open>lookup(a\<^sub>1, a\<^sub>2)\<close> is not None and if the equation is not of the type (a = b)\<close>
 fun link_to_lookup :: "equation option list list \<Rightarrow> nat list \<Rightarrow> equation \<Rightarrow> pending_equation"
@@ -212,7 +207,7 @@ fun are_congruent :: "congruence_closure \<Rightarrow> equation \<Rightarrow> bo
 "are_congruent \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> (a \<approx> b) = 
     (rep_of l a = rep_of l b)"
 | "are_congruent \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr> (F a\<^sub>1 a\<^sub>2 \<approx> a) = 
-    (case (t ! rep_of l a\<^sub>1) ! rep_of l a\<^sub>2 of
+    (case lookup_entry t l a\<^sub>1 a\<^sub>2 of
       Some (F b\<^sub>1 b\<^sub>2 \<approx> b) \<Rightarrow> (rep_of l a = rep_of l b)
     | None \<Rightarrow> False
 )"

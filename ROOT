@@ -1,4 +1,4 @@
-session Isabelle = HOL +
+session Congruence_Closure = HOL +
   options [document = pdf, document_output = "output"]
   sessions
     "HOL-Library"

@@ -23,8 +23,7 @@ inductive_set Congruence_Closure :: "equation set \<Rightarrow> equation set" fo
   | transitive3: "(F a\<^sub>1 a\<^sub>2 \<approx> a) \<in> Congruence_Closure S
 \<Longrightarrow> (a\<^sub>1 \<approx> b\<^sub>1) \<in> Congruence_Closure S \<Longrightarrow> (a\<^sub>2 \<approx> b\<^sub>2) \<in> Congruence_Closure S
 \<Longrightarrow> (F b\<^sub>1 b\<^sub>2 \<approx> a) \<in> Congruence_Closure S"
-  | monotonic: "(F a\<^sub>1 a\<^sub>2 \<approx> a) \<in> Congruence_Closure S \<Longrightarrow> (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> Congruence_Closure S 
-\<Longrightarrow> (a\<^sub>1 \<approx> b\<^sub>1) \<in> Congruence_Closure S \<Longrightarrow> (a\<^sub>2 \<approx> b\<^sub>2) \<in> Congruence_Closure S 
+  | monotonic: "(F a\<^sub>1 a\<^sub>2 \<approx> a) \<in> Congruence_Closure S \<Longrightarrow> (F a\<^sub>1 a\<^sub>2 \<approx> b) \<in> Congruence_Closure S 
 \<Longrightarrow> (a \<approx> b) \<in> Congruence_Closure S"
 
 declare Congruence_Closure.intros[intro]
@@ -97,13 +96,11 @@ proof
     by blast
 qed
 
-text \<open>Rule to find if the congruence closure of two sets is equal\<close>
 lemma Congruence_Closure_imp: 
   assumes "x \<in> Congruence_Closure A" "\<And> a. a \<in> A \<Longrightarrow> a \<in> Congruence_Closure B"
   shows "x \<in> Congruence_Closure B"
   using assms apply(induction x rule: Congruence_Closure.induct)
   by auto
-
 
 lemma Congruence_Closure_monotonic:
   "S \<subseteq> S' \<Longrightarrow> Congruence_Closure S \<subseteq> Congruence_Closure S'"
@@ -115,6 +112,7 @@ proof
     using subset by blast+
 qed
 
+text \<open>Rule to find if the congruence closure of two sets is equal\<close>
 lemma Congruence_Closure_eq[case_names left right]:
   assumes "\<And> a. a \<in> A \<Longrightarrow> a \<in> Congruence_Closure B"
     "\<And> b. b \<in> B \<Longrightarrow> b \<in> Congruence_Closure A"
@@ -191,7 +189,6 @@ abbreviation lookup_entries_set :: "congruence_closure \<Rightarrow> equation se
                       \<and> b' < nr_vars cc \<and> c < nr_vars cc \<and>
                       cc_list cc ! a' = a' \<and> cc_list cc ! b' = b' 
                       \<and> lookup cc ! a' ! b' = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)}"
-
 
 definition representativeE :: "congruence_closure \<Rightarrow> equation set"
   where
@@ -431,7 +428,7 @@ text \<open>Invariants needed for the correctness proof of cc_explain\<close>
 
 abbreviation valid_labels_invar :: "pending_equation option list \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> bool"
   where
-"valid_labels_invar pfl pf l \<equiv> (\<forall> n < length pf.
+    "valid_labels_invar pfl pf l \<equiv> (\<forall> n < length pf.
     pf ! n \<noteq> n
     \<longrightarrow> (\<exists> a a\<^sub>1 a\<^sub>2 b b\<^sub>1 b\<^sub>2 . (pfl ! n = Some (One (a \<approx> b)) \<or> 
           pfl ! n = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> a) (F b\<^sub>1 b\<^sub>2 \<approx> b)))
@@ -442,7 +439,7 @@ abbreviation valid_labels_invar :: "pending_equation option list \<Rightarrow> n
 
 definition pf_labels_invar :: "congruence_closure \<Rightarrow> bool"
   where
-"pf_labels_invar cc \<equiv> valid_labels_invar (pf_labels cc) (proof_forest cc) (cc_list cc)"
+    "pf_labels_invar cc \<equiv> valid_labels_invar (pf_labels cc) (proof_forest cc) (cc_list cc)"
 
 abbreviation cc_invar :: "congruence_closure \<Rightarrow> bool"
   where
@@ -783,18 +780,18 @@ lemma lookup_invar_valid:
 
 
 lemma longest_common_prefix_concat: 
-"longest_common_prefix (a @ b) (a @ c) = a @ longest_common_prefix b c"
+  "longest_common_prefix (a @ b) (a @ c) = a @ longest_common_prefix b c"
 proof(induction "(a @ b)" "(a @ c)" arbitrary: a b rule: longest_common_prefix.induct)
   case (1 x xs y ys)
   then show ?case 
     apply(cases a)
     by auto
 qed auto
-  
+
 lemma lowest_common_ancestor_fun_upd:
   assumes "ufa_invar l" "x < length l" "y < length l"
-"l ! a = a" "rep_of l a \<noteq> rep_of l b" "rep_of l x = rep_of l y"
-"a < length l" "b < length l"
+    "l ! a = a" "rep_of l a \<noteq> rep_of l b" "rep_of l x = rep_of l y"
+    "a < length l" "b < length l"
   shows "lowest_common_ancestor l x y = lowest_common_ancestor (l[a := b]) x y"
 proof-
   have a_root: "a = rep_of l a" 
@@ -803,7 +800,7 @@ proof-
   proof(cases "rep_of l x = rep_of l a")
     case True
     then have *: "path_to_root (l[a := b]) x = path_to_root l b @ path_to_root l x"
-"path_to_root (l[a := b]) y = path_to_root l b @ path_to_root l y"
+      "path_to_root (l[a := b]) y = path_to_root l b @ path_to_root l y"
       using a_root assms path_to_root_fun_upd_root 
       by metis+
     then have *: "longest_common_prefix (path_to_root (l[a := b]) x) (path_to_root (l[a := b]) y)
@@ -813,7 +810,7 @@ longest_common_prefix (path_to_root l x) (path_to_root l y)" unfolding *
     have "hd (path_to_root l x) = rep_of l x" "hd (path_to_root l y) = rep_of l y"
       using assms path_hd path_to_root_correct by blast+
     with assms have "(path_to_root l x) = [rep_of l x]@tl(path_to_root l x)"
-"(path_to_root l y) = [rep_of l y]@tl(path_to_root l y)"
+      "(path_to_root l y) = [rep_of l y]@tl(path_to_root l y)"
       by (metis Cons_eq_appendI  empty_append_eq_id len_greater_imp_nonempty list.collapse path_to_root_length)+
     then have "longest_common_prefix (path_to_root l x) (path_to_root l y) = 
 [rep_of l x] @ longest_common_prefix (tl(path_to_root l x)) (tl(path_to_root l y)) "
@@ -825,7 +822,7 @@ longest_common_prefix (path_to_root l x) (path_to_root l y)" unfolding *
   next
     case False
     then have "path_to_root (l[a := b]) x = path_to_root l x"
-"path_to_root (l[a := b]) y = path_to_root l y" 
+      "path_to_root (l[a := b]) y = path_to_root l y" 
       by (auto simp add: assms path_to_root_fun_upd' ufa_invar_fun_upd')
     then show ?thesis 
       by fastforce
