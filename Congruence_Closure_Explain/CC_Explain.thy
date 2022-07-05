@@ -1159,7 +1159,7 @@ qed simp
 subsubsection \<open>Invariant after merge\<close>
 
 lemma validity_invar_merge1:
-  assumes "valid_vars a \<approx> b
+  assumes "valid_vars (a \<approx> b)
      (nr_vars \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, 
 pf_labels = pfl, input = ip\<rparr>)"
     "validity_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, 
@@ -1391,7 +1391,7 @@ lemma explain_along_path_valid:
     then obtain pRAC where pRAC: "pf ! rep_of l a \<noteq> rep_of l a \<and> path pf c pRAC (rep_of l a)" 
       using "1.prems" False explain_list_invar_imp_valid_rep unfolding cc congruence_closure.select_convs
       by blast
-    have "path l (rep_of l (rep_of l a)) [rep_of l a] (rep_of l a)"
+    have path_rep: "path l (rep_of l (rep_of l a)) [rep_of l a] (rep_of l a)"
       using "1.prems" unfolding cc congruence_closure.select_convs
       using explain_list_invar_def pRAC path_length_1 path_nodes_lt_length_l rep_of_idem by auto
     then have pRAC': "path pf c (butlast pRAC) (pf ! rep_of l a)" 
@@ -1400,8 +1400,8 @@ lemma explain_along_path_valid:
     obtain aa a\<^sub>1 a\<^sub>2 bb b\<^sub>1 b\<^sub>2 where valid_eq: "
 (pfl ! rep_of l a = Some (One (aa \<approx> bb)) \<or> 
           pfl ! rep_of l a = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb)))
-          \<and> (aa = pf ! rep_of l a \<and> bb = rep_of l a \<or> aa = rep_of l a \<and> bb = pf ! rep_of l a)
-        "using "1.prems" unfolding cc pf_labels_invar_def congruence_closure.select_convs
+          \<and> (aa = pf ! rep_of l a \<and> bb = rep_of l a \<or> aa = rep_of l a \<and> bb = pf ! rep_of l a)"
+      using "1.prems" unfolding cc pf_labels_invar_def congruence_closure.select_convs
       by (meson pRAC path_nodes_lt_length_l)
     from "1.prems" invar have explain_list_invar: "explain_list_invar (l[rep_of l a := pf ! rep_of l a]) (proof_forest cc)" 
       unfolding cc congruence_closure.select_convs 
@@ -1411,20 +1411,21 @@ lemma explain_along_path_valid:
       using invar by blast
     then have valid: "(pf ! rep_of l a) < length pf" "ufa_invar (l[rep_of l a := (pf ! rep_of l a)])"
       using "1.prems" path_nodes_lt_length_l ufa_invarD(2) ufa_union_invar unfolding cc congruence_closure.select_convs 
-      using pRAC' apply blast      using ufa_invar_fun_upd' "1.prems" unfolding cc congruence_closure.select_convs 
-      using \<open>path l (rep_of l (rep_of l a)) [rep_of l a] (rep_of l a)\<close> explain_list_invar_def pRAC' path_length_1 path_nodes_lt_length_l rep_neq by auto
+      using pRAC' apply blast using ufa_invar_fun_upd' "1.prems" unfolding cc congruence_closure.select_convs 
+      using path_rep explain_list_invar_def pRAC' path_length_1 path_nodes_lt_length_l rep_neq by auto
     show ?thesis proof(cases "the (pfl ! rep_of l a)")
       case (One a')
       from valid_eq have *: "pfl ! rep_of l a = Some (One a')" 
         using One by auto
       have result: "explain_along_path cc l a c = ({a'} \<union> output', new_l', pend')" 
         using 1 explain_along_path_simp2[OF False] One False * recursive_step cc by simp 
-      have "pf ! rep_of l a \<noteq> rep_of l a" 
-        by (simp add: pRAC)
-      then have a': "a' \<in> ip" using "1.prems" unfolding validity_invar_def using One valid_eq 
-        by (smt (verit, del_insts) \<open>path l (rep_of l (rep_of l a)) [rep_of l a] (rep_of l a)\<close> cc congruence_closure.ext_inject congruence_closure.surjective explain_list_invar_def inv_same_length_def nth_mem option.discI path_nodes_lt_length_l pending_eq_in_set.simps(1))
-      from 1(2)[OF False] One "1.prems" recursive_step cc explain_list_invar pRAC' valid have "output' \<subseteq> ip" 
-        by auto
+      have "pf ! rep_of l a \<noteq> rep_of l a" "rep_of l a < length l"
+        using pRAC path_rep path_nodes_lt_length_l by blast+
+      then have a': "a' \<in> ip" using "1.prems" 
+        unfolding validity_invar_def cc congruence_closure.select_convs explain_list_invar_def inv_same_length_def using One valid_eq 
+        by (metis nth_mem option.discI pending_eq_in_set.simps(1))
+      from recursive_step cc explain_list_invar pRAC' have "output' \<subseteq> ip" 
+        using 1(2) False One "1.prems" valid by auto
       with a' cc result show ?thesis 
         by auto
     next

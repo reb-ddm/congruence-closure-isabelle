@@ -175,10 +175,6 @@ abbreviation nr_vars :: "congruence_closure \<Rightarrow> nat"
   where
     "nr_vars cc \<equiv> length (cc_list cc)"
 
-definition cc_\<alpha> :: "congruence_closure \<Rightarrow> equation set"
-  where
-    "cc_\<alpha> cc \<equiv> {x . valid_vars x (nr_vars cc) \<and> are_congruent cc x}"
-
 abbreviation representatives_set :: "nat list \<Rightarrow> equation set"
   where
     "representatives_set l \<equiv> {a \<approx> rep_of l a |a. a < length l \<and> l ! a \<noteq> a}"
@@ -224,7 +220,7 @@ lemma pending_set_union':
 
 lemma pending_set_Constant:
   assumes "eq \<in> pending_set pe"
-  obtains a b where "eq = a \<approx> b"
+  obtains a b where "eq = (a \<approx> b)"
   using assms apply(induction rule: pending_set.induct)
   by auto
 
@@ -280,7 +276,7 @@ definition proof_forest_invar :: "congruence_closure \<Rightarrow> bool"
   where
     "proof_forest_invar cc \<equiv> ufa_invar (proof_forest cc)"
 
-text \<open>The equations in pending can only be of teo specific forms:\<close>
+text \<open>The equations in pending can only be of these specific forms:\<close>
 
 definition pending_invar :: "congruence_closure \<Rightarrow> bool"
   where
@@ -517,29 +513,28 @@ subsection \<open>Lemmata for Congruence_Closure with our congruence_closure dat
 lemma a_eq_rep_of_a_in_CC_representatives_set:
   assumes "a < length l"
   shows
-    "(a \<approx> rep_of l a) \<in> Congruence_Closure (representatives_set l)"
-    "(rep_of l a \<approx> a) \<in> Congruence_Closure (representatives_set l)"
+    "(a \<approx> (rep_of l a)) \<in> Congruence_Closure (representatives_set l)"
+    "((rep_of l a) \<approx> a) \<in> Congruence_Closure (representatives_set l)"
 proof-
-  have *: "rep_of l a = a \<Longrightarrow> (a \<approx> rep_of l a) \<in> Congruence_Closure (representatives_set l)" 
+  have *: "rep_of l a = a \<Longrightarrow> (a \<approx> (rep_of l a)) \<in> Congruence_Closure (representatives_set l)" 
     by auto
-  have "rep_of l a \<noteq> a \<Longrightarrow> (a \<approx> rep_of l a) \<in> (representatives_set l)" 
+  have "rep_of l a \<noteq> a \<Longrightarrow> (a \<approx> (rep_of l a)) \<in> (representatives_set l)" 
     unfolding representativeE_def
     using assms rep_of_refl by force
-  then have "rep_of l a \<noteq> a \<Longrightarrow> (a \<approx> rep_of l a) 
+  then have "rep_of l a \<noteq> a \<Longrightarrow> (a \<approx> (rep_of l a)) 
 \<in> Congruence_Closure (representatives_set l)" 
     by auto
-  with * show "(a \<approx> rep_of l a) \<in> Congruence_Closure (representatives_set l)" 
+  with * show "(a \<approx> (rep_of l a)) \<in> Congruence_Closure (representatives_set l)" 
     by blast
-  with symmetric show "(rep_of l a \<approx> a) \<in> Congruence_Closure (representatives_set l)" 
+  with symmetric show "((rep_of l a) \<approx> a) \<in> Congruence_Closure (representatives_set l)" 
     by simp
 qed
-
 
 lemma a_eq_rep_of_a_in_CC:
   assumes "a < length (cc_list cc)"
   shows
-    "(a \<approx> rep_of (cc_list cc) a) \<in> Congruence_Closure (representativeE cc)"
-    "(rep_of (cc_list cc) a \<approx> a) \<in> Congruence_Closure (representativeE cc)"
+    "(a \<approx> (rep_of (cc_list cc) a)) \<in> Congruence_Closure (representativeE cc)"
+    "((rep_of (cc_list cc) a) \<approx> a) \<in> Congruence_Closure (representativeE cc)"
   unfolding representativeE_def using assms Congruence_Closure_union a_eq_rep_of_a_in_CC_representatives_set
   by blast+
 
@@ -558,7 +553,7 @@ proof-
 qed
 
 lemma CC_rep_of_a_imp_a:
-  assumes "(rep_of (cc_list cc) a \<approx> rep_of (cc_list cc) c)
+  assumes "((rep_of (cc_list cc) a) \<approx> (rep_of (cc_list cc) c))
 \<in> Congruence_Closure (representativeE cc) "
     "a < nr_vars cc" "c < nr_vars cc"
   shows "(a \<approx> c) \<in> Congruence_Closure (representativeE cc)"
@@ -684,8 +679,7 @@ lemma update_lookup_unchanged:
 lemma update_lookup_unchanged':
   assumes "\<not> lookup_Some t l (F d\<^sub>1 d\<^sub>2 \<approx> d)"
     "lookup_entry t l c\<^sub>1 c\<^sub>2 = Some (F b\<^sub>1 b\<^sub>2 \<approx> ba)"
-  shows "lookup_entry (update_lookup t l (F d\<^sub>1 d\<^sub>2 \<approx> d)) l c\<^sub>1 c\<^sub>2
-= lookup_entry t l c\<^sub>1 c\<^sub>2"
+  shows "lookup_entry (update_lookup t l (F d\<^sub>1 d\<^sub>2 \<approx> d)) l c\<^sub>1 c\<^sub>2 = lookup_entry t l c\<^sub>1 c\<^sub>2"
 proof(cases "rep_of l c\<^sub>1 = rep_of l d\<^sub>1 \<and> rep_of l c\<^sub>2 = rep_of l d\<^sub>2")
   case True
   then have "lookup_Some t l (F c\<^sub>1 c\<^sub>2 \<approx> c)" for c 
@@ -742,7 +736,7 @@ lemma use_list_invar_less_n_in_set:
   assumes "use_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe,  proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     "i < length l" "(F a b \<approx> c) \<in> set (u ! i)" "l ! i = i"
   shows "a < length l" "b < length l" "c < length l"
-  using assms by (metis in_set_conv_nth use_list_invar_less_n)+
+  using assms use_list_invar_less_n by (metis in_set_conv_nth)+
 
 lemma use_list_invar_less_n_in_set': 
   assumes "use_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe,  proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
@@ -777,7 +771,6 @@ lemma lookup_invar_valid:
     "(t ! i) ! j = Some (F f g \<approx> h)" "i < length l" "j < length l" "l ! i = i" "l ! j = j"
   shows "i = rep_of l f" "j = rep_of l g" 
   using assms unfolding lookup_invar_def by fastforce+
-
 
 lemma longest_common_prefix_concat: 
   "longest_common_prefix (a @ b) (a @ c) = a @ longest_common_prefix b c"

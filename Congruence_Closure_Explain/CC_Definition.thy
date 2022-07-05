@@ -17,7 +17,7 @@ text \<open>The input equations to this congruence closure algorithm need
 
       For example the equation \<open>2 \<approx> 5\<close> should be interpreted as \<open>c\<^sub>2 = c\<^sub>5\<close>.\<close>
 
-datatype equation = Constants nat nat ("_ \<approx> _")
+datatype equation = Constants nat nat ("_ \<approx> _" 51)
   | Function nat nat nat                 ("F _ _ \<approx> _" 51)
 
 datatype pending_equation = One equation
@@ -133,7 +133,6 @@ fun propagate_loop
 )"
 | "propagate_loop _ [] cc = cc"
 
-
 abbreviation propagate_step
   where 
 "propagate_step l u t pe pf pfl ip a b eq \<equiv> 
@@ -144,8 +143,7 @@ abbreviation propagate_step
     pending = pe,
     proof_forest = add_edge pf a b, 
     pf_labels = add_label pfl pf a eq, 
-    input = ip\<rparr>
-"
+    input = ip\<rparr>"
 
 function propagate :: "congruence_closure \<Rightarrow> congruence_closure"
   where
@@ -216,6 +214,5 @@ text \<open>For the initialisation of the congruence closure algorithm.\<close>
 abbreviation 
 "initial_cc n \<equiv> \<lparr>cc_list = [0..<n], use_list = replicate n [], lookup = replicate n (replicate n None),
                   pending = [], proof_forest = [0..<n], pf_labels = replicate n None, input = {}\<rparr>"
-
 
 end

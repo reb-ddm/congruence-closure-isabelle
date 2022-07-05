@@ -6,6 +6,8 @@ theory Explain_Definition
     "HOL-Library.Option_ord"
 begin
 
+no_notation Ref.update ("_ := _" 62)
+
 text \<open>
   Formalization of an explain operation, based on the Union Find implementation
   of \<open>Separation_Logic_Imperative_HOL.Union_Find\<close>. Path compression is omitted.

@@ -2845,7 +2845,7 @@ proof(standard, standard, standard)
 \<and> (valid_vars_pending (the (pfl[a := Some eq] ! a)) l)"
     by auto
   with assms prems show "\<exists>aa a\<^sub>1 a\<^sub>2 ba b\<^sub>1 b\<^sub>2.
-            (pfl[a := Some eq] ! n = Some (One aa \<approx> ba) \<or>
+            (pfl[a := Some eq] ! n = Some (One (aa \<approx> ba)) \<or>
              pfl[a := Some eq] ! n = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> ba))) \<and>
             (aa = pf[a := b] ! n \<and> ba = n \<or> aa = n \<and> ba = pf[a := b] ! n) \<and>
             valid_vars_pending (the (pfl[a := Some eq] ! n)) l" 
@@ -2867,7 +2867,7 @@ proof(standard, standard, standard)
 \<and> valid_vars_pending (the (pfl ! n)) l"
     using assms by blast
   then show "\<exists>aa a\<^sub>1 a\<^sub>2 ba b\<^sub>1 b\<^sub>2.
-            (pfl ! n = Some (One aa \<approx> ba) \<or> pfl ! n = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> ba))) \<and>
+            (pfl ! n = Some (One (aa \<approx> ba)) \<or> pfl ! n = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> ba))) \<and>
             (aa = pf ! n \<and> ba = n \<or> aa = n \<and> ba = pf ! n) \<and>
             valid_vars_pending (the (pfl ! n)) (ufa_union l a b)" 
   proof(cases "(pfl ! n) = Some (One (aa \<approx> bb))")
@@ -2974,7 +2974,7 @@ add_label (pfl[e := Some eq]) (pf[e := e']) (pf ! e) (the (pfl ! e))"
         using "1.prems" add_label_domain ufa_invarD(2) ufa_invar_fun_upd' by auto
       let ?eq = "the (pfl ! e)"
       have 4: "\<exists>c\<^sub>1 c\<^sub>2 c d\<^sub>1 d\<^sub>2 d.
-       (?eq = One c \<approx> d \<or> ?eq = Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d)) \<and>
+       (?eq = One (c \<approx> d) \<or> ?eq = Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d)) \<and>
        (e = c \<and> pf ! e = d \<or> pf ! e = c \<and> e = d) \<and> c < length l \<and> d < length l 
 \<and> valid_vars_pending ?eq l" 
         using "1.prems" False ufa_invarD(2) by auto
@@ -3026,19 +3026,15 @@ lemma inv_same_rep_classes_step:
     let ?step = "\<lparr>cc_list = ufa_union l a b, use_list = u[rep_of l a := []], lookup = t, pending = pe,
                      proof_forest = add_edge pf a b, pf_labels = add_label pfl pf a eq, input = ip\<rparr>"
     assume i_j: "i < length (proof_forest ?step)" "j < length (proof_forest ?step)"
-    with add_edge_preserves_length' assms have *:"length (proof_forest ?step) = length (proof_forest ?base)" 
+    with add_edge_preserves_length' assms have 
+      "length (proof_forest ?step) = length (proof_forest ?base)" 
       by simp
-    with add_edge_preserves_length' assms have "length (cc_list ?step) = length (cc_list ?base)" 
-      by simp
-    with assms * have "(rep_of (cc_list ?base) i = rep_of (cc_list ?base) j) =
-           (rep_of (proof_forest ?base) i = rep_of (proof_forest ?base) j)" unfolding inv_same_rep_classes_def using inv_same_rep_classes_not_divided 
-      using i_j by presburger
         \<comment>\<open>The representative classes of add_edge and ufa_invar have the same behaviour\<close>
     with rep_of_add_edge_aux ufa_union_aux 
     show "(rep_of (cc_list ?step) i = rep_of (cc_list ?step) j) =
            (rep_of (proof_forest ?step) i = rep_of (proof_forest ?step) j) " 
-      using assms * i_j inv_same_rep_classes_not_divided unfolding congruence_closure.select_convs 
-      by (smt (z3) congruence_closure.select_convs(1) congruence_closure.select_convs(5))
+      using assms i_j unfolding inv_same_rep_classes_def congruence_closure.select_convs 
+      by presburger
   qed
 qed auto
 
@@ -3507,7 +3503,7 @@ lemma pf_labels_invar_step:
 shows "pf_labels_invar (propagate_step l u t pe pf pfl ip a b eq)"
 proof-
   have *: "\<exists>c\<^sub>1 c\<^sub>2 c d\<^sub>1 d\<^sub>2 d.
-       (eq = One c \<approx> d \<or> eq = Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d)) \<and>
+       (eq = One (c \<approx> d) \<or> eq = Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d)) \<and>
        (b = c \<and> a = d \<or> a = c \<and> b = d) \<and> c < length l \<and> d < length l
 \<and> valid_vars_pending eq l"
     using assms pending_invar_Cons valid_vars_pending_cases by fastforce
@@ -3858,7 +3854,7 @@ lemma cc_invar_merge1:
   assumes "cc_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, 
 pf_labels = pfl, input = ip\<rparr>"
     (is "cc_invar ?base")
-    "valid_vars a \<approx> b
+    "valid_vars (a \<approx> b)
      (nr_vars \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, 
 pf_labels = pfl, input = ip\<rparr>)"
   shows "cc_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = One (a \<approx> b)#pe, 

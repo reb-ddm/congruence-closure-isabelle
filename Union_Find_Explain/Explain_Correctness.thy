@@ -32,13 +32,13 @@ next
     then have uf_list: "uf_list (ufe_union pufe x y) = (uf_list pufe)[rep_of (uf_list pufe) x := rep_of (uf_list pufe) y]"
       by (simp add: invar ufe_union_uf_list union.hyps(2))
     with union.prems(1) uf_list have k: "k = rep_of (uf_list pufe) x" 
-      by (metis True nth_list_update_neq rep_of_refl)
+      by (metis True nth_list_update_neq)
     with union rep_of_ufe_union_invar have 1: "rep_of (uf_list (ufe_union pufe x y)) k = rep_of (uf_list (ufe_union pufe x y)) x"
       by (metis uf_list rep length_list_update)
     then have unions: "unions (ufe_union pufe x y) = unions pufe @ [(x, y)]" 
       by (metis True ufe_union1_ufe ufe_union2_unions union.prems(1))
     then have au: "au (ufe_union pufe x y) = (au pufe)[rep_of (uf_list pufe) x := Some (length (unions pufe))]"
-      by (metis rep True k list_update_id uf_list ufe_union2_au union.prems(1))
+      by (metis True k list_update_id uf_list ufe_union2_au union.prems(1))
     from length_au union have "k < length (au pufe)" 
       by (metis length_list_update uf_list)
     with k au have "(au (ufe_union pufe x y)) ! k = Some (length (unions pufe))" 
@@ -59,7 +59,7 @@ next
     with union have "k < length l1" 
       by (metis ufe_data_structure.select_convs(1) ufe_union_length_uf_list)
     with False au_Some_if_not_root union obtain a where "(a1 ! k) = Some a" 
-      by (metis pufe rep_of_refl ufe_data_structure.select_convs(1))
+      by (metis pufe ufe_data_structure.select_convs(1))
     with union au_Some_valid have "a < length u1" 
       by (metis apply_unions_length_au length_replicate pufe ufe_data_structure.select_convs(2) ufe_data_structure.select_convs(3) ufe_union_length_uf_list)
     with union have "fst (u1 ! a) < length l1" "snd (u1 ! a) < length l1"
@@ -166,10 +166,11 @@ proof-
   obtain k_x where k_x: "newest_index_x = Some k_x \<and> k_x < length u" 
     by blast
   then show "\<exists>k. newest_index_x = Some k \<and> k < length u" by simp
-  with k_x assms have "fst (u ! k_x) < length l" "snd (u ! k_x) < length l"
+  with k_x assms have *: "fst (u ! k_x) < length l" "snd (u ! k_x) < length l"
     by auto
   with assms show "ax < length l" "bx < length l"
-    by (metis k_x fst_conv snd_conv option.sel)+
+     apply (metis k_x fst_conv  option.sel)
+    using assms * by (metis k_x  snd_conv option.sel)
 qed
 
 lemma explain_case_y_newest_index_y_Some:
@@ -716,7 +717,7 @@ proof-
       with defs assms unions_ufe_union_invar have equalities: "ax' = ax"  "bx' = bx"
         by (metis \<open>newest_index_x' = newest_index_x\<close> length_eq old.prod.inject option.sel ufe_data_structure.select_convs(2))+
       with explain_case_x_rep_of_ax_bx defs assms show ?thesis 
-        by (metis True \<open>newest_index_x' = newest_index_x\<close> \<open>newest_index_y' = newest_index_y\<close> \<open>path l1 lca' px' x\<close> length_eq path_nodes_lt_length_l ufe_data_structure.select_convs(1)) 
+        by (metis True \<open>newest_index_x' = newest_index_x\<close> \<open>newest_index_y' = newest_index_y\<close> length_eq ufe_data_structure.select_convs(1)) 
     qed
   next
     case False
@@ -919,7 +920,7 @@ proof-
         moreover have "1 \<in> set [1..<length (rep_of l y#p_rep_x)]" 
           by (metis length list.set_intros(1) upt_eq_Cons_conv)
         moreover have "Some (length u1) \<in> ?set"
-          using ** by (metis calculation rev_image_eqI)
+          using ** by (metis calculation(2) rev_image_eqI)
         ultimately have "Some (length u1) = Max ?set"
           using  Max_eqI finite * 
           by (smt (verit) image_iff)

@@ -484,8 +484,9 @@ next
       using apply_unions_ufe_invar length_uf_list_initial pufe ufe_invar_initial un_valid by presburger
     with Suc have "P pufe" 
       using \<open>x = length (unions pufe)\<close> length_eq by fastforce
-    from Suc(3) u fst_conv snd_conv have "x2 < length (uf_list pufe)" "y2 < length (uf_list pufe)"
-      by (metis length_eq length_Suc_rev_conv lessI nth_append_length)+
+    from Suc(3) u have "x2 < length (uf_list pufe)" "y2 < length (uf_list pufe)"
+       apply (metis length_eq fst_conv length_Suc_rev_conv lessI nth_append_length)
+      by (metis Suc(3) u length_eq snd_conv length_Suc_rev_conv lessI nth_append_length)
     with Suc show ?thesis 
       using \<open>P pufe\<close> \<open>ufe_invar pufe\<close> pufe2 by blast
   qed

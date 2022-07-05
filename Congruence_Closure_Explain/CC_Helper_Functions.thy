@@ -574,8 +574,6 @@ lemma rep_of_add_edge_aux:
 proof-
   from assms have dom: "add_edge_dom (l, x, y)" 
     by (simp add: add_edge_domain)
-  with assms have "ufa_invar (add_edge l x y)" 
-    by (simp add: add_edge_ufa_invar_invar)
   from dom assms show ?thesis 
   proof(induction rule: add_edge.pinduct)
     case (1 pf e e')
@@ -585,17 +583,17 @@ proof-
         \<comment>\<open>e is a root, only one edge to e' is added\<close>
       then have add_edge: "add_edge pf e e' = pf[e := e']" 
         by (simp add: "1.hyps" add_edge.psimps)
-      have "rep_of pf e = e" 
+      have rep_e: "rep_of pf e = e" 
         by (simp add: True rep_of_refl)
           \<comment>\<open>the new rep of i is either e', if it was e, or it doesn't change.\<close>
       then show ?thesis proof(cases "rep_of pf i = e")
         case True
         then show ?thesis 
-          using "1.prems" add_edge \<open>rep_of pf e = e\<close> rep_of_fun_upd_rep_of by auto
+          using "1.prems" add_edge rep_e rep_of_fun_upd_rep_of by auto
       next
         case False
         with rep_of_fun_upd' show ?thesis 
-          using "1.prems" \<open>rep_of pf e = e\<close> add_edge by force
+          using "1.prems" rep_e add_edge by force
       qed
     next
       case False
@@ -603,51 +601,37 @@ proof-
       then have add_edge: "add_edge pf e e' = add_edge (pf[e := e']) (pf ! e) e"
         by (simp add: "1.hyps" add_edge.psimps)
       from False add_edge_correctness "1.prems" 
-        \<comment>\<open>Paths are useful for proving that certain nodes are in the same connected component,
-            which means they have the same representative.\<close>
-      have inverted_p: "path (add_edge pf e e') e' ([e'] @ rev (path_to_root pf e)) (rep_of pf e)" 
-        by auto
       have invar: "ufa_invar (pf[e := e'])" 
         by (simp add: "1.prems" ufa_invar_fun_upd')
-      have "add_edge pf e e' ! e = e'" 
-        by (simp add: "1.prems" nth_add_edge_e_eq_e')
-      with "1.prems" have "hd (tl ([e'] @ rev (path_to_root pf e))) = e" 
-        by (metis empty_append_eq_id hd_rev list.sel(3) path_last path_to_root_correct snoc_eq_iff_butlast' tl_append2)
-      with path_to_root_length "1.prems" have length_path: "length ([e'] @ rev (path_to_root pf e)) > 1 "
-        by simp
-      with "1.prems" have "([e'] @ rev (path_to_root pf e)) ! 1 = e"
-        by (metis \<open>hd (tl ([e'] @ rev (path_to_root pf e))) = e\<close> hd_tl_list)             
-      have "ufa_invar (add_edge pf e e')" 
-        using 1 add_edge_ufa_invar_invar by auto
-      with nodes_path_rep_of inverted_p length_path have "rep_of (add_edge pf e e') e = rep_of (add_edge pf e e') e'"
-        using \<open>([e'] @ rev (path_to_root pf e)) ! 1 = e\<close> by fastforce
-      from rep_of_fun_upd "1.prems" have rep_of_parent: "rep_of (pf[e := e']) (pf ! e) = rep_of pf (pf ! e)" 
+      from rep_of_fun_upd "1.prems" have rep_of_parent: 
+        "rep_of (pf[e := e']) (pf ! e) = rep_of pf (pf ! e)" 
         by (metis False path_remove_child path_to_root_correct ufa_invarD(2))
-      with "1.prems" have  "rep_of (pf[e := e']) (pf ! e) \<noteq> rep_of (pf[e := e']) e" 
+      with "1.prems" have rep_of_parent': "rep_of (pf[e := e']) (pf ! e) \<noteq> rep_of (pf[e := e']) e" 
         by (metis invar length_list_update nth_list_update_eq rep_of_fun_upd' rep_of_idx)
           \<comment>\<open>The induction hypothesis tells us that the claim holds for the parent of e\<close>
       with 1(2)[OF False invar] 1 have IH: "rep_of (add_edge (pf[e := e']) (pf ! e) e) i =
-    (if rep_of (pf[e := e']) i = rep_of (pf[e := e']) (pf ! e) then rep_of (pf[e := e']) e
-     else rep_of (pf[e := e']) i)" 
+      (if rep_of (pf[e := e']) i = rep_of (pf[e := e']) (pf ! e) then rep_of (pf[e := e']) e
+       else rep_of (pf[e := e']) i)" 
         by (metis length_list_update ufa_invarD(2))     
       then show ?thesis 
       proof(cases "rep_of pf i = rep_of pf e")
         case True
         then show ?thesis proof(cases "rep_of (pf[e := e']) i = rep_of (pf[e := e']) (pf ! e)")
           case True
-            \<comment>\<open>i was in the same connected component as e, and after adding the edge (e,e'), 
+            \<comment>\<open>i was in the same connected component as e, and after adding the edge (e, e'), 
           i is in the same connected component as the parent of e, 
           therefore i is nearer to the root than e.\<close>
           with "1.prems" show ?thesis 
             by (metis IH add_edge invar length_list_update nth_list_update_eq rep_of_fun_upd' rep_of_idx rep_of_parent)
         next
           case False
-            \<comment>\<open>i was in the same connected component as e, and after adding the edge (e,e'), 
+            \<comment>\<open>i was in the same connected component as e, and after adding the edge (e, e'), 
           i is not in the same connected component as the parent of e.
           Therefore e is nearer to the root than i, and the new representative of i
           is rep_of e', which is also the new representative of e.\<close>
-          with True rep_of_fun_upd3 "1.prems" have *: "rep_of (pf[e := e']) i = rep_of (pf[e := e']) e" 
-            by (metis \<open>rep_of (pf[e := e']) (pf ! e) \<noteq> rep_of (pf[e := e']) e\<close> rep_of_parent rep_of_step ufa_invarD(2))
+          with True rep_of_fun_upd3 "1.prems" have *: 
+            "rep_of (pf[e := e']) i = rep_of (pf[e := e']) e" 
+            by (metis rep_of_parent' rep_of_parent rep_of_step ufa_invarD(2))
           with "1.prems" have "rep_of (pf[e := e']) e = rep_of (pf[e := e']) e'" 
             by (metis False rep_of_fun_upd3 rep_of_idx rep_of_parent ufa_invarD(2))
           then show ?thesis 
