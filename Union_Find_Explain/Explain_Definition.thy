@@ -30,7 +30,7 @@ text \<open>For the initialisation of the union find algorithm.\<close>
 abbreviation "initial_ufe n \<equiv> \<lparr>uf_list = [0..<n], unions = [], au = replicate n None\<rparr>"
 
 paragraph \<open>Union\<close>
-text \<open>Extension of the union operations to the \<open>uf_data_structure\<close>.\<close>
+text \<open>Extension of the union operations to the \<open>ufe_data_structure\<close>.\<close>
 fun ufe_union :: "ufe_data_structure \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> ufe_data_structure"
   where
     "ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x y = (

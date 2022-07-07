@@ -5,11 +5,187 @@
 
 \section{The Union Find Data Structure}
 
+
+In this section I will present th implementation of the modified Union Find data structure, as well as the $Explain$ operation and its correctness proof, as described in \cite{Nieuwenhuis}.
+
+The data structure for the Union, Find and Explain operations consists of the following three lists:
+
+\begin{itemize}
+	\item \lstinline{uf_list}: This is the usual union-find list, which contains the parent node of each element in the forest data structure. It is the one described in Section idk.
+	
+	\item \lstinline{unions}: This list simply contains all the pairs of input elements. 
+	
+	\item \lstinline{au}: This is the \emph{associated unions} list,  it contains for each edge in the union-find forest a label with the union that corresponds to this edge. Similarly to the \lstinline{uf_list}, it is indexed by the element, and for each element $e$ which has a parent in the \lstinline{uf_list}, \lstinline{au} contains the input equation which caused the creation of this edge between $e$ and its parent. The equations are represented as indexes in the \lstinline{unions} list. The type of the entries is \lstinline{nat option}, so that for elements without a parent, the \lstinline{au} entry is None.
+\end{itemize}
+
+\begin{exmp}\label{empty_ufe}
+For a union-find algorithm with 4 variables, the initial empty union find looks as follows: 
+\begin{lstlisting}
+(uf_list = [0, 1, 2, 3], unions = []), au = [None, None, None, None]
+\end{lstlisting}
+Each element is its own parent in the \lstinline{uf_list}, which means that it is a root, the \lstinline{unions} list ist empty because no unions were made yet, and there are no edges in the tree, therefore there are no labels in \lstinline{au}.
+\end{exmp}
+
+In order to reason about paths in the union-find forest, I defined the following \lstinline{path} predicate.
+
+\begin{lstlisting}
+inductive path :: "nat list => nat => nat list => nat => bool" where
+single: "n < length l ==> path l n [n] n" |
+step: "r < length l ==> l ! u = r ==> l ! u != u ==>  path l u p v 
+	==> path l r (r # p) v"
+\end{lstlisting}
+
+\lstinline{path l r p v} defines a path from $r$ to $v$, where $r$ is closer to the root, and $p$ contains all the nodes visited on the path from $r$ to $v$. This definition proved to be very useful for many proofs, as will become clearer later in this thesis.
+
+I proved many lemmas about paths, including lemmas about concatenation of adjecent path, and division of one path into two subpaths, and that the length of a path is at least 1, as well as many others, many of which could be proven by rule induction on \lstinline{path}. The most interesting and useful lemma was about the unicity of paths between two nodes:
+
+\begin{lstlisting}
+theorem path_unique: "ufa_invar l ==> path l u p1 v ==> path l u p2 v 
+	==> p1 = p2"
+\end{lstlisting}
+
+\begin{proof}
+The lemma is proven by induction on the length of $p1$.
+
+For the base case we assume that the length of $p1$ is 1. There is only one node in the path, therefore $v = u$. Then I proved a lemma which showed that if the \lstinline{ufa_invar} holds, each path from $v$ to $v$ has length 1, or, in other words, there are no cycles in the graph. For this I showed that if there was a cycle, the function \lstinline{rep_of} would not terminate, because there would be an infinite loop.
+
+For the induction step, we assume that the length of $p1$ is greater than 1. Therefore, we can remove the last node from $p1$ and the last node from $p2$ to get two paths from $u$ to the parent of $v$, where the first one is shorter that $p1$, and we can apply the induction hypothesis, which tells us that the two paths are equal. Adding the node $v$ to those two paths gives us back the original paths $p1$ and $p2$, therefore we conclude that $p1 = p2$.
+\end{proof}
+
+I was also able to prove that two paths of the same length which end at the same node are equal. 
+
+\begin{lstlisting}
+lemma path_unique_if_length_eq:
+assumes "path l x p1 v"
+and "path l y p2 v"
+and "ufa_invar l"
+and "length p1 = length p2"
+shows "p1 = p2 and x = y"
+\end{lstlisting}
+
+\begin{proof}
+This lemma was shown by rule induction on path. 
+
+For the base case I proved a lemma that shows that each path of length 1 is of the form p l n [n] n, using rule inversion.
+
+Then each time a node is added to the beginning of the path, there is only one possibility to add a node, namely its parent in the list.
+\end{proof}
+
+
 \section{Implementation}
 
 \subsection{Union}
 
+The \emph{union} operation was already implemented for the \lstinline{uf_list} in the theory \lstinline{Union_Find} \cite{Sep} (chapter 18, Union-Find Data-Structure), it only needed to be extended in order to appropiately update the other two lists:
+
+\begin{lstlisting}
+fun ufe_union :: "ufe_data_structure => nat => nat => ufe_data_structure"
+where
+"ufe_union (uf_list = l, unions = u, au = a) x y = (
+if (rep_of l x != rep_of l y) then
+(uf_list = ufa_union l x y, 
+unions = u @ [(x,y)],
+au =  a[rep_of l x := Some (length u)])
+else (uf_list = l, unions = u, au = a))"
+\end{lstlisting}
+
+\begin{exmp}
+After a union of 0 and 1, the data structure from Example \ref{empty_ufe} looks as follows:
+\begin{lstlisting}
+	(uf_list = [1, 1, 2, 3], unions = [(0, 1)]), au = [Some 0, None, None, None]
+\end{lstlisting}
+This means that there is an edge between 1 and 0, labeled with the union at index 0, which is $(0,1)$.
+\end{exmp}
+
+The algorithm only modifies the data structure if the parameters are not already in the same equivalence class.
+The union find tree is modified with the \lstinline{ufa_union} from the theory \lstinline{Union_Find}\cite{Sep}.
+The current union $(x, y)$ is added at the end of the \lstinline{unions} list.
+\lstinline{au} is updated such that the new edge between \lstinline{rep_of l x} and \lstinline{rep_of l y} is labeled with the last index of \lstinline{unions}, which contains the current pair of elements $(x, y)$. 
+---
+\begin{lstlisting}
+fun apply_unions::"(nat * nat) list => ufe_data_structure => ufe_data_structure"
+where
+"apply_unions [] p = p" |
+"apply_unions ((x,y)#u) p = apply_unions u (ufe_union p x y)"
+\end{lstlisting}
+
+has a list of pairs as parameters, and applies for each of the pairs x,y the union, starting from an initial data structure p
+
+
 \subsection{Helper Functions for Explain}
+
+\begin{lstlisting}
+  where 
+"path_to_root l x = (if l ! x = x then [x] else path_to_root l (l ! x) @ [x])"
+by pat_completeness auto
+\end{lstlisting}
+
+computes the path from the root to x
+
+It was easy to show that it has the same domain as the \lstinline{rep_of} function, as it has the same recursive calls/case distinctions.
+
+\begin{lstlisting}
+lemma path_to_root_domain: "rep_of_dom (l, i) <--> path_to_root_dom (l, i)" 
+\end{lstlisting}
+
+the correctness follows easily by induction
+
+\begin{lstlisting}
+theorem path_to_root_correct:
+assumes "ufa_invar l"
+and "x < length l"
+shows "path l (rep_of l x) (path_to_root l x) x"
+\end{lstlisting}
+
+\begin{lstlisting}
+text ‹Finds the lowest common ancestor of x and y in the
+tree represented by the array l.›
+fun lowest_common_ancestor :: "nat list ⇒ nat ⇒ nat ⇒ nat" 
+where
+"lowest_common_ancestor l x y = 
+last (longest_common_prefix (path_to_root l x) (path_to_root l y))"
+\end{lstlisting}
+
+uses \lstinline{longest_common_prefix} from HOL-Library.Sublist [cit]. It is a basic algorithm that computes both paths from the root to the two nodes, and chooses the last element these two paths have in common. There are probably more efficient versions which can be used in the refinement.
+
+For this I defined an abstract definition of \lstinline{lowest_common_ancestor} and proved that it is equivalent to \lstinline{lowest_common_ancestor}. The most useful result is the proof, that \lstinline{lowest_common_ancestor} is a common ancestor, aka there is a path from the ancestor to x and to y. I also proved, that any other node which has a path to x and to y, aka which is a common ancestor, has a shorter distance from the root. There is an assumption that x and y are in the same eq. class, otherwise it shouldn't be invoked with the parameters.
+For the proof, I used the fact that \lstinline{path_to_root} is a path from the root to x respectively y, and I used lemmas about splitting paths, which resulted in the following: path l lcp lca and path l l lca x bzw y. This shows that lca is a common ancestor. For the minimality, I proved it by contradiction. If there was a common ancestor with a longer path from the root, then we can show that there is a path from root to x passing through ca, and the same for y. Because of the uniqueness of paths, these paths are equal to \lstinline{path_to_root x}  bzw y. But if ca had a longer path from the root, we can show that there is a longer common prefix than lcp. It was already proven in Sublist[cit] that it is not possible.
+
+\begin{lstlisting}
+text ‹Finds the newest edge on the path from x to y
+(where y is nearer to the root than x).›
+function (domintros) find_newest_on_path  :: "nat list ⇒ nat option list ⇒ nat ⇒ nat ⇒ nat option"
+where
+"find_newest_on_path l a x y = 
+(if x = y then None
+else max (a ! x) (find_newest_on_path l a (l ! x) y))"
+by pat_completeness auto
+\end{lstlisting}
+
+This function terminates, if there is a path from y to x
+
+\begin{lstlisting}
+lemma find_newest_on_path_domain:
+"path l y p x ⟹ find_newest_on_path_dom (l, a, x, y)"
+this is easily shown by induction.
+\end{lstlisting}
+
+I defined \lstinline{Newest_on_path} as the maximal value in a for indexes in p.
+
+\begin{lstlisting}
+abbreviation "Newest_on_path l a x y newest ≡
+∃ p . path l y p x ∧ newest = (MAX i ∈ set [1..<length p]. a ! (p ! i))"
+\end{lstlisting}
+
+\begin{lstlisting}
+theorem find_newest_on_path_correct:
+assumes "path l y p x" "x ≠ y"
+shows "Newest_on_path l a x y (find_newest_on_path l a x y)"
+\end{lstlisting}
+
+proof
+computation induction on \lstinline{find_newest_on_path}
+pretty easily shown
 
 \subsection{Explain}
 
