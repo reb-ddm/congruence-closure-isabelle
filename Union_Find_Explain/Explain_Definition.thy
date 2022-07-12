@@ -82,7 +82,7 @@ lemma apply_unions_cons: "apply_unions u1 a = b \<Longrightarrow> apply_unions u
 
 paragraph \<open>Explain\<close>
 
-text \<open>Finds the path from x to rep_of x.\<close>
+text \<open>Finds the path from x to \<open>rep_of\<close> x.\<close>
 function path_to_root :: "nat list \<Rightarrow> nat \<Rightarrow> nat list"
   where 
     "path_to_root l x = (if l ! x = x then [x] else path_to_root l (l ! x) @ [x])"
@@ -231,7 +231,7 @@ lemma explain_case_y[simp]:
             \<union> explain \<lparr>uf_list = l, unions = u, au = a\<rparr> ay y"
   by (auto simp add: explain.psimps Let_def)  
 
-subsection \<open>Lemmas about rep_of.\<close>
+subsection \<open>Lemmas about \<open>rep_of\<close>\<close>
 
 lemma rep_of_less_length_l:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> rep_of l x < length l"

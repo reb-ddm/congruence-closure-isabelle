@@ -1114,7 +1114,7 @@ qed
 
 paragraph \<open>A better case rule for proofs about explain\<close>
 
-text \<open>Given that case_y and case_y are symmetric, we can prove case_y
+text \<open>Given that \<open>case_y\<close> and \<open>case_y\<close> are symmetric, we can prove \<open>case_y\<close>
       more easily with this new case rule. It needs to be used with the 
       \<open>induction\<close> proof method. \<close>
 

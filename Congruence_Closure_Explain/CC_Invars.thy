@@ -27,7 +27,7 @@ proof(standard, standard, standard, standard, standard, standard)
     from assms i_j nth_list_update_eq nth_update_invalid show ?thesis 
       unfolding congruence_closure.select_convs lookup_invar_def assms(2) update_lookup.simps
       apply(cases "rep_of l a\<^sub>1 < length ?new_t")
-      apply(cases "rep_of l a\<^sub>2 < length (?new_t ! rep_of l a\<^sub>1)")
+       apply(cases "rep_of l a\<^sub>2 < length (?new_t ! rep_of l a\<^sub>1)")
       using True by auto
   next
     case False
@@ -532,17 +532,17 @@ proof(standard, standard, standard, standard, standard, standard, standard, stan
     by (metis nth_list_update_eq)+
   have "update_lookup t (ufa_union l a b) u1' ! a' ! b' \<noteq> None" 
     using prems by fast
-with assms(5) prems(1-4) obtain k\<^sub>1 k\<^sub>2 k where 
+  with assms(5) prems(1-4) obtain k\<^sub>1 k\<^sub>2 k where 
     "t ! a' ! b' = Some (F k\<^sub>1 k\<^sub>2 \<approx> k)" 
     "rep_of (ufa_union l a b) k\<^sub>1 = a'" "rep_of (ufa_union l a b) k\<^sub>2 = b'"
   if "t ! a' ! b' \<noteq> None" 
-  unfolding lookup_invar_def congruence_closure.select_convs 
-  by blast
+    unfolding lookup_invar_def congruence_closure.select_convs 
+    by blast
   with assms(5) prems(1-4) obtain k\<^sub>1 k\<^sub>2 k where 
     "update_lookup t (ufa_union l a b) u1' ! a' ! b' = Some (F k\<^sub>1 k\<^sub>2 \<approx> k)" 
     "rep_of (ufa_union l a b) k\<^sub>1 = a'" "rep_of (ufa_union l a b) k\<^sub>2 = b'"
     unfolding lookup_invar_def congruence_closure.select_convs apply(cases "t ! a' ! b'")
-    apply (metis "*"(3) "*"(4) \<open>update_lookup t (ufa_union l a b) u1' ! a' ! b' \<noteq> None\<close> assms(13) assms(9) nth_list_update_eq update_lookup.simps(1) update_lookup_unchanged)
+     apply (metis "*"(3) "*"(4) \<open>update_lookup t (ufa_union l a b) u1' ! a' ! b' \<noteq> None\<close> assms(13) assms(9) nth_list_update_eq update_lookup.simps(1) update_lookup_unchanged)
     using assms(8) assms(9) update_lookup_unchanged' by force
   then have a_b: "rep_of (ufa_union l a b) c\<^sub>1 = a'" "rep_of (ufa_union l a b) c\<^sub>2 = b'"
     using prems(5) by auto
@@ -1336,7 +1336,6 @@ proof(standard, standard, standard, standard, standard, standard, standard)
   qed
 qed
 
-
 paragraph \<open>Invariants after the entire loop\<close>
 
 lemma lookup_invar_loop: 
@@ -1472,7 +1471,6 @@ use_list = u'[rep_b' := u1' # u' ! rep_b'], lookup = update_lookup t' l' u1', pe
       using "*" False by force
   qed
 qed simp
-
 
 lemma lookup_invar2_loop:
   assumes 
@@ -1670,8 +1668,6 @@ pending = link_to_lookup t' l' u1' # pe', proof_forest = pf,
   qed
 qed simp
 
-
-
 lemma use_list_invar2_loop:
   assumes 
     "ufa_invar l" "a < length l" "b < length l"
@@ -1800,14 +1796,13 @@ pending = link_to_lookup t' l' u1' # pe', proof_forest = pf,
              pf_labels = pfl', input = ip'\<rparr>) =
     ?loop1" 
       by auto
-    have " \<forall>j<length urest'. use_list_valid_element (urest' ! j) l (rep_of l a) " using 1(15) 
-      by auto
+    have " \<forall>j<length urest'. use_list_valid_element (urest' ! j) l (rep_of l a) " 
+      using 1(15) by auto
     with 1(1)[OF 5(1) assms(1,2,3,4) 2 3] 1(2-) 2 3 4 assms(4) lookup_Some 
     show ?thesis 
       by auto
   qed
 qed simp
-
 
 lemma inv2_loop:
   assumes "a < length (cc_list cc)" "b < length (cc_list cc)" 
@@ -1875,7 +1870,7 @@ lemma inv2_loop:
       set urest') = Congruence_Closure (representativeE
        (propagate_loop rep_b' urest' ?loop2) \<union> pending_set
        (pending (propagate_loop rep_b' urest' ?loop2)))" 
-      using "*" False unfolding cc_list_invar_def by force
+      using * False unfolding cc_list_invar_def by force
     from "1.prems" inv2_loop2 u1' False have "Congruence_Closure
      (representativeE ?loop2 \<union> pending_set (pending ?loop2) \<union>
       set urest') = Congruence_Closure
@@ -1937,7 +1932,7 @@ pf_labels = pfl, input = ip\<rparr>"
   unfolding cc_list_invar_def by auto
 
 lemma pf_labels_invar_loop: 
-"pf_labels (propagate_loop rep_b u_a 
+  "pf_labels (propagate_loop rep_b u_a 
 \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>)
 = pfl" 
   apply(induction rep_b u_a 
@@ -1946,7 +1941,7 @@ lemma pf_labels_invar_loop:
   by auto
 
 lemma proof_forest_loop: 
-"proof_forest (propagate_loop rep_b u_a 
+  "proof_forest (propagate_loop rep_b u_a 
 \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>)
 = pf" 
   apply(induction rep_b u_a 
@@ -1955,7 +1950,7 @@ lemma proof_forest_loop:
   by auto
 
 lemma cc_list_loop: 
-"cc_list (propagate_loop rep_b u_a 
+  "cc_list (propagate_loop rep_b u_a 
 \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>)
 = l"
   apply(induction rep_b u_a 
@@ -1965,7 +1960,7 @@ lemma cc_list_loop:
 
 subsection \<open>The invariants remain invariant after propagate\<close>
 
-paragraph \<open>Invariants before entering the propagate_loop.\<close>
+paragraph \<open>Invariants before entering the \<open>propagate_loop\<close>\<close>
 
 lemma lookup_invar_mini_step:
   assumes "lookup_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
@@ -2029,8 +2024,6 @@ proof(standard, standard, standard, standard, standard)
   qed
 qed
 
-
-
 lemma pending_invar_mini_step:
   assumes "ufa_invar l" "a < length l" "b < length l"
     "pending_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq2 # pe), 
@@ -2068,7 +2061,6 @@ proof(standard, standard)
   qed
 qed
 
-
 lemma inv2_mini_step1:
   assumes "ufa_invar l" "a < length l" "b < length l"
     "a = left eq2" "b = right eq2"
@@ -2089,8 +2081,7 @@ proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
         pending_set pe \<union>
         set (u ! rep_of l a)"
     (is "eq \<in> (representativeE ?step \<union> pending_set pe \<union> set (u ! rep_of l a)) ")
-  shows "
-eq \<in> Congruence_Closure 
+  shows "eq \<in> Congruence_Closure 
 (representativeE 
 \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq2 # pe), 
 proof_forest = pf, pf_labels = pfl, input = ip\<rparr>
@@ -2173,7 +2164,7 @@ Congruence_Closure (representativeE ?base \<union> pending_set (eq2 # pe))"
     with pending_a_b_in_Congruence_Closure'
     have ***: "(a \<approx> b) \<in> Congruence_Closure (representativeE ?base \<union> pending_set (eq2 # pe))" 
       using assms(4) assms(5) assms(8) pending_invar_Cons by force
-    from assms * new_lookup have "(F a' b' \<approx> rep_of l c) \<in> (representativeE ?base)" 
+    from assms * new_lookup have F_in_rep: "(F a' b' \<approx> rep_of l c) \<in> (representativeE ?base)" 
       unfolding representativeE_def congruence_closure.select_convs by simp
     have "rep_of l (rep_of l c) = rep_of l a" 
       by (simp add: assms(1) assms(2) new_lookup(8) rep_of_idem)
@@ -2189,10 +2180,10 @@ Congruence_Closure (representativeE ?base \<union> pending_set (eq2 # pe))"
      (representativeE ?base \<union> pending_set (eq2 # pe))" 
       by (metis "**" transitive1 Congruence_Closure_split_rule cc1(2))
     then show ?thesis 
-      by (metis Congruence_Closure_split_rule \<open>F a' b' \<approx> rep_of l c \<in> representativeE \<lparr>cc_list = l, use_list = u, lookup = t, pending = eq2 # pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>\<close> base new_lookup(1) transitive2)
+      by (metis Congruence_Closure_split_rule F_in_rep base new_lookup(1) transitive2)
   next
     case urest
-    have "rep_of l a < length l" "l ! (rep_of l a) = rep_of l a"
+    have rep_a_valid: "rep_of l a < length l" "l ! (rep_of l a) = rep_of l a"
        apply (simp add: assms(1) assms(2) rep_of_less_length_l)
       by (simp add: assms(1) assms(2) rep_of_min)
     with urest assms(10) obtain c\<^sub>1 c\<^sub>2 c where c: "eq = (F c\<^sub>1 c\<^sub>2 \<approx> c)"
@@ -2202,22 +2193,18 @@ Congruence_Closure (representativeE ?base \<union> pending_set (eq2 # pe))"
            lookup_entry t l c\<^sub>1 c\<^sub>2 = Some (F b\<^sub>1 b\<^sub>2 \<approx> b) \<and>
            (b \<approx> c) \<in> Congruence_Closure
             (representatives_set (cc_list ?base) \<union> pending_set (eq2 # pe))" unfolding congruence_closure.select_convs use_list_invar2_def
-      using \<open>l ! rep_of l a = rep_of l a\<close> \<open>rep_of l a < length l\<close> 
-      by blast
+      using rep_a_valid by blast
     then have b2: "(b \<approx> c) \<in> Congruence_Closure
-            (representativeE ?base \<union> pending_set (eq2 # pe))"unfolding representativeE_def Congruence_Closure_union
-      by (smt (verit, ccfv_SIG) Congruence_Closure_imp Congruence_Closure_split_rule Un_commute Un_iff)
+            (representativeE ?base \<union> pending_set (eq2 # pe))"
+      unfolding representativeE_def congruence_closure.select_convs
+      using Congruence_Closure_imp 
+      by (metis (no_types, lifting) Congruence_Closure_split_rule Un_iff sup_commute)
     have *: "l ! rep_of l c\<^sub>1 = rep_of l c\<^sub>1" "l ! rep_of l c\<^sub>2 = rep_of l c\<^sub>2"
       "rep_of l c\<^sub>1 < length l" "rep_of l c\<^sub>2 < length l"
       using assms(1) c rep_of_min rep_of_bound rep_of_less_length_l by auto
     with assms(9) b have c_b: "rep_of l c\<^sub>1 = rep_of l b\<^sub>1" "rep_of l c\<^sub>2 = rep_of l b\<^sub>2"
       "b\<^sub>1 < length l" "b\<^sub>2 < length l" "b < length l"
-          apply (meson lookup_invar_valid(1)) 
-      using * b assms(9) apply (meson lookup_invar_valid(2))
-      using * b assms(9) lookup_invar_less_n(1) apply blast
-      using * b assms(9) lookup_invar_less_n(2) apply blast
-      using * b assms(9) lookup_invar_less_n(3) apply blast
-      done
+      using lookup_invar_valid lookup_invar_less_n by fast+
     then have CC_b: "(F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> Congruence_Closure (representativeE ?base)"
       using CC_lookup_entry_in_CC b  "*" assms(9) by force
     then have "(b\<^sub>1 \<approx> c\<^sub>1) \<in> Congruence_Closure (representativeE ?base)"
@@ -2225,7 +2212,7 @@ Congruence_Closure (representativeE ?base \<union> pending_set (eq2 # pe))"
       using c_b c CC_same_rep 
       by auto
     then have "(F c\<^sub>1 c\<^sub>2 \<approx> b) \<in> Congruence_Closure (representativeE ?base)"
-      using c_b b  "*" assms(9) transitive3 CC_b by blast
+      using c_b b * assms(9) transitive3 CC_b by blast
     with assms urest show ?thesis
       using Congruence_Closure_union b2 c(1) transitive2 by blast
   qed 
@@ -2248,8 +2235,7 @@ proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     "(k \<approx> j) \<in> (representativeE
          \<lparr>cc_list = l, use_list = u, lookup = t, pending = eq2 # pe, proof_forest = pf, pf_labels = pfl,
             input = ip\<rparr> \<union>
-        pending_set (eq2 # pe)) "
-
+        pending_set (eq2 # pe))"
 shows "(k \<approx> j) \<in> Congruence_Closure 
 (representativeE 
 \<lparr>cc_list = ufa_union l a b, 
@@ -2307,7 +2293,12 @@ proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
 proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     "use_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq2 # pe), 
 proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
-  shows "Congruence_Closure (representativeE 
+  shows "Congruence_Closure 
+(representativeE 
+\<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq2 # pe), 
+proof_forest = pf, pf_labels = pfl, input = ip\<rparr>
+\<union> pending_set (eq2 # pe))
+= Congruence_Closure (representativeE 
 \<lparr>cc_list = ufa_union l a b, 
     use_list = u[rep_of l a := []], 
     lookup = t, 
@@ -2316,19 +2307,14 @@ proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     pf_labels = add_label pfl pf a eq2, 
     input = ip\<rparr>
 \<union> pending_set pe
-\<union> set (u ! rep_of l a)) = 
-Congruence_Closure 
-(representativeE 
-\<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq2 # pe), 
-proof_forest = pf, pf_labels = pfl, input = ip\<rparr>
-\<union> pending_set (eq2 # pe))"
-    (is "Congruence_Closure (representativeE ?step \<union> pending_set pe \<union> set (u ! rep_of l a)) = ?right")
+\<union> set (u ! rep_of l a))"
+    (is "?left = Congruence_Closure (representativeE ?step \<union> pending_set pe \<union> set (u ! rep_of l a))")
 proof(induction rule: Congruence_Closure_eq)
-  case (left eq)
+  case (right eq)
   then show ?case using inv2_mini_step1 assms 
     by blast
 next
-  case (right eq)
+  case (left eq)
   then consider
     (rep) c where "eq = c \<approx> rep_of l c" "c < length l" "l ! c \<noteq> c"
   | (lookup) a' b' c c\<^sub>1 c\<^sub>2 where "eq = F a' b' \<approx> rep_of l c" "a' < length l" "b' < length l"
@@ -2340,7 +2326,7 @@ next
     by blast
   then show ?case proof(cases)
     case rep
-    then show ?thesis using inv2_mini_step2 assms right by blast 
+    then show ?thesis using inv2_mini_step2 assms left by blast 
   next
     case lookup
     then show ?thesis proof(cases "a' = rep_of l a \<or> b' = rep_of l a")
@@ -2355,11 +2341,12 @@ next
       from b have cc1: "(F b\<^sub>1 b\<^sub>2 \<approx> bb) \<in> 
 Congruence_Closure (representativeE ?step \<union> pending_set pe \<union> set (u ! rep_of l a))"
         using Congruence_Closure_split_rule by blast
-      from assms lookup have c_length: "rep_of (ufa_union l a b) c\<^sub>1 = rep_of (ufa_union l a b) a'"
+      from assms lookup rep_of_iff ufa_union_aux
+      have c_length: "rep_of (ufa_union l a b) c\<^sub>1 = rep_of (ufa_union l a b) a'"
         "c\<^sub>1 < length l" "rep_of (ufa_union l a b) c\<^sub>2 = rep_of (ufa_union l a b) b'"
         "c\<^sub>2 < length l"
         unfolding lookup_invar_def congruence_closure.select_convs 
-        by (metis equation.inject(2) option.discI option.inject rep_of_iff ufa_union_aux)+
+        by (metis equation.inject(2) option.discI option.inject)+
       from b have
         b_length: "b\<^sub>1 < length l" "b\<^sub>2 < length l" "bb < length l"
         using b True assms(10) lookup use_list_invar_less_n_in_set(1) apply blast        
@@ -2457,7 +2444,7 @@ Congruence_Closure (representativeE ?step)"
     case new_eq
     then obtain hh hhh where "eq = hh \<approx> hhh" 
       by simp
-    then show ?thesis using inv2_mini_step2 assms right by blast 
+    then show ?thesis using inv2_mini_step2 assms left by blast 
   qed (simp add: base)
 qed
 
@@ -2575,7 +2562,7 @@ proof(standard, standard, standard, standard, standard, standard, standard, stan
             (cc_list \<lparr>cc_list = l, use_list = u, lookup = t, pending = eq # pe, proof_forest = pf,
                pf_labels = pfl, input = ip\<rparr>) \<union>
              pending_set (eq # pe))"
-    "    (F a\<^sub>1 a\<^sub>2 \<approx> ac) \<in> set (u ! a') \<and>
+    "(F a\<^sub>1 a\<^sub>2 \<approx> ac) \<in> set (u ! a') \<and>
          rep_of l a\<^sub>1 = rep_of l c\<^sub>1 \<and>
          rep_of l a\<^sub>2 = rep_of l c\<^sub>2 \<and>
          (ac \<approx> c) \<in> Congruence_Closure
@@ -2621,9 +2608,8 @@ rep_of l aa = rep_of l bb \<Longrightarrow> rep_of (ufa_union l a b) aa = rep_of
               (cc_list \<lparr>cc_list = ufa_union l a b, use_list = u[rep_of l a := []], lookup = t, pending = pe,
                  proof_forest = add_edge pf a b, pf_labels = add_label pfl pf a eq, input = ip\<rparr>) \<union>
              pending_set pe)
-            )
-       ""
-           (F a\<^sub>1 a\<^sub>2 \<approx> ac) \<in> set (u[rep_of l a := []] ! a') \<and>
+            )"
+        "(F a\<^sub>1 a\<^sub>2 \<approx> ac) \<in> set (u[rep_of l a := []] ! a') \<and>
            rep_of (ufa_union l a b) a\<^sub>1 = rep_of (ufa_union l a b) c\<^sub>1 \<and>
            rep_of (ufa_union l a b) a\<^sub>2 = rep_of (ufa_union l a b) c\<^sub>2 \<and>
            (ac \<approx> c) \<in> Congruence_Closure
@@ -2651,7 +2637,7 @@ rep_of l aa = rep_of l bb \<Longrightarrow> rep_of (ufa_union l a b) aa = rep_of
             ({aa \<approx> rep_of (ufa_union l a b) aa |aa.
               aa < length (ufa_union l a b) \<and> ufa_union l a b ! aa \<noteq> aa} \<union>
              pending_set pe)
-            ) "
+            )"
     by auto
 qed
 
@@ -2778,8 +2764,7 @@ proof(standard, standard, standard, standard, standard, standard, standard)
           (cc_list \<lparr>cc_list = ufa_union l a b, use_list = u[rep_of l a := []], lookup = t,
              pending = pe, proof_forest = add_edge pf a b,
              pf_labels = add_label pfl pf a eq, input = ip\<rparr>) \<union>
-         pending_set pe)
-            " 
+         pending_set pe)" 
       by auto
     with reps e show ?thesis 
       unfolding congruence_closure.select_convs by blast
@@ -2919,7 +2904,6 @@ proof-
     qed
   qed
 qed
-
 
 lemma valid_labels_invar_mini_step:
   assumes "valid_labels_invar pfl pf l"
@@ -3095,10 +3079,10 @@ contains_similar_equation \<lparr>cc_list = ufa_union l a b,
 proof(standard)
   fix eq'
   assume eq': "eq' \<in> set (u ! rep_of l a)"
-  with assms use_list_invar_less_n_in_set'
+  with assms use_list_invar_less_n_in_set' rep_of_bound rep_of_root use_list_invar_less_n_in_set(1)
   obtain c\<^sub>1 c\<^sub>2 c where c: "eq' = (F c\<^sub>1 c\<^sub>2 \<approx> c)"
     "c\<^sub>1 < length l" "c\<^sub>2 < length l" "c < length l" 
-    by (metis rep_of_bound rep_of_root use_list_invar_less_n_in_set(1))
+    by metis
   with assms obtain b\<^sub>1 b\<^sub>2 bb where 
     b: "lookup_entry t l c\<^sub>1 c\<^sub>2 = Some (F b\<^sub>1 b\<^sub>2 \<approx> bb)" 
     "(bb \<approx> c) \<in> Congruence_Closure (representatives_set (cc_list ?base) \<union> pending_set (pending ?base))"
@@ -3474,7 +3458,6 @@ proof-
   then show ?thesis using inv_same_length_loop assms by simp
 qed 
 
-
 lemma cc_list_invar_step: 
   assumes "a < length l" "b < length l" 
     "cc_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
@@ -3494,13 +3477,13 @@ qed
 
 lemma pf_labels_invar_step:
   assumes "ufa_invar pf" "a < length l" "b < length l" 
-"a = left eq" "b = right eq"
+    "a = left eq" "b = right eq"
     "pending_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     "pf_labels_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
-"length l = length pf" "length l = length pfl"  
-"rep_of pf a \<noteq> rep_of pf b"
-"ufa_invar l" 
-shows "pf_labels_invar (propagate_step l u t pe pf pfl ip a b eq)"
+    "length l = length pf" "length l = length pfl"  
+    "rep_of pf a \<noteq> rep_of pf b"
+    "ufa_invar l" 
+  shows "pf_labels_invar (propagate_step l u t pe pf pfl ip a b eq)"
 proof-
   have *: "\<exists>c\<^sub>1 c\<^sub>2 c d\<^sub>1 d\<^sub>2 d.
        (eq = One (c \<approx> d) \<or> eq = Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d)) \<and>
@@ -3510,20 +3493,19 @@ proof-
   have "valid_labels_invar (add_label pfl pf a eq) (add_edge pf a b) l"
     using valid_labels_invar_mini_step * assms(1,7,8,9,10,11) 
     unfolding pf_labels_invar_def congruence_closure.select_convs by simp
- then have "pf_labels_invar \<lparr>cc_list = ufa_union l a b, 
+  then have "pf_labels_invar \<lparr>cc_list = ufa_union l a b, 
     use_list = u[rep_of l a := []], 
     lookup = t, 
     pending = pe,
     proof_forest = add_edge pf a b, 
     pf_labels = add_label pfl pf a eq, 
     input = ip\<rparr>" using  assms(2,3,11) valid_labels_invar_ufa_union
-  unfolding pf_labels_invar_def congruence_closure.select_convs 
-  by auto
+    unfolding pf_labels_invar_def congruence_closure.select_convs 
+    by auto
   then show ?thesis using pf_labels_invar_loop proof_forest_loop cc_list_loop
     unfolding pf_labels_invar_def congruence_closure.select_convs
     by simp
 qed
-
 
 lemma cc_invar_step:
   assumes "cc_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, 
@@ -3538,7 +3520,7 @@ proof (rule conjI)+
   have a_b: "a < length l" "b < length l" 
     using assms pending_left_right_valid by blast+
   have same_length: "length u = length l" "length t = length l" 
-"length pf = length l" "length pfl = length l"  
+    "length pf = length l" "length pfl = length l"  
     using assms unfolding inv_same_length_def congruence_closure.select_convs by blast+
   have rep_pf: "rep_of pf a \<noteq> rep_of pf b"
     using assms(1,4) a_b same_length(3) unfolding inv_same_rep_classes_def by auto
@@ -3774,12 +3756,11 @@ qed simp
 subsection \<open>Invariants after merge\<close>
 
 lemma representativeE_unchanged:
-  " representativeE
+  "representativeE
         \<lparr>cc_list = l, use_list = u, lookup = t, pending = k # pe, proof_forest = pf, pf_labels = pfl,
            input = insert q ip\<rparr> 
 = representativeE
-\<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>
-"
+\<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
   unfolding representativeE_def 
   by auto
 
@@ -4334,7 +4315,6 @@ proof(standard, standard, standard, standard, standard, standard, standard, stan
       by (metis (no_types, lifting) * prems)
   qed
 qed
-
 
 lemma use_list_invar2_merge3:
   assumes "cc_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, 

@@ -52,7 +52,7 @@ proof-
   qed
 qed
 
-subsection \<open>Lemmas about are_congruent\<close>
+subsection \<open>Lemmas about \<open>are_congruent\<close>\<close>
 
 lemma CC_representativeE_valid_vars:
   assumes "eq \<in> Congruence_Closure (representativeE cc)" "cc_invar cc" 

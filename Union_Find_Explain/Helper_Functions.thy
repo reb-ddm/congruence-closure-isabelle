@@ -253,7 +253,7 @@ abbreviation "ufe_invar ufe \<equiv>
 valid_unions (unions ufe) (length (uf_list ufe)) \<and>
 apply_unions (unions ufe) (initial_ufe (length (uf_list ufe))) = ufe"
 
-paragraph \<open>Lemmata about the length of uf_list, au and unions, if the invariant holds.\<close>
+paragraph \<open>Lemmata about the length of \<open>uf_list\<close>, au and unions, if the invariant holds.\<close>
 
 lemma ufe_union_length_au:
   "ufe_union ufe1 x y = ufe2 \<Longrightarrow> length (au ufe1) = length (au ufe2)"

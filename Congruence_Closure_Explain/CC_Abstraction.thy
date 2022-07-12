@@ -1,4 +1,4 @@
-section \<open>Correctness of merge and are_congruent: \<close>
+section \<open>Correctness of merge and \<open>are_congruent\<close>: \<close>
 theory CC_Abstraction
   imports CC_Helper_Functions
 begin
@@ -201,7 +201,7 @@ lemma pending_set_empty_iff_pending_empty:
 proof
   show "pending_set pe = {} \<Longrightarrow> pe = []"
     apply(induction pe rule: pending_set.induct)
-    by(simp_all)
+    by (simp_all)
   show "pe = [] \<Longrightarrow> pending_set pe = {}" by simp
 qed
 
@@ -227,7 +227,7 @@ lemma pending_set_Constant:
 subsection \<open>Invariants  definitions\<close>
 text \<open>As described in the paper\<close>
 
-text \<open>For cc_list_invar we use ufa_invar\<close>
+text \<open>For \<open>cc_list_invar\<close> we use \<open>ufa_invar\<close>\<close>
 
 definition cc_list_invar :: "congruence_closure \<Rightarrow> bool"
   where
@@ -254,7 +254,7 @@ definition use_list_invar :: "congruence_closure \<Rightarrow> bool"
 
 text \<open>for all pairs of representatives (i, j), Lookup(i, j) is some input equation
 \<open>f(a\<^sub>1, a\<^sub>2)=a\<close> such that i and j are the current respective representatives of \<open>a\<^sub>1\<close> and \<open>a\<^sub>2\<close> whenever
-such an equation exists. Otherwise, Lookup(i, j) is \<bottom>\<close>
+such an equation exists. Otherwise, Lookup(i, j) is \<open>\<bottom>\<close>\<close>
 abbreviation lookup_invar_correctness :: "congruence_closure \<Rightarrow> bool"
   where
     "lookup_invar_correctness cc \<equiv> (\<forall> i < nr_vars cc . 
@@ -270,7 +270,7 @@ definition lookup_invar :: "congruence_closure \<Rightarrow> bool"
     "lookup_invar cc \<equiv> lookup_invar_correctness cc 
                         \<and> quadratic_table (lookup cc)"
 
-text \<open>This invariant is needed for the termination proof of add_edge:\<close>
+text \<open>This invariant is needed for the termination proof of \<open>add_edge\<close>:\<close>
 
 definition proof_forest_invar :: "congruence_closure \<Rightarrow> bool"
   where
@@ -385,7 +385,7 @@ a' < nr_vars cc \<longrightarrow> b' < nr_vars cc \<longrightarrow> (cc_list cc)
   contains_similar_equation cc b' c\<^sub>1 c\<^sub>2 c
 )"
 
-text \<open>All equations in use_list are also in the lookup table.\<close>
+text \<open>All equations in the use list are also in the lookup table.\<close>
 definition use_list_invar2' :: "congruence_closure \<Rightarrow> equation list \<Rightarrow> bool"
   where
     "use_list_invar2' cc u_a = (\<forall> a' c\<^sub>1 c\<^sub>2 c.
@@ -420,7 +420,7 @@ a' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a'
 )" unfolding use_list_invar2'_def
   by simp
 
-text \<open>Invariants needed for the correctness proof of cc_explain\<close>
+text \<open>Invariants needed for the correctness proof of \<open>cc_explain\<close>\<close>
 
 abbreviation valid_labels_invar :: "pending_equation option list \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> bool"
   where
@@ -445,8 +445,8 @@ abbreviation cc_invar :: "congruence_closure \<Rightarrow> bool"
         \<and> use_list_invar2 cc) \<and> pf_labels_invar cc"
 
 text \<open>
-(1) Prove that it works for the "mini_step".
-(2) Prove that the invariant is preserved by the two cases of propagate_loop.
+(1) Prove that it works for the \<open>"mini_step"\<close>.
+(2) Prove that the invariant is preserved by the two cases of \<open>propagate_loop\<close>.
 \<close>
 lemma propagate_step_induct[consumes 3, case_names base update_pending update_lookup]:
   assumes 
@@ -508,7 +508,7 @@ P (propagate_loop rep_b urest
     by force
 qed
 
-subsection \<open>Lemmata for Congruence_Closure with our congruence_closure data structure\<close>
+subsection \<open>Lemmata for \<open>Congruence_Closure\<close> with our \<open>congruence_closure\<close> data structure\<close>
 
 lemma a_eq_rep_of_a_in_CC_representatives_set:
   assumes "a < length l"

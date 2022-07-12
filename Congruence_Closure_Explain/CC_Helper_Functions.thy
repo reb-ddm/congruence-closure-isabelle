@@ -654,7 +654,7 @@ lemma rep_of_add_edge_invar:
 
 subsection \<open>Termination of \<open>add_label\<close>\<close>
 
-text \<open>The termination of add_label only depends on pf and y.\<close>
+text \<open>The termination of \<open>add_label\<close> only depends on pf and y.\<close>
 lemma add_label_dom_pf_y: "add_label_dom (pfl, pf, y, x) \<Longrightarrow> add_label_dom (pfl', pf, y, x')"
 proof(induction arbitrary: pfl' x' rule: add_label.pinduct)
   case (1 pfl pf e lbl)

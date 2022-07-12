@@ -5,16 +5,16 @@ begin
 
 subsection \<open>Explain definition\<close>
 
-text \<open>The "highest node" is in this case the same as the rep_of, because we do not 
+text \<open>The \<open>"highest node"\<close> is in this case the same as the \<open>rep_of\<close>, because we do not 
       have the optimisation of checking which equivalence class is bigger, 
       we just make the union in the given order. When adding this optimisation,
-      a highest_node function must be also implemented. \<close>
+      a \<open>highest_node\<close> function must be also implemented. \<close>
 
 text \<open>There are three variables changed by the function \<open>explain_along_path\<close>: 
 
     * The overall output of explain
     * The Union Find list of the additional union find, which is local to the explain function
-    * The list of pending proofs, which need to be recursively called with cc_explain
+    * The list of pending proofs, which need to be recursively called with \<open>cc_explain\<close>
       
       These are the three values returned by this function.\<close>
 
@@ -111,7 +111,7 @@ abbreviation cc_explain :: "congruence_closure \<Rightarrow> nat \<Rightarrow> n
   where
     "cc_explain cc a b \<equiv> cc_explain_aux cc [0..<nr_vars cc] [(a, b)]"
 
-subsection \<open>Invariant for the additional union find in cc_explain\<close>
+subsection \<open>Invariant for the additional union find in \<open>cc_explain\<close>\<close>
 
 definition explain_list_invar :: "nat list \<Rightarrow> nat list \<Rightarrow> bool"
   where
@@ -866,11 +866,9 @@ for x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb
   qed 
 qed
 
+subsection \<open>Invariants for the correctness of \<open>explain\<close>\<close>
 
-
-subsection \<open>Invariants for the correctness of explain\<close>
-
-text \<open>We introduce new invariant of the congruence_closure in order to prove the correctness
+text \<open>We introduce new invariant of the \<open>congruence_closure\<close> in order to prove the correctness
 and validity of explain.\<close> 
 
 text \<open>These invars simply state that all the equations in the proof forest, the lookup table, 
@@ -939,7 +937,7 @@ lemma cc_explain_correctness_invar':
   shows "(a \<approx> b) \<in> Congruence_Closure (cc_explain_aux cc l eqs \<union> representatives_set l)"
   using assms unfolding cc_explain_correctness_invar_def by blast
 
-subsection \<open>Validity invar pf pf_labels\<close>
+subsection \<open>Validity invar pf \<open>pf_labels\<close>\<close>
 
 subsubsection \<open>The invariants remain invariant after the loop of propagate\<close>
 
@@ -959,14 +957,14 @@ lemma validity_invar_loop:
     using "1.prems"(5,6) by fastforce
   from 1 have *: "\<forall>j<length urest. use_list_valid_element (urest ! j) l rep_b"
     by auto
+  from "1.prems" obtain a\<^sub>1 a\<^sub>2 aa where u1': "u1 = (F a\<^sub>1 a\<^sub>2 \<approx> aa)"
+    "a\<^sub>1 < length l" "a\<^sub>2 < length l" "aa < length l" "rep_of l a\<^sub>1 = rep_b \<or> rep_of l a\<^sub>2 = rep_b"
+    unfolding congruence_closure.select_convs
+    by (metis in_set_conv_nth list.set_intros(1))
   show ?case
   proof(cases "lookup_Some t l u1")
     case True
-    from "1.prems" obtain a\<^sub>1 a\<^sub>2 aa where u1': "u1 = (F a\<^sub>1 a\<^sub>2 \<approx> aa)"
-      "a\<^sub>1 < length l" "a\<^sub>2 < length l" "aa < length l" "rep_of l a\<^sub>1 = rep_b \<or> rep_of l a\<^sub>2 = rep_b"
-      unfolding congruence_closure.select_convs
-      by (metis in_set_conv_nth list.set_intros(1))
-    with True obtain eq where "lookup_entry t l a\<^sub>1 a\<^sub>2 = Some eq"
+    with u1' obtain eq where "lookup_entry t l a\<^sub>1 a\<^sub>2 = Some eq"
       by fastforce
     have "rep_of l a\<^sub>1 < length t" "rep_of l a\<^sub>2 < length (t ! rep_of l a\<^sub>2)"
       using "1.prems" unfolding cc_list_invar_def congruence_closure.select_convs  
@@ -987,16 +985,17 @@ lemma validity_invar_loop:
     from "1.prems" u1_in_ip have use_list: "use_list_validity_invar (use_list ?loop2) (input ?loop2)" 
       unfolding validity_invar_def congruence_closure.select_convs 
       by (metis in_set_upd_cases list.inject list.set_cases nth_mem)
-    from "1.prems" u1_in_ip have "lookup_validity_invar (lookup ?loop2) (input ?loop2)"
-      unfolding validity_invar_def congruence_closure.select_convs 
-      by (smt (z3) in_set_upd_cases list_update_id option.collapse option.inject set_update_memI update_lookup.elims)
+    from "1.prems"(1) u1_in_ip have "lookup_validity_invar (lookup ?loop2) (input ?loop2)"
+      unfolding validity_invar_def congruence_closure.select_convs u1' update_lookup.simps
+      by (metis in_set_upd_cases nth_mem option.sel)
     with "1.prems" use_list have v: "validity_invar ?loop2" 
       unfolding validity_invar_def by simp
     with "1.prems" have i: "inv_same_length ?loop2 (nr_vars ?loop2)" 
       unfolding inv_same_length_def congruence_closure.select_convs 
       by (simp add: update_lookup_preserves_length)
-    have "quadratic_table (lookup ?loop2)" using "1.prems" unfolding congruence_closure.select_convs 
-      by (smt (verit, ccfv_threshold) length_list_update nth_list_update_eq nth_list_update_neq update_lookup.elims)
+    have "quadratic_table (lookup ?loop2)" 
+      using "1.prems" unfolding congruence_closure.select_convs u1' update_lookup.simps
+      by (simp add: nth_list_update')
     then show ?thesis 
       using 1 False i v cc_list_invar_def * by auto
   qed
@@ -1004,7 +1003,7 @@ qed simp
 
 subsubsection \<open>The invariant remains invariant after propagate\<close>
 
-paragraph \<open>Invariant before entering the propagate_loop\<close>
+paragraph \<open>Invariant before entering the \<open>propagate_loop\<close>\<close>
 
 lemma pf_labels_validity_invar_add_label:
   assumes "ufa_invar pf" "a < length pf" "length pf = length pfl"
@@ -1365,7 +1364,7 @@ theorem validity_invar_initial_cc: "validity_invar (initial_cc n)"
   by fastforce
 
 
-subsection \<open>Validity of cc_explain\<close>
+subsection \<open>Validity of \<open>cc_explain\<close>\<close>
 
 lemma explain_along_path_valid:
   assumes "explain_along_path_dom (cc, l, a, c)" "cc_invar cc" "validity_invar cc"
@@ -1632,7 +1631,7 @@ proof-
     using "*" "**" assms by presburger
 qed
 
-subsection \<open>Correctness invar of cc_explain\<close>
+subsection \<open>Correctness invar of \<open>cc_explain\<close>\<close>
 
 
 lemma path_invariant_after_add_edge:
@@ -1774,7 +1773,7 @@ proof(standard, standard, standard, standard, standard, standard, standard)
     by blast
 qed
 
-subsection \<open>Correctness of cc_explain\<close>
+subsection \<open>Correctness of \<open>cc_explain\<close>\<close>
 
 theorem cc_explain_correct:
   assumes "are_congruent cc (a \<approx> b)" "cc_invar cc" "valid_vars (a \<approx> b) (nr_vars cc)"
