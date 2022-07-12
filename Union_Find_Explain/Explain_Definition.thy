@@ -72,10 +72,10 @@ lemma P_ufe_unionE[consumes 1, case_names rep_neq]:
   using assms by auto
 
 text \<open>For the application of a list of unions.\<close>
-fun apply_unions::"(nat * nat) list \<Rightarrow> ufe_data_structure \<Rightarrow> ufe_data_structure"
+fun apply_unions :: "(nat * nat) list \<Rightarrow> ufe_data_structure \<Rightarrow> ufe_data_structure"
   where
     "apply_unions [] p = p" |
-    "apply_unions ((x,y)#u) p = apply_unions u (ufe_union p x y)"
+    "apply_unions ((x, y) # u) p = apply_unions u (ufe_union p x y)"
 
 lemma apply_unions_cons: "apply_unions u1 a = b \<Longrightarrow> apply_unions u2 b = c \<Longrightarrow> apply_unions (u1 @ u2) a = c"
   by(induction u1 a rule: apply_unions.induct, simp_all)
@@ -262,7 +262,7 @@ proof (cases "rep_of (uf_list ufe) x = rep_of (uf_list ufe) y")
     by (simp add: True)
 next
   case False
-  then show ?thesis  using ufe_data_structure.cases ufe_union2 by (metis ufe_data_structure.select_convs(1))
+  then show ?thesis using ufe_data_structure.cases ufe_union2 by (metis ufe_data_structure.select_convs(1))
 qed
 
 lemma ufa_union_root: 

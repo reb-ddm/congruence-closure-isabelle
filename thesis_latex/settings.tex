@@ -28,7 +28,8 @@
 \usepackage{amsmath}
 \usepackage{amsthm}
 \usepackage[hidelinks]{hyperref} % hidelinks removes colored boxes around references and links
-
+\usepackage{listings}
+\usepackage{stmaryrd} % for \rrparenthesis
 
 \bibliography{bibliography}
 
@@ -54,19 +55,46 @@
 \definecolor{TUMAccentLightBlue}{HTML}{98C6EA}
 \definecolor{TUMAccentBlue}{HTML}{64A0C8}
 
+\definecolor{isarblue}{HTML}{006699}
+\definecolor{isargreen}{HTML}{009966}
+\lstdefinelanguage{isabelle}{%
+	keywords=[1]{type_synonym,datatype,fun,abbreviation,definition,proof,lemma,theorem,corollary,inductive,function,using,by,hence,then,have},
+	keywordstyle=[1]\color{isarblue}\bfseries,
+	keywords=[2]{where,assumes,shows,and},
+	keywordstyle=[2]\bfseries\color{isargreen},
+	keywords=[3]{if,then,else,case,of,SOME,let,in,O,MAX},
+	keywordstyle=[3]\color{isarblue},
+}
+\lstset{%
+	language=isabelle,
+	escapeinside={&}{&},
+	columns=fixed,
+	extendedchars,
+	basewidth={0.5em,0.45em},
+	basicstyle=\ttfamily,
+	breaklines=true,
+	mathescape,
+}
+\lstset{literate=%
+	{≡}{{$\equiv$}}1
+	{⦇}{{$\llparenthesis$}}1
+	{⦈}{{$\rrparenthesis$}}1
+	{∨}{{$\vee$}}1
+	{∧}{{$\wedge$}}1
+	{≠}{{$\neq$}}1
+	{⇒}{{$\Rightarrow$}}1
+	{⟹}{{$\Longrightarrow$}}1
+	{≥}{{$\geq$}}1
+	{∪}{{$\cup$}}1
+	{⟷}{{$\longleftrightarrow$}}1
+	{∃}{{$\exists$}}1
+	{∈}{{$\in$}}1
+}
+\lstset{extendedchars=\true}
 % Settings for pgfplots
 \pgfplotsset{compat=newest}
 \pgfplotsset{
   % For available color names, see http://www.latextemplates.com/svgnames-colors
   cycle list={TUMBlue\\TUMAccentOrange\\TUMAccentGreen\\TUMSecondaryBlue2\\TUMDarkGray\\},
-}
-
-% Settings for lstlistings
-\lstset{%
-  basicstyle=\ttfamily,
-  columns=fullflexible,
-  autogobble,
-  keywordstyle=\bfseries\color{TUMBlue},
-  stringstyle=\color{TUMAccentGreen}
 }
 
