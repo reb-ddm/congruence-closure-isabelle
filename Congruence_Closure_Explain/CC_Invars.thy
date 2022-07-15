@@ -1041,8 +1041,6 @@ proof-
     by (metis equation.inject(2) length_list_update)+
 qed
 
-
-
 lemma use_list_invar2_loop1:
   assumes "ufa_invar l" 
     "a < length l" "b < length l" 
@@ -1196,7 +1194,6 @@ Some (F e\<^sub>1 e\<^sub>2 \<approx> e)"
     qed
   qed
 qed
-
 
 lemma use_list_invar2_loop2:
   assumes "ufa_invar l" 
