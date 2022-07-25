@@ -3,17 +3,24 @@
 
 \chapter{Introduction}\label{chapter:introduction}
 
-I use Isabelle \cite{isabelle}
+The equivalence closure of a relation, or analogously a set of equations $a = b$, with $a$ and $b$ being two constants, is the smallest superset of the relation which is reflexive, symmetric and transitive. Algorithms for maintaining the equivalence closure have been known for a long time \cite{unionfind-og}, the most widely used being the union-find algorithm, because of its simplicity and its almost constant runtime \cite{Tarjan}.
+
+The congruence closure of a set of equations is similar, but it considers not only constants, but also functions. Additionally to reflexivity, symmetry and transitivity, it satisfies monotonicity, i.e. $f(x_1, ... ,x_n) = f(y_1, ... ,y_n)$ if $x_i = y_i$ for all $i$ between $1$ and $n$. \cite{Nieuwenhuis} For example the equation $c = e$ belongs to the congruence closure of $f(a,b) = c$, $f(d,b) = e$ and $a = d$. Several approaches to solve this problem have been described, with different runtimes and applications, for example \cite{congruenceclosure-og2,congruenceclosure-og,Nieuwenhuis}.
+
+These algorithms are used in decision procedures such as satisfiability modulo theories (SMT) solvers. \cite{z3} In these settings, it is required to generate an explanation, i.e. find the set of input equations which caused the congruence. These can then be used to generate a certificate of the congruence, which can be verified by a program. Nieuwenhuis and Oliveras have presented an efficient version of the congruence closure algorithm with an explain operation, and two versions of the union-find algorithm with an explain operation, in a conference paper \cite{Nieuwenhuis}, which was later extended, see \cite{Nieuwenhuis2}.
+
+The descriptions of the algorithms contain informal proofs, but the algorithms can be verified by an interactive theorem prover, like Isabelle, in order to strengthen our confidence in their correctness. In this thesis we will implement the algorithms of the paper \cite{Nieuwenhuis} and prove their correctness in the theorem prover Isabelle/HOL.  The description of the congruence closure algorithms contains an informal proof, but to my knowledge, this thesis presents the first proof of the union-find explain algorithm and of the congruence closure algorithm in an automatic theorem prover. Our implementation is based on the union-find formalisation by Lammich \cite{unionfind-isabelle} in Isabelle/HOL. Given that the focus of this paper is on the verification of the algorithms, some optimisations are left out of the implementation, such as path compression for union-find.
+
 
 \section{Outline}
-Citation test~\parencite{latex}.
+This thesis is organized as follows: Chapter 2 discusses some related work and gives a brief overview of the notation used by Isabelle.
+
+In Chapter 3 the union-find implementation by Lammich \cite{unionfind-isabelle} is described, and the explain operation is presented together with its correctness and termination proofs.
+
+Chapter 4 looks at the congruence closure implementation and its correctness proof. It also describes the explain operation for congruence closure, and discusses a possible proof outline for its correctness. For reasons of time, the actual proof has not been finished yet.
+
+The last chapter summarizes the results and gives an outlook on the proofs which are open for future work.
+
+The Isabelle code of this thesis is available on GitHub\footnote{https://github.com/reb-ddm/congruence-closure-isabelle}.
 
 
-
-
-
-  \begin{lstlisting}
-    apply(simp)
-    apply(auto)
-    done
-  \end{lstlisting}

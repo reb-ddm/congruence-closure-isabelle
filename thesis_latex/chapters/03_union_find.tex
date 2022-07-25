@@ -1,17 +1,36 @@
 % !TeX root = ../main.tex
 % Add the above to each chapter to make compiling the PDF easier in some editors.
 
-\chapter{Explain Operation for Union Find}\label{chapter:union_find}
+\chapter{Union-Find with Explain Operation}\label{chapter:union_find}
 
-\section{The Union Find Data Structure}
+\section{Union-Find Algorithm}
 
+In this thesis, we will use lists to model the union-find forest, where at each index $i$ the list contains the parent $l!i$ of the element $i$ in the forest. The theory ``Union\_Find'' also uses this representation.
+
+If $i$ does not have a parent, e.g. it is a root, then the list contains the element $i$ itself at the index $i$, e.g. $l!i = i$.
+
+\section{Union-Find in Isabelle}
+
+The union find algorithm was already formalized in Isabelle, and the code can be found in the ``Archive of Formal Proofs'' (AFP)\cite{afp}.
+
+For example the following is the definition of the $find$ operation from the Theory ``Union\_Find''\cite{Sep}. It is called \lstinline{rep_of}, because it finds the representative of an element in the union-find forest.
+
+The domain of \lstinline{rep_of} is used in the theory ``Union\_Find'' to define the following invariant for valid union-find lists. \cite{Sep}.
+
+\begin{lstlisting}
+definition
+  "ufa_invar l ≡ ∀i<length l. rep_of_dom (l,i) ∧ l!i<length l"
+\end{lstlisting}
+
+\section{Union-Find Data Structure}
+\label{section:uf-data}
 
 The section below describes the implementation of the modified Union Find data structure, as well as the $Explain$ operation and its correctness proof, as described in \cite{Nieuwenhuis}.
 
 The data structure for the Union, Find and Explain operations consists of the following three lists:
 
 \begin{itemize}
-	\item \lstinline{uf_list}: This is the usual union-find list, which contains the parent node of each element in the forest data structure. It is the one described in Section TODO.
+	\item \lstinline{uf_list}: This is the usual union-find list, which contains the parent node of each element in the forest data structure. It is the one described in Section \ref{chapter:preliminaries}.
 
 	\item \lstinline{unions}: This list simply contains all the pairs of input elements in chronological order.
 
@@ -63,30 +82,30 @@ The current union $(x, y)$ is added at the end of the \lstinline{unions} list.
 
 \begin{lstlisting}
 fun ufe_union :: "ufe_data_structure ⇒ nat ⇒ nat ⇒ ufe_data_structure"
-where
-"ufe_union ⦇uf_list = l, unions = u, au = a⦈ x y = (
+  where
+    "ufe_union ⦇uf_list = l, unions = u, au = a⦈ x y = (
 if (rep_of l x ≠ rep_of l y) then
-⦇uf_list = ufa_union l x y,
-unions = u @ [(x,y)],
-au = a[rep_of l x := Some (length u)]⦈
+    ⦇uf_list = ufa_union l x y,
+     unions = u @ [(x,y)],
+     au = a[rep_of l x := Some (length u)]⦈
 else ⦇uf_list = l, unions = u, au = a⦈)"
 \end{lstlisting}
 
 \begin{exmp}
 After a union of 0 and 1, the data structure from Example \ref{empty_ufe} looks as follows:
 \begin{lstlisting}
-	⦇uf_list = [1, 1, 2, 3], unions = [(0, 1)], au = [Some 0, None, None, None]⦈
+⦇uf_list = [1, 1, 2, 3], unions = [(0, 1)], au = [Some 0, None, None, None]⦈
 \end{lstlisting}
-This means that there is an edge between 1 and 0, labeled with the union at index 0, which is $(0,1)$.
+There is an edge between 1 and 0, labeled with the union at index 0, which is $(0,1)$.
 \end{exmp}
 
 Next, we define a function which takes a list of unions as parameter and simply applies each of those unions to the data structure. This will be needed for the invariant and the correctness proof in the next sections.
 
 \begin{lstlisting}
-fun apply_unions::"(nat * nat) list ⇒ ufe_data_structure ⇒ ufe_data_structure"
-where
-"apply_unions [] p = p" |
-"apply_unions ((x, y) # u) p = apply_unions u (ufe_union p x y)"
+fun apply_unions :: "(nat * nat) list ⇒ ufe_data_structure ⇒ ufe_data_structure"
+  where
+    "apply_unions [] p = p" |
+    "apply_unions ((x, y) # u) p = apply_unions u (ufe_union p x y)"
 \end{lstlisting}
 
 \subsection{Helper Functions for Explain}
@@ -99,9 +118,9 @@ The function \lstinline{path_to_root l x} computes the path from the root of $x$
 
 \begin{lstlisting}
 function path_to_root :: "nat list ⇒ nat ⇒ nat list"
-where
-"path_to_root l x = (if l ! x = x then [x] else path_to_root l (l ! x) @ [x])"
-by pat_completeness auto
+  where
+    "path_to_root l x = (if l ! x = x then [x] else path_to_root l (l ! x) @ [x])"
+  by pat_completeness auto
 \end{lstlisting}
 
 It was easy to show that it has the same domain as the \lstinline{rep_of} function, as it has the same recursive calls.
@@ -131,15 +150,15 @@ The function will only be used for two nodes which have the same root, otherwise
 
 \begin{lstlisting}
 fun lowest_common_ancestor :: "nat list ⇒ nat ⇒ nat ⇒ nat"
-where
-"lowest_common_ancestor l x y =
+  where
+    "lowest_common_ancestor l x y =
 last (longest_common_prefix (path_to_root l x) (path_to_root l y))"
 \end{lstlisting}
 
 Regarding the correctness proof, there were two aspects to prove: the most useful result is that \lstinline{lowest_common_ancestor l x y} is a common ancestor of $x$ and $y$. The second aspect stated that any other common ancestor of $x$ and $y$ has a shorter distance from the root. The proof assumes that that $x$ and $y$ have the same root.
 
 \begin{proof}
-Let $lca =$\lstinline{lowest_common_ancestor l x y}. We previously proved that \lstinline{path_to_root} computes a path $p_x$ from the root to $x$ and $p_y$ from the root to $y$. Evidently, $lca$ lies on both paths, because it is part of their common prefix. Splitting the paths, we get a path from the root to $lca$ and one from $lca$ to $x$, and the same for $y$. This shows that $lca$ is a common ancestor.
+Let $lca =$\lstinline{lowest_common_ancestor l x y}. We previously proved that \lstinline{path_to_root} computes a path $p_x$ from the root to $x$ and a path $p_y$ from the root to $y$. Evidently, $lca$ lies on both paths, because it is part of their common prefix. Splitting the paths, we get a path from the root to $lca$ and one from $lca$ to $x$, and the same for $y$. This shows that $lca$ is a common ancestor.
 
 To prove that it is the \emph{lowest} common ancestor, we can prove it by contradiction. If there was a common ancestor $lca_2$ with a longer path from the root than $lca$, then we can show that there is a path from the root to $x$ passing through $lca_2$, and the same for $y$. Because of the uniqueness of paths, these paths are equal to \lstinline{path_to_root l x} and \lstinline{path_to_root l y}, respectively. That means, that there is a prefix of \lstinline{path_to_root l x} and \lstinline{path_to_root l y} which is longer than the one calculated by the function \lstinline{longest_common_prefix}. The theory Sublist\cite{Sublist} contains a correctness proof for \lstinline{longest_common_prefix}, which we can use to show the contradiction.
 \end{proof}
@@ -317,9 +336,9 @@ It remains to show the correctness.
 theorem explain_correct:
 assumes "ufe_invar ufe"
 and "rep_of (uf_list ufe) x = rep_of (uf_list ufe) y"
-shows "(x, y) ∈ (symcl (explain ufe x y))⇧*"
+shows "(x, y) ∈ (symcl (explain ufe x y))*"
 \end{lstlisting}
 
 This was shown by computation induction on explain. For example for case x:
-$(x, ax) \in$\lstinline{(explain x ax)*} and $(bx, y)$) \in$\lstinline{(explain bx y)*} and $(ax, bx) \in$\lstinline{explain x y}
-Therefore $(x, y) \in$\lstinline{(explain x y)*}
+$(x, ax) \in$\lstinline{(explain x ax)*} and $(bx, y) \in\:$\lstinline{(explain bx y)*} and $(ax, bx) \in\:$\lstinline{explain x y}
+Therefore $(x, y) \in\:$\lstinline{(explain x y)*}

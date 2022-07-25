@@ -3,6 +3,8 @@
 
 \chapter{Congruence Closure with Explain Operation}\label{chapter:congruence_closure}
 
+\section{Congruence Closure Algorithm}
+
 \section{Implementation}
 
 For the implementation of the congruence closure algorithm, we follow the description in the paper. \cite{Nieuwenhuis}
@@ -133,13 +135,6 @@ In the other case $e$ is not a root, then there is a path $p'$ from the root to 
 
 Additionally, each edge is labeled with the input equation or the input equations which caused the adding of this edge. This is not necessary for the union-find algorithm by itself, but it will be needed by the \lstinline{explain} operation for congruence closure. There are two possible types of labels: either an equation $a = b$ was input, or two equations of the type $F(a_1, a_2) = a$ and $F(b_1, b_2) = b$, where $a_1$ and $b_1$ were already in the same equivalence class before this union, as well as $a_2$ and $b_2$. In both theses cases a union between the equivalence classes of $a$ and $b$ must be made. The labeling is implemented by using an additional list, which at each index contains the label of the outgoing edge, or \lstinline{None} if there is no outgoing edge. It is similar to the associated unions list of union-find, but it contains directly the labels instead of an index to another list.
 
-We define a new datatype for the equations used in the algorithm. Equations of the type $a = b$ will be written as \lstinline{a ≈  b}, and equations of the type $F(a, b) = c$ are written as \lstinline{F a b ≈  c}
-
-\begin{lstlisting}
-datatype equation = Constants nat nat ("_ ≈ _")
-  | Function nat nat nat                 ("F _ _ ≈ _")
-\end{lstlisting}
-
 The labels have the type \lstinline{pending_equation}, which can be either one or two equations.
 
 \begin{lstlisting}
@@ -220,7 +215,7 @@ fun merge :: "congruence_closure ⇒ equation ⇒ congruence_closure"
 )"
 \end{lstlisting}
 
-The main part of the algorithm is executed in propagate, which recursively takes one item from pending and performs the union of the representative classes. As previously mentioned, the pending item could be either an equation of the type $a = b$, or two equations of the type $F(a_1, a_2) = a$ and $F(b_1, b_2) = b$, where $a_1$ and $a_2$ are already in the same representative class as $b_1$ and $b_2$ respectively. In both cases the representative classes of $a$ and $b$ need to be merged. The functions \lstinline{left} and \lstinline{right} simply retrieve $a$ and $b$ from either of the two types of pending equations. If $a$ and $b$ are already in the same representative class, nothing needs to be done, otherwise the union is performed. For more clarity, I defined the union separately as $propagate_step$.
+The main part of the algorithm is executed in propagate, which recursively takes one item from pending and performs the union of the representative classes. As previously mentioned, the pending item could be either an equation of the type $a = b$, or two equations of the type $F(a_1, a_2) = a$ and $F(b_1, b_2) = b$, where $a_1$ and $a_2$ are already in the same representative class as $b_1$ and $b_2$ respectively. In both cases the representative classes of $a$ and $b$ need to be merged. The functions \lstinline{left} and \lstinline{right} simply retrieve $a$ and $b$ from either of the two types of pending equations. If $a$ and $b$ are already in the same representative class, nothing needs to be done, otherwise the union is performed. For more clarity, I defined the union separately as \lstinline{propagate_step}.
 
 \begin{lstlisting}
 function propagate :: "congruence_closure ⇒ congruence_closure"
@@ -548,7 +543,7 @@ Thus we need two new invariants of this form:
 
 Unfortunately, these two invariants are not exactly true, because if there are two different equations where the elements have the same representatives, then they can't both be present in the lookup table, because it only stores one equation for each pair of representatives. In fact, the set of equations in lookup and in the use list are not exactly the same, but for each equation in one of them, there is a ``similar'' equation in the other one.
 
-The difficulty was to find a suitable definition of `similar'' which is not too strong, otherwise it wouldn't be true, but also not too weak, otherwise it is not possible to prove the invariant \lstinline{inv2}.
+The difficulty was to find a suitable definition of ``similar'' which is not too strong, otherwise it wouldn't be true, but also not too weak, otherwise it is not possible to prove the invariant \lstinline{inv2}.
 
 The right definition of similar turned out to be the following:
 

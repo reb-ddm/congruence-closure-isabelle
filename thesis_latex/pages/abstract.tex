@@ -1,5 +1,6 @@
 \chapter{\abstractname}
 
-%TODO: Abstract
 
+Congruence Closure is already used by most theorem provers for solving decision procedures.  However, the implementations of congruence closure are usually not formally proven for completeness.
 
+This thesis describes the implementation and correctness proofs for a union-find algorithm with an explain operation and congruence closure with an explain operation, which is partly based on the implementation of the union-find algorithm. The proofs are formalized in the interactive theorem prover Isabelle/HOL. The correctness proof for the explain operation is only described, not formally proven yet. The implementation is based on the paper by Nieuwenhuis and Oliveras \cite{Nieuwenhuis}. This result can be used in order to develop an automatic proof strategy in Isabelle, for automatic proofs of theorems.
