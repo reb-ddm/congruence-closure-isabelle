@@ -145,7 +145,7 @@ abbreviation propagate_step
     pf_labels = add_label pfl pf a eq, 
     input = ip\<rparr>"
 
-function propagate :: "congruence_closure \<Rightarrow> congruence_closure"
+function (domintros) propagate :: "congruence_closure \<Rightarrow> congruence_closure"
   where
 "propagate \<lparr>cc_list = l, use_list = u, lookup = t, pending = [], proof_forest = pf, pf_labels = pfl, input = ip\<rparr> = 
 \<lparr>cc_list = l, use_list = u, lookup = t, pending = [], proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"

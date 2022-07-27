@@ -250,8 +250,8 @@ It also says that the unions were made with valid variables, aka the numbers are
 the length of the union find list.\<close>
 
 abbreviation "ufe_invar ufe \<equiv> 
-valid_unions (unions ufe) (length (uf_list ufe)) \<and>
-apply_unions (unions ufe) (initial_ufe (length (uf_list ufe))) = ufe"
+  valid_unions (unions ufe) (length (uf_list ufe)) \<and>
+  apply_unions (unions ufe) (initial_ufe (length (uf_list ufe))) = ufe"
 
 paragraph \<open>Lemmata about the length of \<open>uf_list\<close>, au and unions, if the invariant holds.\<close>
 

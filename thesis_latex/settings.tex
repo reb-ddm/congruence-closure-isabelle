@@ -35,6 +35,9 @@
 \usepackage{courier}
 \usepackage{DejaVuSansMono}
 
+\urldef\myurl\url{https://coq.inria.fr/distrib/V8.11.2/refman/proof-engine/tactics.html#coq}
+
+
 \bibliography{bibliography}
 
 \setkomafont{disposition}{\normalfont\bfseries} % use serif font for headings
@@ -68,7 +71,7 @@
 \lstdefinelanguage{isabelle}{%
 	keywords=[1]{type_synonym,datatype,fun,abbreviation,definition,proof,lemma,theorem,corollary,inductive,function,using,by,hence,then,have,inductive_set},
 	keywordstyle=[1]\color{isarblue}\bfseries,
-	keywords=[2]{where,assumes,shows,and, for},
+	keywords=[2]{where,assumes,shows,and, for, obtains},
 	keywordstyle=[2]\bfseries\color{isargreen},
 	keywords=[3]{if,then,else,case,of,SOME,let,in,O,MAX},
 	keywordstyle=[3]\bfseries\color{isarblue},
@@ -94,6 +97,7 @@
 	{≥}{{$\geq$\:\:}}1
 	{∪}{{$\cup$\:\:}}1
 	{⟷}{{$\longleftrightarrow$\:\:}}1
+    {⟶}{{$\longrightarrow$\:\:}}1
 	{∃}{{$\exists$\:\:}}1
 	{∈}{{$\in$\:\:}}1
     {≈}{{$\approx$\:\:}}1

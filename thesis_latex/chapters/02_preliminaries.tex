@@ -43,6 +43,7 @@ For more information on records, see \cite{isabelle}, chapter 8.3.
 The theory ``Partial\_Equivalence\_Relation''\cite{Collections-AFP} defines the symmetric closure \lstinline{symcl} of a relation and the reflexiv-transitive closure is already part of the Isabelle/HOL distribution, and its syntax is \lstinline{R*}. The two definitions can be combined to have an abstraction of the equivalence closure. For example the equivalence closure of the relation $R$ is \lstinline{(symcl R)*}.
 
 \subsubsection{Datatypes}
+\label{subsubsection:datatypes}
 
 New datatypes can be defined with the \lstinline|datatype| keyword. New datatypes consist of constructors and existing types. A concrete syntax for the new datatypes can be defined in brackets.
 
@@ -58,3 +59,9 @@ In this thesis, we will use the notation \lstinline{a ≈ b} and \lstinline{F a 
 \subsubsection{option}
 
 The type \lstinline{option} models optional values. The value of a variable with type \lstinline{'a option} is either \lstinline|None| or \lstinline|Some a| where $a$ is a value with type $'a$.
+
+\subsection{Related work}
+
+Congruence closure exists in most automatic theorem provers, for example Coq has a \lstinline{congruence} tactic \cite{congruence-coq}, Lean also has a congruence-closure based decision procedure \cite{congruenceclosure-lean}
+(cite: Z3, cvc4, coq congruence closure, lean itt)
+

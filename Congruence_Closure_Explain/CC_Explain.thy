@@ -1323,8 +1323,9 @@ theorem validity_invar_merge:
   then have "validity_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = One (a \<approx> b)#pe, 
       proof_forest = pf, pf_labels = pfl, input = insert (a \<approx> b) ip\<rparr>" 
     using validity_invar_merge1 "1.prems" by blast
-  with 1 propagate_domain show ?case 
-    using merge.simps(1) validity_invar_propagate cc_invar by presburger
+  with 1 propagate_domain' show ?case 
+    using merge.simps(1) validity_invar_propagate cc_invar 
+    by (metis congruence_closure.select_convs(1))
 next
   case (2 l u t pe pf pfl ip a\<^sub>1 a\<^sub>2 a)
   then show ?case 
@@ -1338,8 +1339,8 @@ next
             pending = link_to_lookup t l (F a\<^sub>1 a\<^sub>2 \<approx> a)#pe, proof_forest = pf,
             pf_labels = pfl, input = insert (F a\<^sub>1 a\<^sub>2 \<approx> a) ip\<rparr>"
       using validity_invar_merge2 "2.prems" True by blast
-    with True cc_invar 2 propagate_domain show ?thesis 
-      using merge.simps(2) validity_invar_propagate by metis
+    with True cc_invar 2 propagate_domain' show ?thesis 
+      using merge.simps(2) validity_invar_propagate by (metis congruence_closure.select_convs(1))
   next
     case False
     then have "cc_invar \<lparr>cc_list = l, 

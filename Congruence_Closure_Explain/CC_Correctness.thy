@@ -1,7 +1,98 @@
 section \<open>Correctness proofs for congruence closure\<close>
 theory CC_Correctness
-  imports CC_Invars 
+  imports CC_Termination 
 begin 
+
+theorem cc_invar_merge: 
+  assumes "cc_invar cc" "valid_vars eq (nr_vars cc)"
+  shows "cc_invar (merge cc eq)"
+  using assms proof(induction cc eq rule: merge.induct)
+  case (1 l u t pe pf pfl ip a b)
+  then have "cc_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = One (a \<approx> b)#pe, 
+      proof_forest = pf, pf_labels = pfl, input = insert (a \<approx> b) ip\<rparr>" 
+    using cc_invar_merge1 by simp
+  with 1 propagate_domain' show ?case 
+    using merge.simps(1) cc_invar_propagate 
+    by (metis congruence_closure.select_convs(1))
+next
+  case (2 l u t pe pf pfl ip a\<^sub>1 a\<^sub>2 a)
+  then show ?case 
+  proof(cases "lookup_Some t l (F a\<^sub>1 a\<^sub>2 \<approx> a)")
+    case True
+    then have "cc_invar \<lparr>cc_list = l, use_list = u, lookup = t, 
+            pending = link_to_lookup t l (F a\<^sub>1 a\<^sub>2 \<approx> a)#pe, proof_forest = pf,
+            pf_labels = pfl, input = insert (F a\<^sub>1 a\<^sub>2 \<approx> a) ip\<rparr>"
+      using cc_invar_merge2 "2.prems" by blast
+    with True 2 propagate_domain' show ?thesis 
+      using merge.simps(2) cc_invar_propagate by (metis congruence_closure.select_convs(1))
+  next
+    case False
+    then have "cc_invar \<lparr>cc_list = l, 
+          use_list = (u[rep_of l a\<^sub>1 := (F a\<^sub>1 a\<^sub>2 \<approx> a)#(u ! rep_of l a\<^sub>1)])[rep_of l a\<^sub>2 := (F a\<^sub>1 a\<^sub>2 \<approx> a)#(u ! rep_of l a\<^sub>2)], 
+          lookup = update_lookup t l (F a\<^sub>1 a\<^sub>2 \<approx> a), 
+          pending = pe, proof_forest = pf, pf_labels = pfl, input = insert (F a\<^sub>1 a\<^sub>2 \<approx> a) ip\<rparr>"
+      using cc_invar_merge3 "2.prems" by blast
+    with False show ?thesis 
+      by simp
+  qed
+qed
+
+subsection \<open>Initial cc\<close>
+
+theorem cc_invar_initial_cc: "cc_invar (initial_cc n)"
+proof(rule conjI)+
+  show "cc_list_invar (initial_cc n)" unfolding cc_list_invar_def 
+    by (simp add: ufa_init_invar)
+  show "use_list_invar (initial_cc n)" unfolding use_list_invar_def
+  proof(standard, standard, standard, standard, standard)
+    fix i j 
+    assume "i < nr_vars (initial_cc n)" "j < length (use_list (initial_cc n) ! i)"
+      "cc_list (initial_cc n) ! i = i"
+    then have "length (use_list (initial_cc n) ! i) = 0" 
+      by fastforce
+    then have "False" 
+      using \<open>j < length (use_list (initial_cc n) ! i)\<close> by presburger
+  qed simp
+  show "lookup_invar (initial_cc n)" unfolding lookup_invar_def
+  proof(standard, standard, standard, standard, standard, standard, standard)
+    fix i j
+    assume "i < nr_vars (initial_cc n)" "j < nr_vars (initial_cc n)"
+      "cc_list (initial_cc n) ! i = i \<and> cc_list (initial_cc n) ! j = j"
+    then show "lookup (initial_cc n) ! i ! j = None" 
+      by force
+  next
+    show "quadratic_table (lookup (initial_cc n))" 
+      by simp
+  qed
+  show "proof_forest_invar (initial_cc n)" unfolding proof_forest_invar_def
+    by (simp add: ufa_init_invar)
+  have "representativeE (initial_cc n) \<union> pending_set (pending (initial_cc n)) = {}" 
+    unfolding representativeE_def by simp
+  moreover have "input (initial_cc n) = {}"  by simp
+  ultimately show "inv2 (initial_cc n)" unfolding inv2_def
+    by auto
+  show "inv_same_rep_classes (initial_cc n)" unfolding inv_same_rep_classes_def
+  proof(standard, standard, standard, standard)
+    fix i j
+    assume "i < length (proof_forest (initial_cc n))"
+      "j < length (proof_forest (initial_cc n))"
+    then show "(rep_of (cc_list (initial_cc n)) i =
+            rep_of (cc_list (initial_cc n)) j) =
+           (rep_of (proof_forest (initial_cc n)) i =
+            rep_of (proof_forest (initial_cc n)) j)" 
+      by force
+  qed
+  show "inv_same_length (initial_cc n) (nr_vars (initial_cc n))" 
+    unfolding inv_same_length_def by simp
+  show "pending_invar (initial_cc n)" 
+    unfolding pending_invar_def by simp
+  show "lookup_invar2 (initial_cc n)" 
+    unfolding lookup_invar2_def by simp
+  show "use_list_invar2 (initial_cc n)" 
+    unfolding use_list_invar2_def by auto
+  show "pf_labels_invar (initial_cc n)"
+    unfolding pf_labels_invar_def congruence_closure.select_convs by force
+qed
 
 subsection \<open>Correctness of merge\<close>
 
@@ -15,13 +106,13 @@ lemma pending_empty_after_merge:
   "cc_invar cc \<Longrightarrow> valid_vars x (nr_vars cc) \<Longrightarrow> pending cc = [] \<Longrightarrow> pending (merge cc x) = []"
 proof(induction cc x rule: merge.induct)
   case (1 l u t pe pf pfl ip a b)
-  then show ?case using pending_empty_after_propagate cc_invar_merge1 propagate_domain 
-    using merge.simps(1) by presburger
+  then show ?case using pending_empty_after_propagate cc_invar_merge1 propagate_domain' 
+    using merge.simps(1) by (metis congruence_closure.select_convs(1))
 next
   case (2 l u t pe pf pfl ip a\<^sub>1 a\<^sub>2 a)
   then show ?case using pending_empty_after_propagate apply(cases "lookup_Some t l (F a\<^sub>1 a\<^sub>2 \<approx> a)")
-    using pending_empty_after_propagate cc_invar_merge2 propagate_domain 
-    using merge.simps(2) apply presburger
+    using pending_empty_after_propagate cc_invar_merge2 propagate_domain'
+    using merge.simps(2) apply (metis congruence_closure.select_convs(1))
     using merge.simps(2) by simp
 qed
 
@@ -35,7 +126,7 @@ proof-
   from assms have "ufa_invar l" 
     unfolding cc cc_list_invar_def by auto
   from assms cc consider
-    (rep) c where "eq = c \<approx> rep_of l c" "c < length l" "l ! c \<noteq> c"
+    (rep) c where "eq = (c \<approx> rep_of l c)" "c < length l" "l ! c \<noteq> c"
   | (lookup) a' b' c c\<^sub>1 c\<^sub>2 where "eq = F a' b' \<approx> rep_of l c" "a' < length l" "b' < length l"
     "c < length l" "l ! a' = a'" "l ! b' = b'" "t ! a' ! b' = Some (F c\<^sub>1 c\<^sub>2 \<approx> c)"
     unfolding representativeE_def 
@@ -56,11 +147,11 @@ subsection \<open>Lemmas about \<open>are_congruent\<close>\<close>
 
 lemma CC_representativeE_valid_vars:
   assumes "eq \<in> Congruence_Closure (representativeE cc)" "cc_invar cc" 
-    "\<nexists> a . eq = a \<approx> a"
+    "\<nexists> a . eq = (a \<approx> a)"
   shows "valid_vars eq (nr_vars cc)"
   using assms proof(induction eq rule: Congruence_Closure.induct)
   case (base eqt)
-  then consider a where "eqt = a \<approx> rep_of (cc_list cc) a" 
+  then consider a where "eqt = (a \<approx> rep_of (cc_list cc) a)" 
     "a < nr_vars cc" "(cc_list cc) ! a \<noteq> a" 
   | a' b' c c\<^sub>1 c\<^sub>2 where "eqt = F a' b' \<approx> rep_of (cc_list cc) c"  "a' < nr_vars cc"
     "b' < nr_vars cc"  "c < nr_vars cc"

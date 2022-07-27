@@ -4,33 +4,54 @@
 \chapter{Union-Find with Explain Operation}\label{chapter:union_find}
 
 \section{Union-Find Algorithm}
+\label{section:uf-algorithm}
 
-In this thesis, we will use lists to model the union-find forest, where at each index $i$ the list contains the parent $l!i$ of the element $i$ in the forest. The theory ``Union\_Find'' also uses this representation.
+The union-find data structure is used to keep track of the equivalence closure of a set of equations between constants,  by partitioning the initial set of $n$ constants into equivalence classes. It is initialized with a partition where each element is in their own equivalence class. There is a \lstinline{union} operation which merges two equivalence classes. The \lstinline{find} operation returns a representative of the equivalence class. Two elements are in the same representative class, if and only if they have the same representative.
 
-If $i$ does not have a parent, e.g. it is a root, then the list contains the element $i$ itself at the index $i$, e.g. $l!i = i$.
+The equivalence classes are modeled with a forest, which is a graph where each connected component is a tree. Initially, the graph contains $n$ vertices and no edges, then each \lstinline{union} adds a directed edge. The connected components of the graph represent the equivalence classes. Each tree in the forest has a root, which is also the representative of the equivalence class, and each edge in the tree is directed towards the root. In order to keep this invariant, at each \lstinline{union a b}, the new edge is added between the representative of $a$ (which will be denoted as $rep\_of(l, a)$, where $l$ is the union-find forest) and $rep\_of(l, b)$.
+
+The union-find forest is modeled by a list $l$ of length $n$, where at each index $i$ the list contains the parent of the element $i$ in the forest. If $i$ does not have a parent, i.e. it is a root, then the list contains the element $i$ itself at the index $i$, e.g. $l!i = i$.
+
+The original union-find algorithm \cite{Tarjan} contains two optimisations: path compression in the \lstinline{find} method, and choosing the representative of the bigger class to be the new representative of the merged class in \lstinline{union}. These optimisations are irrelevant for the correctness of the algorithm, therefore we leave them out of this implementation in order to simplify the proofs.
+
 
 \section{Union-Find in Isabelle}
+\label{section:uf-isabelle}
 
-The union find algorithm was already formalized in Isabelle, and the code can be found in the ``Archive of Formal Proofs'' (AFP)\cite{afp}.
+The union-find algorithm was already formalized in Isabelle by Lammich \cite{unionfind-isabelle}, and the code can be found in the ``Archive of Formal Proofs'' (AFP) under ``A Separation Logic Framework for Imperative HOL'', in the theory ``Union\_Find''\cite{afp, Sep}. The following is a brief description of the implementation.
 
-For example the following is the definition of the $find$ operation from the Theory ``Union\_Find''\cite{Sep}. It is called \lstinline{rep_of}, because it finds the representative of an element in the union-find forest.
+The function \lstinline{rep_of} finds the representative of an element in the forest. It is analogous to the \lstinline{find} operation, except that it does not do path compression.
 
-The domain of \lstinline{rep_of} is used in the theory ``Union\_Find'' to define the following invariant for valid union-find lists. \cite{Sep}.
+\begin{lstlisting}
+function (domintros) rep_of
+  where "rep_of l i = (if l!i = i then i else rep_of l (l!i))"
+  by pat_completeness auto
+\end{lstlisting}
+
+The domain of \lstinline{rep_of} is used to define the following invariant for valid union-find lists. This invariant states that the \lstinline{rep_of} function terminates on all valid indexes of the list, which is equivalent to saying that the union-find forest does not contain any cycles.
 
 \begin{lstlisting}
 definition
   "ufa_invar l ≡ ∀i<length l. rep_of_dom (l,i) ∧ l!i<length l"
 \end{lstlisting}
 
+The \lstinline{union} operation simply adds an edge between the representatives of the two elements.
+
+\begin{lstlisting}
+abbreviation "ufa_union l x y ≡ l[rep_of l x := rep_of l y]"
+\end{lstlisting}
+
+The theory contains several lemmas, including the lemma which states that the invariant \lstinline{ufa_invar} holds for the initial union-find forest without edges, and that it is preserved by the \lstinline{ufa_union} operation.
+
 \section{Union-Find Data Structure}
 \label{section:uf-data}
 
-The section below describes the implementation of the modified Union Find data structure, as well as the $Explain$ operation and its correctness proof, as described in \cite{Nieuwenhuis}.
+The section below describes the implementation of a union-find data structure, which was modified in order to support an \lstinline{explain} operation, as described in \cite{Nieuwenhuis}.
 
 The data structure for the Union, Find and Explain operations consists of the following three lists:
 
 \begin{itemize}
-	\item \lstinline{uf_list}: This is the usual union-find list, which contains the parent node of each element in the forest data structure. It is the one described in Section \ref{chapter:preliminaries}.
+	\item \lstinline{uf_list}: This is the usual union-find list, which contains the parent node of each element in the forest data structure. It is the one described in Section \ref{section:uf-algorithm}.
 
 	\item \lstinline{unions}: This list simply contains all the pairs of input elements in chronological order.
 
@@ -40,7 +61,7 @@ The data structure for the Union, Find and Explain operations consists of the fo
 \begin{exmp}\label{empty_ufe}
 For a union-find algorithm with 4 variables, the initial empty union find looks as follows:
 \begin{lstlisting}
-&$\llparenthesis$&uf_list = [0, 1, 2, 3], unions = [], au = [None, None, None, None]&$\rrparenthesis$&
+⦇uf_list = [0, 1, 2, 3], unions = [], au = [None, None, None, None]⦈
 \end{lstlisting}
 Each element is its own parent in the \lstinline{uf_list}, which means that it is a root, the \lstinline{unions} list is empty because no unions were made yet, and there are no edges in the tree, therefore there are no labels in \lstinline{au}.
 \end{exmp}
@@ -48,14 +69,14 @@ Each element is its own parent in the \lstinline{uf_list}, which means that it i
 In order to reason about paths in the union-find forest, we define the following \lstinline{path} predicate.
 
 \begin{lstlisting}
-inductive path :: "nat list &$\Rightarrow$& nat &$\Rightarrow$& nat list &$\Rightarrow$& nat &$\Rightarrow$& bool" where
-single: "n < length l ⟹ path l n [n] n" |
-step: "r < length l ⟹ l ! u = r ⟹ l ! u ≠ u ⟹ path l u p v ⟹ path l r (r # p) v"
+inductive path :: "nat list ⇒ nat ⇒ nat list ⇒ nat ⇒ bool" where
+  single: "n < length l ⟹ path l n [n] n" |
+  step: "r < length l ⟹ l ! u = r ⟹ l ! u ≠ u ⟹  path l u p v ⟹ path l r (r # p) v"
 \end{lstlisting}
 
-\lstinline{path l r p v} defines a path from $r$ to $v$, where $r$ is an ancestor of $v$, which means that it is closer to the root, and $p$ contains all the nodes visited on the path from $r$ to $v$. This definition proved to be very useful for many proofs, as will become clearer later in this thesis.
+\lstinline{path l r p v} defines a path from $r$ to $v$, where $r$ is an ancestor of $v$, which means that it is closer to the root, and $p$ is a list which contains all the nodes visited on the path from $r$ to $v$. This definition proved to be very useful for many proofs, as will become clearer later in this thesis.
 
-The theory \lstinline{Path} contains many lemmas about paths, including lemmas about concatenation of adjacent paths, and splitting of one path into two subpaths, and that the length of a path is at least 1, as well as others, many of which could be proven by rule induction on \lstinline{path}. The most interesting and useful lemma was about the unicity of paths between two nodes:
+The theory ``Path'' contains many lemmas about paths, including lemmas about concatenation of adjacent paths, and splitting of one path into two subpaths, and that the length of a path is at least 1, as well as others, many of which could be proven by rule induction on \lstinline{path}. The most interesting and useful lemma was about the uniqueness of paths between two nodes:
 
 \begin{lstlisting}
 theorem path_unique: "ufa_invar l ⟹ path l u p1 v ⟹ path l u p2 v ⟹ p1 = p2"
@@ -66,18 +87,18 @@ The lemma is proven by induction on the length of $p1$.
 
 For the base case we assume that the length of $p1$ is 1. There is only one node in the path, therefore $v = u$. Then I proved a lemma which showed that if the \lstinline{ufa_invar} holds, each path from $v$ to $v$ has length 1, or, in other words, there are no cycles in the graph. For this I showed that if there was a cycle, the function \lstinline{rep_of} would not terminate, because there would be an infinite loop.
 
-For the induction step, we assume that the length of $p1$ is greater than 1. Therefore, we can remove the last node from $p1$ and the last node from $p2$ to get two paths from $u$ to the parent of $v$, where the first one is shorter that $p1$, and we can apply the induction hypothesis, which tells us that the two paths are equal. Adding the node $v$ to those two paths gives us back the original paths $p1$ and $p2$, therefore we conclude that $p1 = p2$.
+For the induction step, we assume that the length of $p1$ is greater than 1. Therefore, we can remove the last node from $p1$ and the last node from $p2$ to get two paths $p1'$ and $p2'$ from $u$ to the parent of $v$, where $p1'$ is shorter that $p1$, and we can apply the induction hypothesis, which tells us that $p1' = p2'$. Adding the node $v$ to those two paths gives us back the original paths $p1$ and $p2$, therefore we conclude that $p1 = p2$.
 \end{proof}
 
 \section{Implementation}
 
 \subsection{Union}
 
-The \emph{union} operation was already implemented for the \lstinline{uf_list} in the theory \lstinline{Union_Find} \cite{Sep} (chapter 18, Union-Find Data-Structure), it only needed to be extended in order to appropiately update the other two lists:
+The \lstinline{ufa_union} operation needs to be extended in order to appropiately update the other two lists:
 
-The algorithm only modifies the data structure if the parameters are not already in the same equivalence class.
-The union find tree is modified with the \lstinline{ufa_union} from the theory \lstinline{Union_Find}\cite{Sep}.
-The current union $(x, y)$ is added at the end of the \lstinline{unions} list.
+The function \lstinline{ufe_union} only modifies the data structure if the parameters are not already in the same equivalence class.
+The \lstinline{uf_list} is modified with \lstinline{ufa_union}.
+The current union $(x, y)$ is appended to the end of the \lstinline{unions} list.
 \lstinline{au} is updated such that the new edge between \lstinline{rep_of l x} and \lstinline{rep_of l y} is labeled with the last index of \lstinline{unions}, which contains the current pair of elements $(x, y)$.
 
 \begin{lstlisting}
@@ -110,11 +131,19 @@ fun apply_unions :: "(nat * nat) list ⇒ ufe_data_structure ⇒ ufe_data_struct
 
 \subsection{Helper Functions for Explain}
 
-The explain function is based on other functions, which will be described in the following pages.
+We implement the explain function following the description of the first version of the union-find algorithm in the paper\cite{Nieuwenhuis}.
+
+The explain function takes as parameter two elements $x$ and $y$ and calculates a subset of the input unions which explain why the two given variables are in the same equivalence class. If we consider the graph which has as nodes the elements and as edges the input unions, then the output of explain would be all the unions on the path from $x$ to $y$. However, the union-find forest in our data structure does not have as edges the unions, but only edges between representatives of the elements of the unions.
+
+From this graph, we can calculate the desired output in the following way: first add the last union $(a, b)$ made between the equivalence class of $x$ and the one of $y$, then recursively call the explain operation with the new parameters $(x, a)$ and $(b, y)$ (or $(x, b)$ and $(a, y)$, depending on which branch $a$ and $b$ are on). The last union is the edge with the highest label in the union-find forest.
+
+$(a, b)$ is calculated by finding the lowest common ancestor $lca$ of $x$ and $y$, and then finding the newest union on the path from $x$ to $lca$ and from $y$ to $lca$.
+
+This section describes the helper functions needed for the implementation of \lstinline|explain|, which calculate the lowest common ancestor, using the function \lstinline{path_to_root}, and the newest union on a path.
 
 \subsubsection{path\_to\_root}
 
-The function \lstinline{path_to_root l x} computes the path from the root of $x$ to the node $x$ in the union-find forest l. It simply starts at $x$ and continues to add the parent of the current node to the path, until it reaches the root.
+The function \lstinline{path_to_root l x} computes the path from the root of $x$ to the node $x$ in the union-find forest $l$. It simply starts at $x$ and continues to add the parent of the current node to the front of the path, until it reaches the root.
 
 \begin{lstlisting}
 function path_to_root :: "nat list ⇒ nat ⇒ nat list"
@@ -133,8 +162,8 @@ The correctness of the function follows easily by induction.
 
 \begin{lstlisting}
 theorem path_to_root_correct:
-assumes "ufa_invar l"
-shows "path l (rep_of l x) (path_to_root l x) x"
+  assumes "ufa_invar l"
+  shows "path l (rep_of l x) (path_to_root l x) x"
 \end{lstlisting}
 
 \subsubsection{lowest\_common\_ancestor}
@@ -142,11 +171,11 @@ shows "path l (rep_of l x) (path_to_root l x) x"
 The function \lstinline{lowest_common_ancestor l x y} finds the lowest common ancestor of $x$ and $y$ in the union-find forest $l$.
 
 \begin{definition}
-	A \emph{common ancestor} of two nodes $x$ and $y$ is a node which has a path to $x$ and a path to $y$.
-	The \emph{lowest common ancestor} of two nodes $x$ and $y$ is a node common ancestor where its path to the root has maximal length.
+A \emph{common ancestor} of two nodes $x$ and $y$ is a node which has a path to $x$ and a path to $y$.
+The \emph{lowest common ancestor} of two nodes $x$ and $y$ is the common ancestor which is farthest away from the root.
 \end{definition}
 
-The function will only be used for two nodes which have the same root, otherwise there is no common ancestor. It first computes the paths from $x$ and $y$ to their root, and then returns the last element which the two paths have in common. For this it uses the function \lstinline{longest_common_prefix} from HOL-Library.Sublist\cite{Sublist}.
+The function will only be used for two nodes which have the same root, otherwise there is no common ancestor. It first computes the paths from $x$ and $y$ to their root, and then returns the last element which the two paths have in common. For this it uses the function \lstinline{longest_common_prefix} from ''HOL-Library.Sublist``\cite{Sublist}, which is included in the standard Isabelle distribution.
 
 \begin{lstlisting}
 fun lowest_common_ancestor :: "nat list ⇒ nat ⇒ nat ⇒ nat"
@@ -157,32 +186,50 @@ last (longest_common_prefix (path_to_root l x) (path_to_root l y))"
 
 Regarding the correctness proof, there were two aspects to prove: the most useful result is that \lstinline{lowest_common_ancestor l x y} is a common ancestor of $x$ and $y$. The second aspect stated that any other common ancestor of $x$ and $y$ has a shorter distance from the root. The proof assumes that that $x$ and $y$ have the same root.
 
-\begin{proof}
-Let $lca =$\lstinline{lowest_common_ancestor l x y}. We previously proved that \lstinline{path_to_root} computes a path $p_x$ from the root to $x$ and a path $p_y$ from the root to $y$. Evidently, $lca$ lies on both paths, because it is part of their common prefix. Splitting the paths, we get a path from the root to $lca$ and one from $lca$ to $x$, and the same for $y$. This shows that $lca$ is a common ancestor.
+\begin{lstlisting}
+abbreviation "common_ancestor l x y ca ≡
+(∃ p . path l ca p x) ∧
+(∃ p . path l ca p y)"
 
-To prove that it is the \emph{lowest} common ancestor, we can prove it by contradiction. If there was a common ancestor $lca_2$ with a longer path from the root than $lca$, then we can show that there is a path from the root to $x$ passing through $lca_2$, and the same for $y$. Because of the uniqueness of paths, these paths are equal to \lstinline{path_to_root l x} and \lstinline{path_to_root l y}, respectively. That means, that there is a prefix of \lstinline{path_to_root l x} and \lstinline{path_to_root l y} which is longer than the one calculated by the function \lstinline{longest_common_prefix}. The theory Sublist\cite{Sublist} contains a correctness proof for \lstinline{longest_common_prefix}, which we can use to show the contradiction.
+abbreviation "Lowest_common_ancestor l x y ca ≡
+(common_ancestor l x y ca ∧
+(∀r ca2 p3 p4. (path l r p3 ca ∧ path l r p4 ca2 ∧ common_ancestor l x y ca2
+⟶ length p3 ≥ length p4)))"
+
+theorem lowest_common_ancestor_correct:
+  assumes "ufa_invar l"
+    and "x < length l"
+    and "y < length l"
+    and "rep_of l x = rep_of l y"
+  shows "Lowest_common_ancestor l x y (lowest_common_ancestor l x y)"
+\end{lstlisting}
+
+\begin{proof}
+Let $lca =$\lstinline{lowest_common_ancestor l x y}. We previously proved that \lstinline{path_to_root} computes a path $p_x$ from the root to $x$ and a path $p_y$ from the root to $y$. Evidently, $lca$ lies on both paths, because it is part of their common prefix. Splitting the path $p_x$, we get a path from the root to $lca$ and one from $lca$ to $x$, and the same for $y$. This shows that $lca$ is a common ancestor.
+
+To prove that it is the \emph{lowest} common ancestor, we can prove it by contradiction. If there was a common ancestor $lca_2$ with a longer path from the root than $lca$, then we can show that there is a path from the root to $x$ passing through $lca_2$, and the same for $y$. Because of the uniqueness of paths, these paths are equal to \lstinline{path_to_root l x} and \lstinline{path_to_root l y}, respectively. That means, that there is a prefix of \lstinline{path_to_root l x} and \lstinline{path_to_root l y} which is longer than the one calculated by the function \lstinline{longest_common_prefix}. The theory ''Sublist`` contains a correctness proof for \lstinline{longest_common_prefix}, which we can use to show the contradiction.
 \end{proof}
 
 \subsubsection{find\_newest\_on\_path}
 
-The function \lstinline{find_newest_on_path} finds the newest edge on the path from $y$ to $x$. It is assumed that $y$ is an ancestor of $x$. The function simply checks all the elements on the path from $y$ to $x$ and returns the one with the largest index in a, which represents the associated unions list.
+The function \lstinline{find_newest_on_path} finds the newest edge on the path from $y$ to $x$. It is assumed that $y$ is an ancestor of $x$. The function simply checks all the elements on the path from $y$ to $x$ and returns the one with the largest index in a, which is the \emph{associated unions} list.
 
 \begin{lstlisting}
-function (domintros) find_newest_on_path :: "nat list ⇒ nat option list ⇒ nat ⇒ nat ⇒ nat option"
-where
-"find_newest_on_path l a x y =
-(if x = y then None
-else max (a ! x) (find_newest_on_path l a (l ! x) y))"
-by pat_completeness auto
+function (domintros) find_newest_on_path  :: "nat list ⇒ nat option list ⇒ nat ⇒ nat ⇒ nat option"
+  where
+    "find_newest_on_path l a x y =
+  (if x = y then None
+    else max (a ! x) (find_newest_on_path l a (l ! x) y))"
+  by pat_completeness auto
 \end{lstlisting}
 
 If there is a path $p$ from $y$ to $x$, it is easily shown by induction that the function terminates.
 
 \begin{lstlisting}
 lemma find_newest_on_path_domain:
-assumes "ufa_invar l"
-and "path l y p x"
-shows "find_newest_on_path_dom (l, a, x, y)"
+  assumes "ufa_invar l"
+    and "path l y p x"
+  shows "find_newest_on_path_dom (l, a, x, y)"
 \end{lstlisting}
 
 For the correctness proof we define an abstract definition of the newest element on the path: \lstinline{Newest_on_path} is the maximal value in the associated unions list for indexes in $p$.
@@ -196,84 +243,79 @@ Then it can easily be shown by computation induction on \lstinline{find_newest_o
 
 \begin{lstlisting}
 theorem find_newest_on_path_correct:
-assumes "path l y p x"
-and "ufa_invar l"
-and "x ≠ y"
-shows "Newest_on_path l a x y (find_newest_on_path l a x y)"
+  assumes path: "path l y p x"
+    and invar: "ufa_invar l"
+    and xy: "x ≠ y"
+  shows "Newest_on_path l a x y (find_newest_on_path l a x y)"
 \end{lstlisting}
 
 \subsection{Explain}
 
-We implement the explain function following the description of the first version of the union-find algorithm in the paper\cite{Nieuwenhuis}.
-
-The explain function takes as parameter two elements $x$ and $y$ and calculates a subset of the input unions which explain why the two given variables are in the same equivalence class. If we consider the graph which has as nodes the elements and as edges the input unions, then the output of explain would be all the unions on the path from $x$ to $y$. However, the union-find forest in our data structure does not have as edges the unions, but only edges between representatives of the elements of the unions.
-
-From this graph, we can calculate the desired output in the following way: first add the last union $(a, b)$ made between the equivalence class of $x$ and the one of $y$, then recursively call the explain operation with the new parameters $(x, a)$ and $(b, y)$ (or $(x, b)$ and $(a, y)$, depending on which branch $a$ and $b$ are on). The newst union is the label of the newest edge in the union-find forest.
-
-$(a, b)$ is calculated by finding the lowest common ancestor $lca$ of $x$ and $y$, and then finding the newest union on the path from $x$ to $lca$ and from $y$ to $lca$. There is a case distinction at the end to account for the cases that the newest union is on same branch as $x$ or as $y$.
+We can now define the explain operation, as describbed in the previous Subsection.
+In order to find the overall newest edge, we first compute the newest edge on the $x$ branch, then the one on the $y$ branch, and then choose the larger one in a case distinction at the end.
 
 TODO example
 
 \begin{lstlisting}
 function (domintros) explain :: "ufe_data_structure ⇒ nat ⇒ nat ⇒ (nat * nat) set"
-where
-"explain ⦇uf_list = l, unions = u, au = a⦈ x y =
-(if x = y ∨ rep_of l x ≠ rep_of l y then {}
-else
-(let lca = lowest_common_ancestor l x y;
-newest_index_x = find_newest_on_path l a x lca;
-newest_index_y = find_newest_on_path l a y lca;
-(ax, bx) = u ! the (newest_index_x);
-(ay, by) = u ! the (newest_index_y)
-in
-(if newest_index_x ≥ newest_index_y then
-{(ax, bx)} ∪ explain ⦇uf_list = l, unions = u, au = a⦈ x ax
-∪ explain ⦇uf_list = l, unions = u, au = a⦈ bx y
-else
-{(ay, by)} ∪ explain ⦇uf_list = l, unions = u, au = a⦈ x by
-∪ explain ⦇uf_list = l, unions = u, au = a⦈ ay y)
-)
+  where
+    "explain ⦇uf_list = l, unions = u, au = a⦈ x y =
+      (if x = y ∨ rep_of l x ≠ rep_of l y then {}
+      else
+          (let lca = lowest_common_ancestor l x y;
+           newest_index_x = find_newest_on_path l a x lca;
+           newest_index_y = find_newest_on_path l a y lca;
+           (a$_x$, b$_x$) = u ! the (newest_index_x);
+           (a$_y$, b$_y$) = u ! the (newest_index_y)
+        in
+        (if newest_index_x ≥ newest_index_y then
+          {(a$_x$, b$_x$)} ∪ explain ⦇uf_list = l, unions = u, au = a⦈ x a$_x$
+            ∪ explain ⦇uf_list = l, unions = u, au = a⦈ b$_x$ y
+        else
+          {(a$_y$, b$_y$)} ∪ explain ⦇uf_list = l, unions = u, au = a⦈ x b$_y$
+            ∪ explain ⦇uf_list = l, unions = u, au = a⦈ a$_y$ y))
 )"
-by pat_completeness auto
+  by pat_completeness auto
 \end{lstlisting}
 
 \section{Proofs}
 
-This section introduces an invariant for the union find data structure and proves that the .\lstinline{explain} function terminates and is correct, when invoked with valid parameters.
+This section introduces an invariant for the union find data structure and proves that the \lstinline{explain} function terminates and is correct, when invoked with valid parameters.
 
 \subsection{Invariant and Induction Rule}
 
 The validity invariant of the data structure expresses that the data structure derived from subsequent unions with \lstinline{ufe_union}, starting from the initial empty data structure.
-It also states that the unions were made with valid variables, i.e. varibles which are in bounds.
+It also states that the unions were made with valid variables, i.e. variables which are in bounds.
 
 \begin{lstlisting}
 abbreviation "ufe_invar ufe ≡
-valid_unions (unions ufe) (length (uf_list ufe)) ∧
-apply_unions (unions ufe) (initial_ufe (length (uf_list ufe))) = ufe"
+  valid_unions (unions ufe) (length (uf_list ufe)) ∧
+  apply_unions (unions ufe) (initial_ufe (length (uf_list ufe))) = ufe"
 \end{lstlisting}
 
 With this definition, it is easy to show that the invariant holds after a union.
 
 \begin{lstlisting}
 lemma union_ufe_invar:
-assumes "ufe_invar ufe"
-shows "ufe_invar (ufe_union ufe x y)"
+  assumes "ufe_invar ufe"
+  shows "ufe_invar (ufe_union ufe x y)"
 \end{lstlisting}
 
-It is also useful to prove that the old invariant, \lstinline{ufa_invar}, is implied by the new invariant, so that we can use all the previously proved lemmas about \lstinline{ufa_invar}. This is easily shown by computation induction on the function \lstinline{apply_unions}, and by using the lemma from the Theory Union Find\cite{Sep}, which states that \lstinline{ufa_invar} holds after having applied \lstinline{ufa_union}, and proving that it holds for the initial ufe.
+It is also useful to prove that the old invariant, \lstinline{ufa_invar}, is implied by the new invariant, so that we can use all the previously proved lemmas about \lstinline{ufa_invar}. This is easily shown by computation induction on the function \lstinline{apply_unions}, and by using the lemma from the Theory ''Union Find``, which states that \lstinline{ufa_invar} holds after having applied \lstinline{ufa_union}, and by proving that it holds for the initial empty data structure.
 
 \begin{lstlisting}
 theorem ufe_invar_imp_ufa_invar: "ufe_invar ufe ⟹ ufa_invar (uf_list ufe)"
 \end{lstlisting}
 
-With this definition of the invariant, we can prove a new induction rule, which will be very useful for proving many properties of a union find data structure. The induction rule, called \lstinline{apply_unions_induct}, has as an assumption that the invariant holds for the given data structure $ufe$, and shows that a certain predicate holds for $ufe$. The base case that needs to be proven is that it holds for the initial data structure, and the induction step is that the property remains invariant after applying a union.
+With this definition of the invariant, we can prove a new induction rule, which will be very useful for proving many properties of a union-find data structure. The induction rule, called \lstinline{apply_unions_induct}, has as an assumption that the invariant holds for the given data structure $ufe$, and shows that a certain predicate holds for $ufe$. The base case that needs to be proven is that it holds for the initial data structure, and the induction step is that the property remains invariant after applying a union.
 
 \begin{lstlisting}
 lemma apply_unions_induct[consumes 1, case_names initial union]:
-assumes "ufe_invar ufe"
-assumes "P (initial_ufe (length (uf_list ufe)))"
-assumes "&$\bigwedge$&pufe x y. ufe_invar pufe ⟹ x < length (uf_list pufe) ⟹ y < length (uf_list pufe) ⟹ P pufe ⟹ P (ufe_union pufe x y)"
-shows "P ufe"
+  assumes "ufe_invar ufe"
+  assumes "P (initial_ufe (length (uf_list ufe)))"
+  assumes "⋀pufe x y. ufe_invar pufe ⟹ x < length (uf_list pufe) ⟹ y < length (uf_list pufe)
+    ⟹ P pufe ⟹ P (ufe_union pufe x y)"
+  shows "P ufe"
 \end{lstlisting}
 
 This induction rule can be used for most of the proofs about explain.
@@ -285,15 +327,16 @@ An important result was to show that the function always terminates if \lstinlin
 
 \begin{lstlisting}
 theorem explain_domain:
-assumes "ufe_invar ufe"
-shows "explain_dom (ufe, x, y)"
+  assumes "ufe_invar ufe"
+  shows "explain_dom (ufe, x, y)"
 \end{lstlisting}
 
 \begin{proof}
-For the base case, we consider the empty data structure. There are no different variables with the same representative, therefore the algorithm terminates immediately.
+For the base case, we consider the empty data structure. There are no distinct variables with the same representative, therefore the algorithm terminates immediately.
 
 For the induction step we need to show that if the function terminates for a data structure $ufe$, then it also terminates for \lstinline{ufe_union ufe x y}.
 The lowest common ancestor and the newest index on path do not change after a union was applied. Therefore the entire algorithm is executed with exactly the same results at each intermediate step, therefore the recursive calls are equal, and they terminate by induction hypothesis.
+
 TODO
 \end{proof}
 
@@ -303,40 +346,39 @@ There are two properties which define the correctness of explain: foremost, the 
 
 \begin{lstlisting}
 theorem explain_valid:
-assumes "ufe_invar ufe"
-and "xy ∈ (explain ufe x y)"
-shows "xy ∈ set (unions ufe)"
+  assumes "ufe_invar ufe"
+    and "xy ∈ (explain ufe x y)"
+  shows "xy ∈ set (unions ufe)"
 \end{lstlisting}
 
-We know from Subsection \ref{subsection:termination} that when the invariant holds, the function terminates. Therefore we can use the partial induction rule that Isabelle automatically generates for partial functions. We can prove that $(a, b)$ is a valid union, given that it is in the \lstinline{unions} list, for that we need to prove that the index found by \lstinline{find_nearest_on_path} is in bounds.
+We know from Subsection \ref{subsection:termination} that when the invariant holds, the function terminates. Therefore we can use the partial induction rule for \lstinline|explain| that Isabelle automatically generates for partial functions. We can prove that $(a, b)$ is a valid union, given that it is in the \lstinline{unions} list, for that we need to prove that the index found by \lstinline{find_nearest_on_path} is in bounds.
 
 \begin{lstlisting}
 lemma find_newest_on_path_Some:
-assumes "path l y p x"
-and "ufe_invar ⦇uf_list = l, unions = u, au = a⦈"
-and "x ≠ y"
-obtains k where "find_newest_on_path l a x y = Some k ∧ k < length u"
+  assumes "path l y p x"
+    and "ufe_invar ⦇uf_list = l, unions = un, au = a⦈"
+    and "x ≠ y"
+  obtains k where "find_newest_on_path l a x y = Some k ∧ k < length un"
 \end{lstlisting}
 
-which follows from the following lemma, that shows that the entries in the associated union list are valid, aka less than the length of u
+which follows from the following lemma, that shows that the entries in the \emph{associated unions} list are in bounds.
 
 \begin{lstlisting}
 lemma au_valid:
-assumes "ufe_invar ufe"
-and "i < length (au ufe)"
-shows "au ufe ! i < Some (length (unions ufe))"
+  assumes "ufe_invar ufe"
+  shows "au ufe ! i < Some (length (unions ufe))"
 \end{lstlisting}
 
-It is easily proven, given that all the values that are added to au are valid.
+It is easily proven, given that all the values that are added to \lstinline|au| are valid.
 
 Thus we have shown the validity of the explain function.
 It remains to show the correctness.
-
-\begin{lstlisting}[language=isabelle]
+TODO
+\begin{lstlisting}
 theorem explain_correct:
-assumes "ufe_invar ufe"
-and "rep_of (uf_list ufe) x = rep_of (uf_list ufe) y"
-shows "(x, y) ∈ (symcl (explain ufe x y))*"
+  assumes "ufe_invar ufe"
+    and "rep_of (uf_list ufe) x = rep_of (uf_list ufe) y"
+  shows "(x, y) ∈ (symcl (explain ufe x y))*"
 \end{lstlisting}
 
 This was shown by computation induction on explain. For example for case x:
