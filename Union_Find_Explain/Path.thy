@@ -192,6 +192,11 @@ next
     by (metis * ** hd_conv_nth last_ConsR length_Cons list.discI list.sel(1) neq0_conv nth_Cons_pos zero_less_diff)
 qed
 
+corollary path_parent:
+  assumes "path l x p y" "i < length p" "i > 0"
+  shows "l ! (p ! i) = (p ! (i - 1))"
+  using assms path_properties by presburger
+
 lemma path_no_cycle: 
   assumes invar: "ufa_invar l"
     and n: "n < length l"

@@ -1241,7 +1241,7 @@ lemma explain_domain_ufe_union_invar:
       from case_x "1.prems" ufe_union 
       have lca_eq: "lca = lca'" 
         by (metis \<open>l2 = ufa_union l x2 y2\<close> \<open>ufa_invar l\<close> defs1(1) lowest_common_ancestor_ufa_union_invar ufe_data_structure.select_convs(1))
-      with "1.prems" case_x lowest_common_ancestor_correct obtain plx where  plx: "path l lca plx x" 
+      with "1.prems" case_x lowest_common_ancestor_correct obtain plx where plx: "path l lca plx x" 
         by (metis \<open>ufa_invar l\<close> ufe_data_structure.select_convs(1))
       with find_newest_on_path_ufe_union_invar 
       have nix_eq: "newest_index_x' = newest_index_x" 
@@ -1421,12 +1421,10 @@ next
       by (metis ufe_data_structure.select_convs(1))+
     then have lengths': "x < length (uf_list pufe)" "y < length l1" 
       by (metis pufe pufe_union ufe_data_structure.select_convs(1) ufe_union_length_uf_list)+
-    with lengths case_x have *: "explain_dom (pufe, x, ax)" "explain_dom (pufe, bx, y)"
-      by (metis pufe_union ufe_data_structure.select_convs(1) ufe_union_length_uf_list)+
     from explain_case_x_rep_of_ax_bx_ufe_union[OF case_x(13,12,19)] l case_x 
     have "rep_of l1 x = rep_of l1 ax" "rep_of l1 y = rep_of l1 bx" 
       by (metis dual_order.strict_iff_not ufe_data_structure.select_convs(1))+
-    with  explain_domain_ufe_union_invar * union(1,2,3) lengths' union lengths
+    with  explain_domain_ufe_union_invar union(1,2,3) lengths' union lengths
     have "explain_dom (ufe_union pufe x2 y2, x, ax)"
       "explain_dom (ufe_union pufe x2 y2, bx, y)"
       by (metis pufe pufe_union ufe_data_structure.select_convs(1) ufe_union_length_uf_list)+

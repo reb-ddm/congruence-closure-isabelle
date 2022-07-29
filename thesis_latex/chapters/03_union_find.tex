@@ -142,6 +142,7 @@ $(a, b)$ is calculated by finding the lowest common ancestor $lca$ of $x$ and $y
 This section describes the helper functions needed for the implementation of \lstinline|explain|, which calculate the lowest common ancestor, using the function \lstinline{path_to_root}, and the newest union on a path.
 
 \subsubsection{path\_to\_root}
+\label{subsubsection:path-to-root}
 
 The function \lstinline{path_to_root l x} computes the path from the root of $x$ to the node $x$ in the union-find forest $l$. It simply starts at $x$ and continues to add the parent of the current node to the front of the path, until it reaches the root.
 
@@ -323,7 +324,27 @@ This induction rule can be used for most of the proofs about explain.
 \subsection{Termination Proof}
 \label{subsection:termination}
 
-An important result was to show that the function always terminates if \lstinline{ufe_invar} holds.
+An important result was to show that the function always terminates if \lstinline{ufe_invar} holds. We will show this using \lstinline|apply_unions_invar|, therefore we need to show that if the function terminates before \lstinline{ufe_union} is applied, then it also terminates afterwards, assuming that $x$ and $y$ are in the same representative class, where $x$ and $y$ are the last two parameters of explain.
+
+\begin{lstlisting}
+lemma explain_domain_ufe_union_invar:
+  assumes "explain_dom (ufe, x, y)"
+    and "ufe_invar ufe"
+    and "rep_of (uf_list ufe) x = rep_of (uf_list ufe) y"
+  shows "explain_dom (ufe_union ufe x2 y2, x, y)"
+\end{lstlisting}
+
+\begin{proof}
+We can use the partial induction rule of \lstinline|explain|, given that our first assumption is that explain terminates.
+
+We show only the case when \lstinline|newest_index_x ≥ newest_index_y|, because the other case is symmetric to it. The Isabelle code also contains proofs about the symmetry of \lstinline{explain}, which are used in order to avoid duplicate proofs for the two cases of the \lstinline{explain} function, but they will not be discussed here, as they are not essential to prove the correctness of the function.
+
+Initially, we remark that the lowest common ancestor and the newest index on path do not change after a union was applied. Therefore we will refer to the variables with the same names as in the function definition, e.g. $lca$, $ax$, etc., without specifying if we refer to e.g. \lstinline|lowest_common_ancestor l x y| or \lstinline|lowest_common_ancestor (ufa_union l x2 y2) $\:\:$x y|.
+
+We assume that $x$ and $y$ are in the same representative class after the union. Given that $(ax, bx)$ is the newest branch on the path fom $ax$ to the lowest common ancestor $lca$ of $x$ and $y$, we know that every edge on the path from $x$ to $ax$ was also present before the union. Therefore $rep\_of(l, ax) = rep\_of(l, x)$ holds before the union, and we can apply the induction hypothesis and conclude \lstinline|explain_dom(ufe_union ufe x2 y2, x, ax)|. $(ax, bx)$ is also newer than the newest branch on the path fom $y$ to the $lca$, therefore $rep\_of(l, y) = rep\_of(l, bx)$, and the induction hypothesis shows that \lstinline|explain_dom(ufe_union ufe x2 y2, bx, y)|. The two recursive calls terminate, therefore \lstinline|explain| terminates.
+\end{proof}
+
+From this result we can prove the termination of \lstinline|explain|:
 
 \begin{lstlisting}
 theorem explain_domain:
@@ -332,26 +353,25 @@ theorem explain_domain:
 \end{lstlisting}
 
 \begin{proof}
+We prove it by using \lstinline|apply_union_induct|.
+
 For the base case, we consider the empty data structure. There are no distinct variables with the same representative, therefore the algorithm terminates immediately.
 
-For the induction step we need to show that if the function terminates for a data structure $ufe$, then it also terminates for \lstinline{ufe_union ufe x y}.
-The lowest common ancestor and the newest index on path do not change after a union was applied. Therefore the entire algorithm is executed with exactly the same results at each intermediate step, therefore the recursive calls are equal, and they terminate by induction hypothesis.
-
-TODO
+For the induction step we can show that the parameters of the recursive case  are in the same representative class, therefore we can apply the previous lemma and show that \lstinline|explain| terminates.
 \end{proof}
 
 \subsection{Correctness Proof}
-TODO
-There are two properties which define the correctness of explain: foremost, the equivalence closure of \lstinline{explain x y} should contain the pair $(x, y)$ (we shall refer to this property as "correctness"), additionally, the elements in the output should only be equations which are part of the input (we shall refer to this property as "validity"). The proposition about the validity of \lstinline{explain} looks as follows:
+
+There are two properties which define the correctness of explain: foremost, the equivalence closure of \lstinline{explain x y} should contain the pair $(x, y)$ (we shall refer to this property as ``correctness''), additionally, the elements in the output should only be equations which are part of the input (we shall refer to this property as ``validity''). The proposition about the validity of \lstinline{explain} is the following:
 
 \begin{lstlisting}
 theorem explain_valid:
   assumes "ufe_invar ufe"
-    and "xy ∈ (explain ufe x y)"
-  shows "xy ∈ set (unions ufe)"
+    and "k ∈ (explain ufe x y)"
+  shows "k ∈ set (unions ufe)"
 \end{lstlisting}
 
-We know from Subsection \ref{subsection:termination} that when the invariant holds, the function terminates. Therefore we can use the partial induction rule for \lstinline|explain| that Isabelle automatically generates for partial functions. We can prove that $(a, b)$ is a valid union, given that it is in the \lstinline{unions} list, for that we need to prove that the index found by \lstinline{find_nearest_on_path} is in bounds.
+We know from Subsection \ref{subsection:termination} that when the invariant holds, the function terminates. Therefore we can use the partial induction rule for \lstinline|explain| that Isabelle automatically generates for partial functions. We can prove that $k$ is a valid union, given that each element in \lstinline|explain ufe x y| originally derives from the \lstinline{unions} list, which is the list of input equations. In order to use this argument, we need to prove that the index found by \lstinline{find_nearest_on_path} is in bounds.
 
 \begin{lstlisting}
 lemma find_newest_on_path_Some:
@@ -361,19 +381,20 @@ lemma find_newest_on_path_Some:
   obtains k where "find_newest_on_path l a x y = Some k ∧ k < length un"
 \end{lstlisting}
 
-which follows from the following lemma, that shows that the entries in the \emph{associated unions} list are in bounds.
+This follows from the following lemma, that shows that the entries in the \emph{associated unions} list are in bounds.
 
 \begin{lstlisting}
 lemma au_valid:
   assumes "ufe_invar ufe"
+    and "i < length (au ufe)"
   shows "au ufe ! i < Some (length (unions ufe))"
 \end{lstlisting}
 
-It is easily proven, given that all the values that are added to \lstinline|au| are valid.
+It is easily proven, given that all the values that are added to \lstinline|au| by \lstinline|ufe_union| are valid.
 
-Thus we have shown the validity of the explain function.
+Thus we can prove the lemma about the validity of the explain function.
 It remains to show the correctness.
-TODO
+
 \begin{lstlisting}
 theorem explain_correct:
   assumes "ufe_invar ufe"
@@ -381,6 +402,13 @@ theorem explain_correct:
   shows "(x, y) ∈ (symcl (explain ufe x y))*"
 \end{lstlisting}
 
-This was shown by computation induction on explain. For example for case x:
-$(x, ax) \in$\lstinline{(explain x ax)*} and $(bx, y) \in\:$\lstinline{(explain bx y)*} and $(ax, bx) \in\:$\lstinline{explain x y}
-Therefore $(x, y) \in\:$\lstinline{(explain x y)*}
+\begin{proof}
+This was shown using the induction rule of \lstinline|explain|.
+
+For the case where \lstinline|x = y|, the algorithm returns the empty set, and because of reflexivity $(x, y)$ is in the equivalence closure of the empty set.
+
+As before, for the remaining cases we consider only the case where \lstinline|newest_index_x ≥ newest_index_y|.
+From the induction hypothesis, we know that $(x, ax) \in$\lstinline{(symcl (explain ufe x y))*} and $(bx, y) \in\:$\lstinline{(symcl (explain ufe x y))*}.
+
+Because of the definition of explain, it holds that $(ax, bx) \in\:$\lstinline{(explain x y)}. Therefore from the transitivity of the equivalence closure it follows that $(x, y) \in\:$\lstinline{(symcl (explain ufe x y))*}.
+\end{proof}

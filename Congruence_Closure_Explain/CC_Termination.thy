@@ -3,17 +3,20 @@ theory CC_Termination
   imports CC_Invars
 begin 
 
-abbreviation root_set where
-  "root_set l \<equiv> {i | i. i < length l \<and> l ! i = i}"
+abbreviation root_set 
+  where 
+    "root_set l \<equiv> {i | i. i < length l \<and> l ! i = i}"
 
-
+text \<open>To prove the termination of \<open>propagate\<close>, we show that the amount of equivalence classes 
+decreases at each step if \<open>propagate\<close>.\<close>
 definition nr_eq_classes :: "nat list \<Rightarrow> nat"
-  where "nr_eq_classes l = card (root_set l)"
+  where 
+    "nr_eq_classes l = card (root_set l)"
 
 lemma ufa_union_decreases_nr_eq_classes:
   assumes "ufa_invar l" "a < length l" 
     "rep_of l a \<noteq> rep_of l b"
-shows "nr_eq_classes (ufa_union l a b) = nr_eq_classes l - 1"
+  shows "nr_eq_classes (ufa_union l a b) = nr_eq_classes l - 1"
 proof-
   have "rep_of l a \<in> root_set l"
     by (simp add: assms rep_of_less_length_l rep_of_root)
@@ -76,7 +79,7 @@ next
       case True
       let ?step = "\<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
       have "cc_invar ?step" 
-        using Suc.prems(1) True a_b(1) a_b(2)cc cc_invar_step2 by blast
+        using Suc.prems(1) True a_b cc cc_invar_step2 by blast
       then have "propagate_dom ?step" using True Suc(1)
       proof (induction pe)
         case Nil
@@ -146,6 +149,5 @@ corollary propagate_domain':
   assumes "cc_invar cc" "valid_vars eq (nr_vars cc)"
   shows "propagate_dom cc"
   using propagate_domain valid_vars_imp_nr_vars_gt_0 assms by blast
-
 
 end

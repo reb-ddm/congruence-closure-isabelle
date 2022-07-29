@@ -524,13 +524,11 @@ Congruence_Closure (representatives_set l \<union> output \<union> pending_set_e
   qed
 qed
 
-
 fun pending_set' :: "pending_equation list \<Rightarrow> equation set"
   where
     "pending_set' [] = {}"
   | "pending_set' ((One a') # xs) = {a'} \<union> pending_set xs"
   | "pending_set' ((Two a' b') # xs) = {a', b'} \<union> pending_set xs"
-
 
 lemma set_union_divide_lemma: "\<Union>{y | y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. k1 y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb }
 \<union> \<Union>{y| y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. k2 y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb } = 
@@ -1364,7 +1362,6 @@ theorem validity_invar_initial_cc: "validity_invar (initial_cc n)"
   unfolding validity_invar_def
   by fastforce
 
-
 subsection \<open>Validity of \<open>cc_explain\<close>\<close>
 
 lemma explain_along_path_valid:
@@ -1634,7 +1631,6 @@ qed
 
 subsection \<open>Correctness invar of \<open>cc_explain\<close>\<close>
 
-
 lemma path_invariant_after_add_edge:
   assumes "c = lowest_common_ancestor pf a b"
 "c' = lowest_common_ancestor (add_edge pf e e') a b"
@@ -1698,7 +1694,6 @@ proof-
     qed
 qed
 
-
 lemma cc_explain_correctness_invar_mini_step:
   assumes "cc_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf,
  pf_labels = pfl, input = ip\<rparr>" 
@@ -1738,7 +1733,6 @@ proof(standard, standard, standard, standard, standard, standard, standard)
     then show ?thesis sorry
   qed
 qed
-
 
 subsubsection \<open>Initial cc\<close>
 
@@ -1794,6 +1788,5 @@ proof-
   then show ?thesis 
     by (metis "*" Un_empty_right)
 qed
-
 
 end

@@ -52,91 +52,52 @@ In the base case there is only one node in the path, therefore $e$ must be equal
 In the other case $e$ is not a root, then there is a path $p'$ from the root to the parent of $e$ which is shorter than the path from the root to $e$. The path $p'$ is also present in the $pf[e := e']$, because the path does not contain $e$. Also, the representative of $e$ in $pf[e := e']$ is equal to the representative of $e'$, and the representative of the parent of $e$ is still the old representative of $e$, therefore they are not in the same representative class, and we can apply the induction hypothesis and conclude that the recursive call terminates, therefore the function terminates.
 \end{proof}
 
+In order to prove the correctness of \lstinline|add_edge|, we show that \lstinline{ufa_union l x y} and \lstinline{add_edge l x y} have the same behaviour, from which we can conclude that the equivalence classes of the union-find forest are the same as those of the proof forest. The theory \lstinline{Union_Find} from the AFP\cite{Sep} already provides the following lemma for \lstinline{ufa_union}:
 
+\begin{lstlisting}
+lemma ufa_union_aux:
+  "rep_of (ufa_union l x y) i =
+    (if rep_of l i = rep_of l x then rep_of l y else rep_of l i)"
+\end{lstlisting}
 
-\tikzset{every picture/.style={line width=0.75pt}} %set default line width to 0.75pt
+We can show a similar lemma for \lstinline{add_edge}:
 
-\begin{tikzpicture}[x=0.75pt,y=0.75pt,yscale=-1,xscale=1]
-	%uncomment if require: \path (0,190); %set diagram left start at 0, and has height of 190
+\begin{lstlisting}
+lemma rep_of_add_edge_aux:
+   assumes "rep_of l x ≠ rep_of l y"
+   shows "rep_of (add_edge l x y) i =
+     (if rep_of l i = rep_of l x then rep_of l y else rep_of l i)"
+\end{lstlisting}
 
-	%Straight Lines [id:da7388909588496015]
-	\draw [color={rgb, 255:red, 126; green, 211; blue, 33 }  ,draw opacity=1 ]   (86,78) -- (74.79,52.07) ;
-	\draw [shift={(74,50.23)}, rotate = 66.63] [color={rgb, 255:red, 126; green, 211; blue, 33 }  ,draw opacity=1 ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da932845693599931]
-	\draw [color={rgb, 255:red, 126; green, 211; blue, 33 }  ,draw opacity=1 ]   (101,110.77) -- (90.76,85.85) ;
-	\draw [shift={(90,84)}, rotate = 67.66] [color={rgb, 255:red, 126; green, 211; blue, 33 }  ,draw opacity=1 ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da8126326447235763]
-	\draw    (55,78) -- (67.18,51.05) ;
-	\draw [shift={(68,49.23)}, rotate = 114.32] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da6899851051736223]
-	\draw    (36,112.23) -- (50.03,86.75) ;
-	\draw [shift={(51,85)}, rotate = 118.85] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da19284936033329814]
-	\draw    (163,103) -- (175.07,80) ;
-	\draw [shift={(176,78.23)}, rotate = 117.69] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da21247734751433156]
-	\draw    (201,103.23) -- (187.92,78) ;
-	\draw [shift={(187,76.23)}, rotate = 62.59] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da18784825583709686]
-	\draw    (216,144) -- (205.73,117.86) ;
-	\draw [shift={(205,116)}, rotate = 68.55] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da43419875667135477]
-	\draw    (236,121) -- (209.84,109.79) ;
-	\draw [shift={(208,109)}, rotate = 23.2] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da8377415360718197]
-	\draw    (127,165) -- (112.59,131.64) ;
-	\draw [shift={(111.8,129.8)}, rotate = 66.64] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da9212006749144803]
-	\draw [color={rgb, 255:red, 126; green, 211; blue, 33 }  ,draw opacity=1 ]   (397.86,51.57) -- (407.95,72.99) ;
-	\draw [shift={(408.8,74.8)}, rotate = 244.78] [color={rgb, 255:red, 126; green, 211; blue, 33 }  ,draw opacity=1 ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da9112225070236206]
-	\draw [color={rgb, 255:red, 126; green, 211; blue, 33 }  ,draw opacity=1 ]   (411.8,80.8) -- (422.91,103.01) ;
-	\draw [shift={(423.8,104.8)}, rotate = 243.43] [color={rgb, 255:red, 126; green, 211; blue, 33 }  ,draw opacity=1 ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da026589038011743282]
-	\draw    (376,74) -- (388.18,47.05) ;
-	\draw [shift={(389,45.23)}, rotate = 114.32] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da4465748806717764]
-	\draw    (357,108.23) -- (371.03,82.75) ;
-	\draw [shift={(372,81)}, rotate = 118.85] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da8556828124311282]
-	\draw    (484,99) -- (496.07,76) ;
-	\draw [shift={(497,74.23)}, rotate = 117.69] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da17154675848466616]
-	\draw    (522,99.23) -- (508.92,74) ;
-	\draw [shift={(508,72.23)}, rotate = 62.59] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da5166223592338979]
-	\draw    (537,140) -- (526.73,113.86) ;
-	\draw [shift={(526,112)}, rotate = 68.55] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da8973818170227796]
-	\draw    (557,117) -- (530.84,105.79) ;
-	\draw [shift={(529,105)}, rotate = 23.2] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da17526153342314021]
-	\draw [color={rgb, 255:red, 126; green, 211; blue, 33 }  ,draw opacity=1 ]   (438,115) -- (469.8,112.93) ;
-	\draw [shift={(471.8,112.8)}, rotate = 176.28] [color={rgb, 255:red, 126; green, 211; blue, 33 }  ,draw opacity=1 ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
-	%Straight Lines [id:da07613740586925388]
-	\draw    (448,164) -- (433.59,130.64) ;
-	\draw [shift={(432.8,128.8)}, rotate = 66.64] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+The additional assumption \lstinline{rep_of l x ≠ rep_of l y} does not cause problems, because \lstinline{add_edge} is only executed by the congruence closure algorithm when \lstinline{rep_of l x ≠ rep_of l y}.
 
-	% Text Node
-	\draw (35,27) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle rep\_of\ l\ e$};
-	% Text Node
-	\draw (102,108) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle e$};
-	% Text Node
-	\draw (155,107) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle e'$};
-	% Text Node
-	\draw (145,53) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle rep\_of\ l\ e'$};
-	% Text Node
-	\draw (356,23) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle (rep\_of\ l\ e)$};
-	% Text Node
-	\draw (425.8,107.8) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle e$};
-	% Text Node
-	\draw (476,103) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle e'$};
-	% Text Node
-	\draw (466,49) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle rep\_of\ l\ e'$};
+\begin{proof}
+We already showed that the function terminates, therefore we can prove it by induction on \lstinline{add_edge}.
 
+The proof uses various lemmas about the behaviour of \lstinline{rep_of} after a function update, which depends on where the function update was, and which element we want to find the representative of. These lemmas are proven by analysing how the paths in the forest change after a function update, which corresponds to adding a path in the forest. With these lemmas the induction is easily proven.
+\end{proof}
 
-\end{tikzpicture}
+We also show that \lstinline|add_edge| has the expected behaviour, which is that it reverses all the edges from the root of $e$ to $e$, and it adds an edge from $e$ to $e'$, i.e. after \lstinline|add_edge| the forest contains a path from $e'$ to the representative of $e$, which is the path which was there before \lstinline|add_edge|, but reversed and with one added edge between $e$ and $e'$. \lstinline|rev| is a function which reverses a list, and \lstinline|path_to_root| is the function described in Subsection \ref{subsubsection:path-to-root}. The proof can be shown by induction on \lstinline|add_edge|.
 
+\begin{lstlisting}
+lemma add_edge_correctness:
+  assumes "ufa_invar pf"
+    "rep_of pf e ≠ rep_of pf e'"
+  shows "path (add_edge pf e e') e' ([e'] @ rev (path_to_root pf e)) (rep_of pf e)"
+\end{lstlisting}
+
+The proof forest has a similar structure as the union-find forest, therefore we prove that \lstinline|add_edge| preserves the \lstinline|ufa_invar| invariant from Section \ref{section:uf-isabelle}. This allows us to apply all the lemmas that were proven for the union-find forest also to the proof forest.
+
+\begin{lstlisting}
+lemma add_edge_ufa_invar_invar:
+  assumes "ufa_invar l"
+    "rep_of l e ≠ rep_of l e'"
+  shows "ufa_invar (add_edge l e e')"
+\end{lstlisting}
+
+\begin{proof}
+In order to prove this lemma, we show another lemma which states that the invariant holds after a function update if the update does not cause the formation of a cycle. Then we show that each function update of \lstinline{add_edge} does not form a cycle.
+\end{proof}
 
 \subsubsection{add\_label}
 
@@ -324,32 +285,11 @@ We define a new invariant \lstinline{inv_same_rep_classes}, which states, as the
 rep_of l i = rep_of l j ⟷ rep_of pf i = rep_of pf j
 \end{lstlisting}
 
-In order to prove this, given that the two lists are only modified during the \lstinline{mini_step}, it is sufficient to show that \lstinline{ufa_union l x y} and \lstinline{add_edge pf x y} have the same behaviour. The theory \lstinline{Union_Find} from the AFP\cite{Sep} already provides the following lemma for \lstinline{ufa_union}:
+This invariant is important for the proofs that consider \lstinline{add_edge}. That is because we only showed that \lstinline{add_edge pf x y} terminates if \lstinline{rep_of pf x ≠ rep_of pf y}. \lstinline{propagate} only executes \lstinline{add_edge} when \lstinline{rep_of l x ≠ rep_of l y}. The invariant shows that these two statements are equivalent, therefore \lstinline{add_edge} always terminates when used inside of the algorithm.
 
-\begin{lstlisting}
-lemma ufa_union_aux:
-  "rep_of (ufa_union l x y) i =
-    (if rep_of l i = rep_of l x then rep_of l y else rep_of l i)"
-\end{lstlisting}
+In order to prove the invariant, given that the two lists $l$ and $pf$ are only modified during the \lstinline{mini_step}, it is sufficient to show that \lstinline{ufa_union l x y} and \lstinline{add_edge pf x y} have the same behaviour, which is what we showed in Subsection \ref{subsubsection:addedge}.
 
-We can show a similar lemma for \lstinline{add_edge}:
-
-\begin{lstlisting}
-lemma rep_of_add_edge_aux:
-   assumes "rep_of l x ≠ rep_of l y"
-   shows "rep_of (add_edge l x y) i =
-     (if rep_of l i = rep_of l x then rep_of l y else rep_of l i)"
-\end{lstlisting}
-
-The additional assumption \lstinline{"rep_of l x ≠ rep_of l y"} does not cause problems, because \lstinline{add_edge} is only used within \lstinline{propagate_step}, and \lstinline{propagate_step} is only executed if \lstinline{"rep_of l x ≠ rep_of l y"}.
-
-\begin{proof}
-We already showed that the function terminates in Subsection \ref{subsubsection:addedge}, therefore we can prove it by induction on \lstinline{add_edge}.
-
-TODO describe the proof.
-\end{proof}
-
-Additionally, for each data structure there is an invariant which states the properties which were informally described in Subsection \ref{subsection:datastructure}.
+Furthermore, for each data structure there is an invariant which states the properties which were informally described in Subsection \ref{subsection:datastructure}.
 
 For the use list, the invariant states that for each representative $a$, its use list only contains equations of the type $F(b_1, b_2) = b$, where $a$ is the representative of either $b_1$ or $b_2$.
 
@@ -369,7 +309,7 @@ The invariant for lookup is similar, it states that each entry in the lookup tab
 Each time an equation is added to lookup, it has the desired form and it is added to the index $(rep\_of(l, a_1), rep\_of(l, a_2))$. This happens in the \lstinline{propagate_loop} and in \lstinline{merge}. In the \lstinline{propagate_loop}, the added equation derives from the use list, for which we proved with the previous invariant that its equations have the desired form. In merge, only the equations of the type $F(a_1, a_2) = a$ are added to lookup.
 \end{proof}
 
-For pending, the invariant states that the equations are either of the form \lstinline{One} ($a = b$) or \lstinline{Two} ($F(a_1, a_2) = a$) ($F(b_1, b_2) = b$) where $rep\_of(l, a_1) = rep\_of(l, b_1)$ and $rep\_of(l, a_2) = rep\_of(l, b_2)$: It is important to know that they are in the same equivalence class, because TODO
+For pending, the invariant states that the equations are either of the form \lstinline{One} ($a = b$) or \lstinline{Two} ($F(a_1, a_2) = a$) ($F(b_1, b_2) = b$) where $rep\_of(l, a_1) = rep\_of(l, b_1)$ and $rep\_of(l, a_2) = rep\_of(l, b_2)$:
 
 \begin{proof}
 We need to show that in the \lstinline{propagate_loop} the equation $u1$ we add to pending has a valid form. We know that $u1$ derives from the use list, therefore it is of the form $F(a_1, a_2) = a$. Then we link to it the lookup entry at the index $(rep\_of(l, a_1), rep\_of(l, a_2))$. From the lookup invariant we know that there is an entry of the form $F(b_1, b_2) = b$ at this index where $rep\_of(l, a_1) = rep\_of(l, b_1)$ and $rep\_of(l, a_2) = rep\_of(l, b_2)$. This shows that they are valid equations for pending.
@@ -416,7 +356,6 @@ lemma Congruence_Closure_eq[case_names left right]:
 \end{lstlisting}
 
 It is used to prove equality between congruence closures of $A$ and $B$. It states that it is sufficient to prove that all elements of set $A$ are in the congruence closure of $B$ and vice versa, instead of having to prove that all elements of the congruence closure of $A$ are in the congruence closure of $B$.
-
 
 \subsection{Correctness}
 
@@ -479,7 +418,7 @@ These two lemmas imply that the congruence closure of the \lstinline{representat
 We will first prove the second statement, given that it is much easer to show.
 
 \begin{proof}
-We need to shhow that \lstinline{Congruence Closure (representativeE ∪ pending ∪ (u ! rep_of l a))} before the \lstinline{propagate_loop} is equal to \lstinline{Congruence Closure (representativeE ∪ pending)}  after the \lstinline{propagate_loop}. In each step of the loop, one element from $(u ! rep\_of(l, a))$ is moved either to pending or to lookup. Therefore after the loop each element of $(u ! rep\_of(l, a))$ is either in pending or in representativeE. The elements of pending and representativeE are never removed from the set, therefore they are present also after the loop.
+We need to show that \lstinline{Congruence Closure (representativeE ∪ pending ∪ (u ! rep_of l a))} before the \lstinline{propagate_loop} is equal to \lstinline{Congruence Closure (representativeE ∪ pending)}  after the \lstinline{propagate_loop}. In each step of the loop, one element from $(u ! rep\_of(l, a))$ is moved either to pending or to lookup. Therefore after the loop each element of $(u ! rep\_of(l, a))$ is either in pending or in representativeE. The elements of pending and representativeE are never removed from the set, therefore they are present also after the loop.
 \end{proof}
 
 The first lemma is more difficult to prove. The following is the statement of the lemma:
@@ -508,7 +447,7 @@ Congruence_Closure (representativeE
 \end{lstlisting}
 
 \begin{proof}
-There are two inclusions which need to be shown. We can use the rule \lstinline{Congruence_Closure_eq} from Subsection \ref{subsection:abstraction}, which means that it is sufficient to show that each equation in the set on the left hand side is in the congruence closure of the right hand side and vice versa.
+There are two inclusions which need to be shown. We can use the rule \lstinline{Congruence_Closure_eq} from Subsection \ref{subsection:abstraction}, which means that it is sufficient to show that each equation in the set on the left-hand side is in the congruence closure of the right-hand side and vice versa.
 
 "$\subseteq$" It needs to be shown that the equations of the \lstinline{representatives_set}, in lookup and in pending are in the Congruence Closure of the right-hand side.
 
@@ -520,7 +459,7 @@ The problematic cases are the equations in lookup. Given that after the union $r
 
 "$\supseteq$" We need to show that the equations of the \lstinline{representatives_set}, \lstinline{lookup_entries_set}, pending set and of $(u ! rep\_of(l, a))$ on the right-hand side are in the congruence closure of the left-hand side.
 
-The \lstinline{representatives_set} contains equations of the type $c = rep\_of (ufa\_union(l, a, b), c)$ for each element $c$ which is not a root. If the representative after the union is the same before the union, the same equation is in the \lstinline{representatives_set} of the left hand side. The only representative that is different than before the union is the representative of $a$, which has as new representative $rep\_of(l, b)$. The left-hand side contains the equations $b = rep\_of(l, b)$ and $a = b$ (which is in pending). By transitivity, the congruence closure also contains $a = rep\_of(l, b)$ and $rep\_of(l, b)$ is exactly the same as $rep\_of (ufa\_union(l, a, b), a)$.
+The \lstinline{representatives_set} contains equations of the type $c = rep\_of (ufa\_union(l, a, b), c)$ for each element $c$ which is not a root. If the representative after the union is the same before the union, the same equation is in the \lstinline{representatives_set} of the left-hand side. The only representative that is different than before the union is the representative of $a$, which has as new representative $rep\_of(l, b)$. The left-hand side contains the equations $b = rep\_of(l, b)$ and $a = b$ (which is in pending). By transitivity, the congruence closure also contains $a = rep\_of(l, b)$ and $rep\_of(l, b)$ is exactly the same as $rep\_of (ufa\_union(l, a, b), a)$.
 
 Regarding lookup, all the elements which are roots after the union, are also roots before the union, therefore all elements in the \lstinline{lookup_entry_set} of the right-hand side are also in the left-hand side.
 
@@ -547,13 +486,18 @@ Two equations $F(a_1, a_2) = a$ and $F(b_1, b_2) = b$ are \emph{similar}, if $re
 
 Simply stating that $a$ and $b$ have the same representative would be too strong, because during the propagate function, they are added to pending in order to be merged later, and are not merged yet. If we use \lstinline{representativeE} instead of \lstinline{representatives_set}, the invariant is not strong enough in order to prove \lstinline{inv2_mini_step}.
 
+The final invariants are the following:
+\begin{itemize}
+    \item \lstinline{lookup_invar2}: For each equation in lookup at the index $(i, j)$ (where $i$ and $j$ are representatives) there is a similar equation in use list $i$ and one in use list $j$.
+	\item \lstinline{use_list_invar2}: For each equation $F(c_1, c_2) = c$ in use list at the index $i$ (where $i$ is a representative) there is a similar equation in lookup at the index $(rep\_of(l, c_1), rep\_of(l, c_2))$.
+\end{itemize}
+
 Here follows the proof for \lstinline{lookup_invar2}:
 
 \begin{proof}
-The invariant states that for each equation in lookup at the index $(i, j)$ (where $i$ and $j$ are representatives) there is a similar equation in use list $i$ and one in use list $j$.
-We need to show that if before the \lstinline{merge} the invariant holds, then it also holds after the \lstinline{merge}.
+We need to show that if the invariant holds before \lstinline{merge}, then it also holds after the \lstinline{merge}.
 
-The main aim is to show that it holds after \lstinline{propagate}. We assume that before \lstinline{propagate} the invariant holds. In particular, each equation $F(c_1, c_2) = c$ in $u_a = (u ! rep\_of(l, a))$ there is a similar equation in $(u ! rep\_of(l, c_1))$ and in $(u ! rep\_of(l, c_2))$.TODO????
+The main aim is to show that it holds after \lstinline{propagate}. We assume that before \lstinline{propagate} the invariants \lstinline{lookup_invar2} and \lstinline{use_list_invar2} hold. In particular, we observe that for each equation $F(c_1, c_2) = c$ in $(u ! rep\_of(l, a))$ (which we shall refer to with $u_a$) there is a similar equation in lookup at the index $(rep\_of(l, c_1), rep\_of(l, c_2))$ and therefore there are similar equations in $(u ! rep\_of(l, c_1))$ and in $(u ! rep\_of(l, c_2))$.
 
 In the \lstinline{propagate_loop} $u_a$ is emptied, while the other use lists are not modified, and $u_a$ is handed over as a parameter to the \lstinline{propagate_loop}.
 
@@ -564,38 +508,36 @@ In \lstinline{loop1} the lookup table and the use lists are not modified, thus t
 In \lstinline{loop2} we take an equation $u1$ of the form $F(c_1, c_2) = c$ from $u_a$.
 
 $u1$ is then added to lookup at the index $(rep\_of(l, c_1), rep\_of(l, c_2))$. We need to show that after this step, an equation similar to $u1$ is present both in the use list of $rep\_of(l, c_1)$ and the use list of $rep\_of(l, c_2)$.
-This holds if one (or both) of them is equal to $rep\_of(l, b)$, because $u1$ is also added to $u ! rep\_of(l, b)$ by the function.
 
-If they are not  equal to $rep\_of(l, b)$, there is a similar equation in the corresponding use list, because the use list has not been changed.
+This holds if none of those two use lists are $u_a$, because of the observation made earlier, and because no use list has not been modified apart from $u_a$.
+
+If one (or both) of the use lists are $u_a$, then the representative of the corresponding element was $rep\_of(l,a)$ before the union, therefore after the union it is $rep\_of(l,b)$. Given that $u1$ is also added to $u ! rep\_of(l, b)$ by the function, we can conclude that there is a similar equation also in this use list.
 \end{proof}
 
 Here follows the proof for \lstinline{use_list_invar2}:
 
 \begin{proof}
-The invariant states that for each equation $F(c_1, c_2) = c$ in use list at the index $i$ (where $i$ is a representative) there is a similar equation in lookup at the index $(rep\_of(l, c_1), rep\_of(l, c_2))$.
 We need to show that if before the \lstinline{merge} the invariant holds, then it also holds after the \lstinline{merge}.
 
-The difficulty in this proof was when after the \lstinline{mini_step}, because of the union, $rep\_of(l, a)$ is not a root any more, therefore the lookup entries at the indexes of $rep\_of(l, a)$ are not in \lstinline|lookup_set| anymore. TODO??However, there could be equations in a use list at an index which is not $rep\_of(l, a)$, which contains equations where the second parameter has the same representative of $a$. These equations do not have a similar equation in lookup at this moment in the algorithm, they have only a similar equation in $u_a = u ! rep\_of l a$, therefore the invariant does not hold for these equations. Nevertheless, we will show that it holds after the \lstinline{propagate_loop} was executed.
+The difficulty in this proof was when after the \lstinline{mini_step}, because of the union, $rep\_of(l, a)$ is not a root any more, therefore if there are some equations $F(c_1, c_2) = c$ in the use list where the representative of $c_1$ or $c_2$ is $rep\_of(l,a)$, they have a new representative after the union, which means that the corresponding similar equations in the lookup table are not at the right index anymore.
+
+If $F(c_1, c_2) = c$ was in $u ! rep\_of (l, a)$ (which we shall again refer to with $u_a$), then it is removed from the use list after the \lstinline|mini_step|, and the previous remark does not cause any problems. However, there could be equations in use list at an index which is not $rep\_of(l, a)$, where $c_1$ or $c_2$ has the same representative of $a$. These equations do not have a similar equation in lookup after the \lstinline{mini_step}, but we know from \lstinline{lookup_invar2} that they have a similar equation in $u_a$.
+Therefore, in order show that \lstinline{use_list_invar2} holds after the \lstinline{propagate_loop}, it is sufficient to show that for each equation in $u_a$ a similar equation is added (or already present) in the lookup table after the \lstinline{propagate_loop}.
 
 From now on let $l$ be the \lstinline{cc_list} after the \lstinline{ufe_union}.
 
-The \lstinline{propagate_loop} removes an equation $F(c_1, c_2) = c$ from $u_a$, and it enters \lstinline{loop1} when lookup contains an equation $F(d_1, d_2) = d$ at the index $(rep\_of(l, c_1), rep\_of(l, c_2))$. Then the equation $c = d$ is added to pending. Note that $F(c_1, c_2) = c$ and $F(d_1, d_2) = d$ are similar at this point, because $rep\_of(l, c_1) = rep\_of(l, d_1)$ and $rep\_of(l, c_2) = rep\_of(l, d_2)$ follows from the \lstinline{lookup_invar}.
+The \lstinline{propagate_loop} removes an equation $F(c_1, c_2) = c$ from $u_a$, and it enters \lstinline{loop1} when lookup contains an equation $F(d_1, d_2) = d$ at the index $(rep\_of(l, c_1), rep\_of(l, c_2))$. Then the equation $c = d$ is added to pending. Note that $F(c_1, c_2) = c$ and $F(d_1, d_2) = d$ are similar at this point, because $rep\_of(l, c_1) = rep\_of(l, d_1)$ and $rep\_of(l, c_2) = rep\_of(l, d_2)$ follows from the \lstinline{lookup_invar}, and $c = d$ is added to pending.
 
-We know that for all the equations in the use list, there is a similar equation in lookup or $u_a$. For those equations where the similar equation is exactly the one that we are removing from $u_a$, we know that there is another equation $F(d_1, d_2) = d$ in lookup which is similar to $F(c_1, c_2) = c$ TODO why.
+This case is exactly the reason why we can only prove that there is a ``similar'' equation in lookup, and not exactly the same.
 
-(This case is exactly the reason why we can only prove that there is a ``similar'' equation in lookup, and not exactly the same.)
+Regarding \lstinline{loop2}, it is entered when lookup contains \lstinline{None} at the index $(rep\_of(l, c_1), rep\_of(l, c_2))$. Then $F(c_1, c_2) = c$ is added to $(u ! rep\_of(l, b))$ and to lookup. Obviously, an equation is similar to itself, therfore after this lookup contains a similar equation to $F(c_1, c_2) = c$.
 
-The \lstinline{loop2} is entered, when lookup contains \lstinline{None} at the index $(rep\_of(l, c_1), rep\_of(l, c_2))$.TODO quindi??
-
-$F(c_1, c_2) = c$ is added to $(u ! rep\_of(l, b))$ and lookup.
-Each equation which was in use list has a similar equation in lookup or $u_a$. For those equations where the similar equation is exactly the one that we are removing from $u_a$, we know that it was also added to lookup.
-
-There is also a new element in the use list, which is $F(c_1, c_2) = c$, and it has a similar equation in lookup, which is $F(c_1, c_2) = c$ itself.
+There is also a new element which is added to the use list, and it has a similar equation in lookup, which is $F(c_1, c_2) = c$ itself, therefore the invariant holds.
 \end{proof}
 
-With these two invariants the proof for \lstinline{inv2} is completed.
+With these two invariants the proof for \lstinline{inv2} is completed. Given that the pending list is always empty after the termination of propagate, the correctness proof \lstinline{are_congruent_correct}, which was defined at the beginning of this section, follows directly from this invariant.
 
-All the invariants are put together in the invariant \lstinline{cc_invar}, and using all the previously described proofs about the invariant, we can prove that \lstinline{cc_invar} holds for the initial empty data structue, and that it holds after \lstinline{merge}.
+All the invariants are put together in the invariant \lstinline{cc_invar}, and using all the previously described proofs about the invariant, we can prove that \lstinline{cc_invar} holds for the initial empty data structure, and that it holds after \lstinline{merge}.
 
 \begin{lstlisting}
 theorem cc_invar_initial_cc: "cc_invar (initial_cc n)"
@@ -607,9 +549,52 @@ theorem cc_invar_merge:
   shows "cc_invar (merge cc eq)"
 \end{lstlisting}
 
-Given that the pending list is always empty after the termination of propagate, the correctness proof \lstinline{are_congruent_correct} follows directly from this invariant.
+The proof uses the fact that \lstinline{propagate} terminates, which will be proven in the following section.
 
-To completely finish the proof, one would need to prove that propagate terminates, which is currently left open for future work.
+\subsection{Termination}
+
+We already proved that the functions \lstinline|add_edge| and \lstinline|add_label| terminate, the only missing proof is the termination of \lstinline|propagate|. All the remaining functions are simple enough for Isabelle to prove their termination automatically.
+
+In order to prove the termination of \lstinline{propagate}, we show that the number of equivalence classes strictly decreases in each step of \lstinline{propagate}, therefore the function terminates at the latest when all the elements belong to the same equivalence class.
+
+The number of equivalence classes is defined as the number of roots in the union-find forest. The function \lstinline|card| returns the cardinality of a set.
+
+\begin{lstlisting}
+abbreviation root_set
+  where
+    "root_set l ≡ {i | i. i < length l ∧ l ! i = i}"
+
+definition nr_eq_classes :: "nat list ⇒ nat"
+  where
+    "nr_eq_classes l = card (root_set l)"
+\end{lstlisting}
+
+With this, we can show that after a union, $rep\_of (l, a)$ is not a root anymore, therefore there is one less root in the forest.
+
+\begin{lstlisting}
+lemma ufa_union_decreases_nr_eq_classes:
+  assumes "ufa_invar l" "a < length l"
+    "rep_of l a ≠ rep_of l b"
+  shows "nr_eq_classes (ufa_union l a b) = nr_eq_classes l - 1"
+\end{lstlisting}
+
+The termination proof for \lstinline{propagate} follows from this lemma, with an additional assumption that there is at least one variable, so that there is at least one equivalence class.
+
+\begin{lstlisting}
+lemma propagate_domain:
+  assumes "cc_invar cc" "nr_vars cc > 0"
+  shows "propagate_dom cc"
+\end{lstlisting}
+
+\begin{proof}
+We prove it by induction on the amount of equivalence classes in the union-find forest.
+
+If the pending list is empty, the function terminates. Otherwise, the first element $eq$ is taken from the pending list. We define $a$ as \lstinline{left eq} and $b$ as \lstinline{right eq}, as in the function.
+
+If $a$ and $b$ are already in the same equivalence class, then the union-find list is not modified, therefore we cannot use the induction hypothesis. Therefore we prove it by induction on the length of the pending list.
+
+If $a$ and $b$ are not in the same equivalence class, they are merged by the \lstinline{propagate_step}, therefore the number of equivalence classes descreases by one according to the lemma \lstinline{ufa_union_decreases_nr_eq_classes} and we can prove the goal by using the induction hypothesis.
+\end{proof}
 
 \section{Implementation of the Explain Operation}
 
