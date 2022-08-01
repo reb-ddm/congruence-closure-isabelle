@@ -13,7 +13,7 @@ The syntax for the empty list in Isabelle is \lstinline|[]|, and longer lists ar
 
 \subsubsection{Functions}
 
-In Isabelle, the termination of functions must be proven. In the case of simple functions, Isabelle can prove it automatically. This is done for functions which are declared with the \lstinline{fun} keyword. For example the declaration \lstinline|fun f :: 'a ⇒ 'b| describes a function $f$ with a parameter of the type $'a$ and it returns a value of the type $'b$. Afterwards, the recursive equations of the function are defined.
+In Isabelle, the termination of functions must be proven. In the case of simple functions, Isabelle can prove it automatically. This is done for functions which are declared with the \lstinline{fun} keyword. For example the declaration \lstinline|fun f :: 'a ⇒ 'b| describes a function $f$ with a parameter of the type $'a$ and it returns a value of the type $'b$. Afterwards, the recursive equations of the function are defined. Isabelle automatically defines induction rules for each function.
 
 Partial functions can also be defined in Isabelle, with the \lstinline{function} keyword.
 The definition looks like this:
@@ -24,11 +24,13 @@ function (domintros) g
   by pat_completeness auto
 \end{lstlisting}
 
-Isabelle automatically defines a predicate \lstinline|g_dom| where \lstinline{g_dom (a)} means that the function terminates with the parameter $a$.
+Isabelle automatically defines a predicate \lstinline|g_dom| where \lstinline{g_dom (a)} means that the function \lstinline|g| terminates with the parameter $a$.
 
 The option \lstinline{domintros} provides inductive introduction rules for \lstinline|g_dom|, based on the defining equations of $g$.
 
 After the function definition, it needs to be proven that the patterns used in the definition are complete and compatible. In our case, the method \lstinline|pat_completeness auto| always automatically proves this goal.
+
+Pertial simplification rules and a partial induction rule are also automatically defined by Isabelle, they can only be applied if we assume or prove that the function terminates with the given parameters.
 
 For a more detailed description of functions in Isabelle, see \cite{functions}.
 
@@ -58,10 +60,19 @@ In this thesis, we will use the notation \lstinline{a ≈ b} and \lstinline{F a 
 
 \subsubsection{option}
 
-The type \lstinline{option} models optional values. The value of a variable with type \lstinline{'a option} is either \lstinline|None| or \lstinline|Some a| where $a$ is a value with type $'a$.
+The type \lstinline{option} models optional values. The value of a variable with type \lstinline{'a option} is either \lstinline|None| or \lstinline|Some a| where $a$ is a value with type $'a$. The function \lstinline|the| applied to \lstinline|Some a| returns \lstinline|a|, and it returns \lstinline|undefined| if the parameter is \lstinline|None|.
+
+If \lstinline{'a} is an ordered type, the order is extended to \lstinline{'a option}, where \lstinline{None ≤ x} for all \lstinline|x|, and \lstinline{Some x ≤ Some y} iff \lstinline{x ≤ y}. This is defined in the Theory ``Option\_ord'' of the HOL library, which is included with the standard Isabelle/HOL distribution.
 
 \subsection{Related work}
 
-Congruence closure exists in most automatic theorem provers, for example Coq has a \lstinline{congruence} tactic \cite{congruence-coq}, Lean also has a congruence-closure based decision procedure \cite{congruenceclosure-lean}
-(cite: Z3, cvc4, coq congruence closure, lean itt)
+Efficient union-find algorithms have been known for a long time, see \cite{unionfind-og, Tarjan}. Given its importance as an algorithm, it was already formalized and verified in some of the most important theorem provers, such as Isabelle and Coq \cite{unionfind-persistent}. The code in this thesis uses the union-find formalization in Isabelle by Lammich, which was first published in a journal \cite{unionfind-isabelle} and later presented at a conference \cite{unionfind-isabelle-conference}. It includes the functions for \emph{union} and \emph{find}, as well as an invariant which charachterizes the validity of the union-find data structure. It will be described in more detail in Section \ref{section:uf-isabelle}.
 
+Based on the union-find implementation, efficient congruence closure algorithms have been developed by Shostak \cite{congruenceclosure-og2}, Nelson and Oppen \cite{congruenceclosure-og} and Downey at al. \cite{congruenceclosure-og3}.
+Nieuwenhuis and Oliveras \cite{Nieuwenhuis} extend the algorithm by an \emph{explain} operation, which is necessary in the context of decision procedures, for example for theorem provers.
+
+Congruence closure is implemented in most automatic theorem provers. Pierre Corbineau implemented a \lstinline|congruence| tactic for the theorem prover Coq \cite{congruenceclosure-coq, congruence-coq}, based on the algorithm of Downey at al. \cite{congruenceclosure-og3}, and with an \emph{explain} operation which is similar to the union-find explain presented in this thesis, and not as efficient as the \emph{explain} operation introduced by Nieuwenhuis \cite{Nieuwenhuis}.
+
+Lean also has a congruence-closure based decision procedure \cite{congruenceclosure-lean}, which is additionally able to handle dependent types.
+
+Isabelle/HOL includes a tool called \lstinline|sledgehammer| \cite{sledgehammer}, which uses external SMT solvers, e.g. Z3 \cite{z3} and CVC4 \cite{cvc4}, whose implementation is based on congruence closure. However, there is no built-in congruence closure proof method for Isabelle yet. The verified algorithm of this paper can be used in the future in order to build such a proof method.

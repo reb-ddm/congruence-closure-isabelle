@@ -12,7 +12,7 @@ The equivalence classes are modeled with a forest, which is a graph where each c
 
 The union-find forest is modeled by a list $l$ of length $n$, where at each index $i$ the list contains the parent of the element $i$ in the forest. If $i$ does not have a parent, i.e. it is a root, then the list contains the element $i$ itself at the index $i$, e.g. $l!i = i$.
 
-The original union-find algorithm \cite{Tarjan} contains two optimisations: path compression in the \lstinline{find} method, and choosing the representative of the bigger class to be the new representative of the merged class in \lstinline{union}. These optimisations are irrelevant for the correctness of the algorithm, therefore we leave them out of this implementation in order to simplify the proofs.
+The original union-find algorithm \cite{Tarjan} contains two tions: path compression in the \lstinline{find} method, and choosing the representative of the bigger class to be the new representative of the merged class in \lstinline{union}. These optimizations are irrelevant for the correctness of the algorithm, therefore we leave them out of this implementation in order to simplify the proofs.
 
 
 \section{Union-Find in Isabelle}
@@ -176,7 +176,7 @@ A \emph{common ancestor} of two nodes $x$ and $y$ is a node which has a path to 
 The \emph{lowest common ancestor} of two nodes $x$ and $y$ is the common ancestor which is farthest away from the root.
 \end{definition}
 
-The function will only be used for two nodes which have the same root, otherwise there is no common ancestor. It first computes the paths from $x$ and $y$ to their root, and then returns the last element which the two paths have in common. For this it uses the function \lstinline{longest_common_prefix} from ''HOL-Library.Sublist``\cite{Sublist}, which is included in the standard Isabelle distribution.
+The function will only be used for two nodes which have the same root, otherwise there is no common ancestor. It first computes the paths from $x$ and $y$ to their root, and then returns the last element which the two paths have in common. For this it uses the function \lstinline{longest_common_prefix} from ``HOL-Library.Sublist'', which is included in the standard Isabelle distribution.
 
 \begin{lstlisting}
 fun lowest_common_ancestor :: "nat list ⇒ nat ⇒ nat ⇒ nat"
@@ -208,7 +208,7 @@ theorem lowest_common_ancestor_correct:
 \begin{proof}
 Let $lca =$\lstinline{lowest_common_ancestor l x y}. We previously proved that \lstinline{path_to_root} computes a path $p_x$ from the root to $x$ and a path $p_y$ from the root to $y$. Evidently, $lca$ lies on both paths, because it is part of their common prefix. Splitting the path $p_x$, we get a path from the root to $lca$ and one from $lca$ to $x$, and the same for $y$. This shows that $lca$ is a common ancestor.
 
-To prove that it is the \emph{lowest} common ancestor, we can prove it by contradiction. If there was a common ancestor $lca_2$ with a longer path from the root than $lca$, then we can show that there is a path from the root to $x$ passing through $lca_2$, and the same for $y$. Because of the uniqueness of paths, these paths are equal to \lstinline{path_to_root l x} and \lstinline{path_to_root l y}, respectively. That means, that there is a prefix of \lstinline{path_to_root l x} and \lstinline{path_to_root l y} which is longer than the one calculated by the function \lstinline{longest_common_prefix}. The theory ''Sublist`` contains a correctness proof for \lstinline{longest_common_prefix}, which we can use to show the contradiction.
+To prove that it is the \emph{lowest} common ancestor, we can prove it by contradiction. We assume that there is a common ancestor $lca_2$ with a longer path from the root than $lca$, then we can show that there is a path from the root to $x$ passing through $lca_2$, and the same for $y$. Because of the uniqueness of paths, these paths are equal to \lstinline{path_to_root l x} and \lstinline{path_to_root l y}, respectively. That means, that there is a prefix of \lstinline{path_to_root l x} and \lstinline{path_to_root l y} which is longer than the one calculated by the function \lstinline{longest_common_prefix}. The theory ``Sublist'' contains a correctness proof for \lstinline{longest_common_prefix}, which we can use to show the contradiction.
 \end{proof}
 
 \subsubsection{find\_newest\_on\_path}
@@ -232,6 +232,8 @@ lemma find_newest_on_path_domain:
     and "path l y p x"
   shows "find_newest_on_path_dom (l, a, x, y)"
 \end{lstlisting}
+
+Note that some additional assumptions of the type \lstinline|"x < length l"| are in the original formulation of this lemma. The assumption that all the variables are in bounds is present in all the lemmas about union-find and congruence closure, but they will not be mentioned in the thesis for reasons of conciseness. For the exact formulation of the lemmas, see the Isabelle code.
 
 For the correctness proof we define an abstract definition of the newest element on the path: \lstinline{Newest_on_path} is the maximal value in the associated unions list for indexes in $p$.
 
@@ -302,7 +304,7 @@ lemma union_ufe_invar:
   shows "ufe_invar (ufe_union ufe x y)"
 \end{lstlisting}
 
-It is also useful to prove that the old invariant, \lstinline{ufa_invar}, is implied by the new invariant, so that we can use all the previously proved lemmas about \lstinline{ufa_invar}. This is easily shown by computation induction on the function \lstinline{apply_unions}, and by using the lemma from the Theory ''Union Find``, which states that \lstinline{ufa_invar} holds after having applied \lstinline{ufa_union}, and by proving that it holds for the initial empty data structure.
+It is also useful to prove that the old invariant, \lstinline{ufa_invar}, is implied by the new invariant, so that we can use all the previously proved lemmas about \lstinline{ufa_invar}. This is easily shown by computation induction on the function \lstinline{apply_unions}, and by using the lemma from the Theory ``Union Find'', which states that \lstinline{ufa_invar} holds after having applied \lstinline{ufa_union}, and by proving that it holds for the initial empty data structure.
 
 \begin{lstlisting}
 theorem ufe_invar_imp_ufa_invar: "ufe_invar ufe ⟹ ufa_invar (uf_list ufe)"
@@ -357,7 +359,7 @@ We prove it by using \lstinline|apply_union_induct|.
 
 For the base case, we consider the empty data structure. There are no distinct variables with the same representative, therefore the algorithm terminates immediately.
 
-For the induction step we can show that the parameters of the recursive case  are in the same representative class, therefore we can apply the previous lemma and show that \lstinline|explain| terminates.
+For the induction step, if $x$ and $y$ are not in the same representative class after the union, the function terminates immediately. Otherwise, we can show that $x$ and $ax$ are in the same representative class before the union, and $bx$ and $y$ as well, therefore we can apply the previous lemma to the recursive calls of the function, and conclude that \lstinline|explain| terminates.
 \end{proof}
 
 \subsection{Correctness Proof}

@@ -115,7 +115,6 @@ subsection \<open>Invariant for the additional union find in \<open>cc_explain\<
 
 definition explain_list_invar :: "nat list \<Rightarrow> nat list \<Rightarrow> bool"
   where
-    \<comment> \<open>They have the same rep\<close>
     "explain_list_invar l pf \<equiv> (\<forall> i < length l. l ! i \<noteq> i \<longrightarrow> l ! i = pf ! i) \<and> 
 (length l = length pf) \<and> ufa_invar l"
 

@@ -3,9 +3,9 @@
 
 \chapter{Introduction}\label{chapter:introduction}
 
-The equivalence closure of a relation, is the smallest superset of the relation which is reflexive, symmetric and transitive. For example, $a = c$ is in the equivalence closure of $a = b$ and $b = c$. Algorithms for maintaining the equivalence closure have been known for a long time \cite{unionfind-og}, the most widely used being the union-find algorithm due to its simplicity and almost constant runtime \cite{Tarjan}.
+The equivalence closure of a relation is the smallest superset of the relation which is reflexive, symmetric and transitive. For example, $a = c$ is in the equivalence closure of $a = b$ and $b = c$. Algorithms for maintaining the equivalence closure have been known for a long time \cite{unionfind-og}, the most widely used being the union-find algorithm due to its simplicity and almost constant runtime \cite{Tarjan}.
 
-The congruence closure of a set of equations is similar, but it considers functions in addition to constants. Further to reflexivity, symmetry and transitivity, it satisfies monotonicity, i.e. $f(x_1, ... ,x_n) = f(y_1, ... ,y_n)$ if $x_i = y_i$ for all $i$ between $1$ and $n$. \cite{Nieuwenhuis} For example, the equation $c = e$ belongs to the congruence closure of $f(a,b) = c$, $f(d,b) = e$ and $a = d$. Several approaches to solve this problem have been described, with different runtimes and applications, as shown by \cite{congruenceclosure-og2,congruenceclosure-og,Nieuwenhuis}.
+The congruence closure of a set of equations is similar, but it considers functions in addition to constants. Further to reflexivity, symmetry and transitivity, it satisfies monotonicity, i.e. $f(x_1, ... ,x_n) = f(y_1, ... ,y_n)$ if $x_i = y_i$ for all $i$ between $1$ and $n$. \cite{Nieuwenhuis} For example, the equation $c = e$ belongs to the congruence closure of $f(a,b) = c$, $f(d,b) = e$ and $a = d$. Several approaches to solve this problem have been described, with different runtimes and applications, as shown by \cite{congruenceclosure-og2,congruenceclosure-og,congruenceclosure-og3,Nieuwenhuis}.
 
 These algorithms are used in decision procedures such as satisfiability modulo theories (SMT) solvers. \cite{z3} In these settings, it is required to generate an explanation by finding the set of input equations which caused the congruence. These can then be used to generate a certificate of the congruence, which can be verified by a program. Nieuwenhuis and Oliveras have presented an efficient version of the congruence closure algorithm and two versions of the union-find algorithm, each with their own explain operation, in a conference paper \cite{Nieuwenhuis}, which was later extended, see \cite{Nieuwenhuis2}.
 
@@ -17,7 +17,7 @@ This thesis is organized as follows: Chapter 2 discusses some related work and g
 
 In Chapter 3 the union-find implementation by Lammich \cite{unionfind-isabelle} is described, and the explain operation is presented together with its correctness and termination proofs.
 
-Chapter 4 looks at the congruence closure implementation and its correctness proof. It also describes the explain operation for congruence closure, and discusses a possible proof outline for its correctness. For reasons of time, the actual proof has not been finished yet.
+Chapter 4 looks at the congruence closure implementation and its correctness and termination proof. It also describes the explain operation for congruence closure, and discusses a possible proof outline for its correctness. For reasons of time, the actual proof has not been finished yet.
 
 The last chapter summarizes the results and gives an outlook on the proofs which are open for future work.
 
