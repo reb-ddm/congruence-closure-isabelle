@@ -422,6 +422,9 @@ a' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a'
 
 text \<open>Invariants needed for the correctness proof of \<open>cc_explain\<close>\<close>
 
+text \<open>The labels of the proof forest are added from the pending list, therefore the 
+\<open>valid_vars_pending\<close> invariant holds for them too. Additionally, the variables in the label 
+of an edge correspond to the vertices connected by the edge. \<close>
 abbreviation valid_labels_invar :: "pending_equation option list \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> bool"
   where
     "valid_labels_invar pfl pf l \<equiv> (\<forall> n < length pf.
@@ -431,7 +434,7 @@ abbreviation valid_labels_invar :: "pending_equation option list \<Rightarrow> n
           \<and> (a = pf ! n \<and> b = n \<or> a = n \<and> b = pf ! n)
           \<and> valid_vars_pending (the (pfl ! n)) l
         )
-)"
+    )"
 
 definition pf_labels_invar :: "congruence_closure \<Rightarrow> bool"
   where

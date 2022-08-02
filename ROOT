@@ -15,7 +15,8 @@ session Congruence_Closure = HOL +
     CC_Helper_Functions
     CC_Invars
     CC_Correctness
-  theories [quick_and_dirty]
     CC_Explain
+  theories [quick_and_dirty]
+    CC_Explain_Correctness
   document_files
     "root.tex"

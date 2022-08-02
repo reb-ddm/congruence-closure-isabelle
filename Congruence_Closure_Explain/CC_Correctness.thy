@@ -244,7 +244,7 @@ lemma are_congruent_monotonic:
     by auto
 qed
 
-theorem are_congruenct_correct: 
+theorem are_congruent_correct: 
   assumes "valid_vars eq (nr_vars cc)" "cc_invar cc" "pending cc = []"
   shows "eq \<in> Congruence_Closure ((input cc)) \<longleftrightarrow> are_congruent cc eq"
 proof-

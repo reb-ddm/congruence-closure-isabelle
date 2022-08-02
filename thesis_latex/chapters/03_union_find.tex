@@ -85,7 +85,7 @@ theorem path_unique: "ufa_invar l ⟹ path l u p1 v ⟹ path l u p2 v ⟹ p1 = p
 \begin{proof}
 The lemma is proven by induction on the length of $p1$.
 
-For the base case we assume that the length of $p1$ is 1. There is only one node in the path, therefore $v = u$. Then I proved a lemma which showed that if the \lstinline{ufa_invar} holds, each path from $v$ to $v$ has length 1, or, in other words, there are no cycles in the graph. For this I showed that if there was a cycle, the function \lstinline{rep_of} would not terminate, because there would be an infinite loop.
+For the base case we assume that the length of $p1$ is 1. There is only one node in the path, therefore $v = u$. Then we prove a lemma which shows that if the \lstinline{ufa_invar} holds, each path from $v$ to $v$ has length 1, or, in other words, there are no cycles in the graph. For this we show that if there was a cycle, the function \lstinline{rep_of} would not terminate, because there would be an infinite loop.
 
 For the induction step, we assume that the length of $p1$ is greater than 1. Therefore, we can remove the last node from $p1$ and the last node from $p2$ to get two paths $p1'$ and $p2'$ from $u$ to the parent of $v$, where $p1'$ is shorter that $p1$, and we can apply the induction hypothesis, which tells us that $p1' = p2'$. Adding the node $v$ to those two paths gives us back the original paths $p1$ and $p2$, therefore we conclude that $p1 = p2$.
 \end{proof}
@@ -113,11 +113,12 @@ else ⦇uf_list = l, unions = u, au = a⦈)"
 \end{lstlisting}
 
 \begin{exmp}
-After a union of 0 and 1, the data structure from Example \ref{empty_ufe} looks as follows:
+After a union of 1 and 0, the data structure from Example \ref{empty_ufe} looks as follows:
 \begin{lstlisting}
-⦇uf_list = [1, 1, 2, 3], unions = [(0, 1)], au = [Some 0, None, None, None]⦈
+⦇uf_list = [0, 0, 2, 3], unions = [(1, 0)], au = [Some 0, None, None, None]⦈
 \end{lstlisting}
-There is an edge between 1 and 0, labeled with the union at index 0, which is $(0,1)$.
+It has the following graphical representation:
+0 $\xleftarrow{\text{(1, 0)}}$ 1 \ \ 2 \ \ 3
 \end{exmp}
 
 Next, we define a function which takes a list of unions as parameter and simply applies each of those unions to the data structure. This will be needed for the invariant and the correctness proof in the next sections.
@@ -129,9 +130,15 @@ fun apply_unions :: "(nat * nat) list ⇒ ufe_data_structure ⇒ ufe_data_struct
     "apply_unions ((x, y) # u) p = apply_unions u (ufe_union p x y)"
 \end{lstlisting}
 
+\begin{exmp}\label{example:apply-unions}
+The result of \lstinline|apply_unions [(1,0), (3,2), (3,1)] (initial_ufe 4)|, where \lstinline|initial_ufe n| is the empty union-find list with $n$ variables, looks like this:
+
+3 $\xrightarrow{\text{(3, 2)}}$ 2$\xrightarrow{\text{(3, 1)}}$ 0 $\xleftarrow{\text{(1, 0)}}$ 1 \
+\end{exmp}
+
 \subsection{Helper Functions for Explain}
 
-We implement the explain function following the description of the first version of the union-find algorithm in the paper\cite{Nieuwenhuis}.
+We implement the explain function following the description of the first version of the union-find algorithm in the paper \cite{Nieuwenhuis}.
 
 The explain function takes as parameter two elements $x$ and $y$ and calculates a subset of the input unions which explain why the two given variables are in the same equivalence class. If we consider the graph which has as nodes the elements and as edges the input unions, then the output of explain would be all the unions on the path from $x$ to $y$. However, the union-find forest in our data structure does not have as edges the unions, but only edges between representatives of the elements of the unions.
 
@@ -152,6 +159,12 @@ function path_to_root :: "nat list ⇒ nat ⇒ nat list"
     "path_to_root l x = (if l ! x = x then [x] else path_to_root l (l ! x) @ [x])"
   by pat_completeness auto
 \end{lstlisting}
+
+\begin{exmp}
+If we consider $l$ to be the union-find list of Example \ref{example:apply-unions},
+
+\lstinline|path_to_root l 3 = [0, 2, 3]|.
+\end{exmp}
 
 It was easy to show that it has the same domain as the \lstinline{rep_of} function, as it has the same recursive calls.
 
@@ -184,6 +197,12 @@ fun lowest_common_ancestor :: "nat list ⇒ nat ⇒ nat ⇒ nat"
     "lowest_common_ancestor l x y =
 last (longest_common_prefix (path_to_root l x) (path_to_root l y))"
 \end{lstlisting}
+
+\begin{exmp}
+If we consider $l$ to be the union-find list of Example \ref{example:apply-unions},
+
+\lstinline|lowest_common_ancestor l 3 1 = 0|.
+\end{exmp}
 
 Regarding the correctness proof, there were two aspects to prove: the most useful result is that \lstinline{lowest_common_ancestor l x y} is a common ancestor of $x$ and $y$. The second aspect stated that any other common ancestor of $x$ and $y$ has a shorter distance from the root. The proof assumes that that $x$ and $y$ have the same root.
 
@@ -224,6 +243,14 @@ function (domintros) find_newest_on_path  :: "nat list ⇒ nat option list ⇒ n
   by pat_completeness auto
 \end{lstlisting}
 
+\begin{exmp}
+Let $l$ be the union-find list of Example \ref{example:apply-unions}, if we consider the edge labels in the associated unions list, instead of the unions they represent, the union-find graph looks like this:
+
+3 $\xrightarrow{\text{1}}$ 2$\xrightarrow{\text{2}}$ 0 $\xleftarrow{\text{0}}$ 1 \
+
+From this representation we can see that the newest index on the path from 3 to 0 is 2.
+\end{exmp}
+
 If there is a path $p$ from $y$ to $x$, it is easily shown by induction that the function terminates.
 
 \begin{lstlisting}
@@ -257,8 +284,6 @@ theorem find_newest_on_path_correct:
 We can now define the explain operation, as describbed in the previous Subsection.
 In order to find the overall newest edge, we first compute the newest edge on the $x$ branch, then the one on the $y$ branch, and then choose the larger one in a case distinction at the end.
 
-TODO example
-
 \begin{lstlisting}
 function (domintros) explain :: "ufe_data_structure ⇒ nat ⇒ nat ⇒ (nat * nat) set"
   where
@@ -280,6 +305,13 @@ function (domintros) explain :: "ufe_data_structure ⇒ nat ⇒ nat ⇒ (nat * n
 )"
   by pat_completeness auto
 \end{lstlisting}
+
+\begin{exmp}
+Let $ufe$ be the union-find data structure of Example \ref{example:apply-unions}. We compute the output of \lstinline|explain ufe 3 1|
+
+We already saw in the previous examples that \lstinline|lca = 0|, \lstinline|newest_index_x = 2|
+and it is easy to see that \lstinline|newest_index_x ≥ newest_index_y|. The list of unions is \lstinline|[(1,0), (3,2), (3,1)]|, therefore \lstinline|a$_x$ = 3| and \lstinline|b$_x$ = 1|. The two recursive calls terminate immediately, hence \lstinline|explain ufe 3 1 = {(3, 1)}|.
+\end{exmp}
 
 \section{Proofs}
 
@@ -346,7 +378,7 @@ Initially, we remark that the lowest common ancestor and the newest index on pat
 We assume that $x$ and $y$ are in the same representative class after the union. Given that $(ax, bx)$ is the newest branch on the path fom $ax$ to the lowest common ancestor $lca$ of $x$ and $y$, we know that every edge on the path from $x$ to $ax$ was also present before the union. Therefore $rep\_of(l, ax) = rep\_of(l, x)$ holds before the union, and we can apply the induction hypothesis and conclude \lstinline|explain_dom(ufe_union ufe x2 y2, x, ax)|. $(ax, bx)$ is also newer than the newest branch on the path fom $y$ to the $lca$, therefore $rep\_of(l, y) = rep\_of(l, bx)$, and the induction hypothesis shows that \lstinline|explain_dom(ufe_union ufe x2 y2, bx, y)|. The two recursive calls terminate, therefore \lstinline|explain| terminates.
 \end{proof}
 
-From this result we can prove the termination of \lstinline|explain|:
+Using this result we can prove the termination of \lstinline|explain|:
 
 \begin{lstlisting}
 theorem explain_domain:

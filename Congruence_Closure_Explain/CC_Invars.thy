@@ -2856,8 +2856,7 @@ lemma valid_labels_invar_mini_step:
 eq = (Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d)))
 \<and> ((b = c \<and> a = d) \<or> (a = c \<and> b = d))
 \<and> c < length l \<and> d < length l
-\<and> valid_vars_pending eq l
-)"
+\<and> valid_vars_pending eq l)"
     "ufa_invar pf"
     "length l = length pf"
     "length l = length pfl"

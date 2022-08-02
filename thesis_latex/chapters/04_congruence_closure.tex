@@ -7,13 +7,13 @@
 
 We now consider not only equations between constants, but also equations containing function symbols. Each function symbol is associated with an arity, which is the number of parameters it accepts. Function symbols with arity 0 are constants.
 
-Arbitrary equations can be transformed to equations of depth at most 2, and with only one function of arity 2. This is done by currying and by introducing new constant symbols. See \cite{Nieuwenhuis2} for a detailed explanation of how this is done. In order to understand this thesis, it is irrelevant to know how the transformation is done, it is just important to know that the result is a set of equations between constant symbols and one specific function symbol $F$ of arity 2. The congruence closure of these transformed equations is equal to the congruence closure of the original equations, therefore from this point on, we will only consider the transformed equations. Therefore there are two types of input equations for the congruence closure algorithm: either $a = b$ or $F(a,b) = c$ where $a$, $b$ and $c$ are constant symbols.
+Arbitrary equations can be transformed to equations of depth at most 2, and with only one function of arity 2. This is done by currying and by introducing new constant symbols. See \cite{Nieuwenhuis2} for a detailed explanation of how this is done. In order to understand this thesis, it is irrelevant to know how the transformation is done, it is just important to know that the result is a set of equations between constant symbols and one specific function symbol $F$ of arity 2. The congruence closure of these transformed equations is equal to the congruence closure of the original equations, therefore from this point on, we will only consider the transformed equations, i.e. these two types of input equations: either $a = b$ or $F(a,b) = c$ where $a$, $b$ and $c$ are constant symbols.
 
-The data structure we use for these equations is the one described in Subsection \ref{subsection:datastructure}.
+The datatype we use for these equations is the one described in Subsection \ref{subsubsection:datatypes}.
 
 \section{Implementation}
 
-For the implementation of the congruence closure algorithm, we follow the description in the paper. \cite{Nieuwenhuis} As before, the optimizations of path compression and considering the sizes of the representative classes are left out. These optimizations are not relevant for the correctness of the algorithm, and they could later be added to a refinement of the algorithm.
+For the implementation of the congruence closure algorithm, we follow the description in the paper \cite{Nieuwenhuis}. As before, the optimizations of path compression and considering the sizes of the representative classes are left out. These optimizations are not relevant for the correctness of the algorithm, and they could later be added to a refinement of the algorithm.
 
 The algorithm uses a modified version of the union find algorithm for maintaining the equivalence classes between the constant elements, and it has a few additional data structures for storing equations containing the function symbol $F$. The following sections describe the modified union-find algorithm and then the congruence closure algorithm, as well as their correctness proofs.
 
@@ -25,7 +25,7 @@ In order to implement an explain operation with a reasonable runtime for the con
 \label{subsubsection:addedge}
 
 The proof forest has directed edges, and for each equivalence class there is a representative node, where all the edges are directed towards. To keep this invariant, each time and edge from $e$ to $e'$ is added, all the edges on the path from the root of $e$ to $e$ are reversed.
-In the implementation, the proof forest is represented by a list which stores the parent of each node, exactly as in the union-find list. My implementation for adding an edge, which corresponds to the \lstinline{union} operation, is the following:
+In the implementation, the proof forest is represented by a list which stores the parent of each node, exactly as in the union-find list. The implementation for adding an edge, which corresponds to the \lstinline{union} operation, is the following:
 
 \begin{lstlisting}
 function (domintros) add_edge :: "nat list ⇒ nat ⇒ nat ⇒ nat list"
@@ -35,6 +35,16 @@ function (domintros) add_edge :: "nat list ⇒ nat ⇒ nat ⇒ nat list"
                         else add_edge (pf[e := e']) (pf ! e) e)"
   by pat_completeness auto
 \end{lstlisting}
+
+\begin{exmp}
+Assuming the proof forest looks like this
+
+2 $\longleftarrow$ 3 \ \ \ 1 $\longrightarrow$ 0 \
+
+After adding an edge between 3 and 1, the edges from 3 to its root are inverted.
+
+2 $\longrightarrow$ 3 $\longrightarrow$ 1 $\longrightarrow$ 0 \
+\end{exmp}
 
 We can show that \lstinline{add_edge e e'} terminates, if the invariant \lstinline{ufa_invar} holds for the proof forest and $e$ and $e'$ do not belong to the same equivalence class.
 
@@ -52,7 +62,7 @@ In the base case there is only one node in the path, therefore $e$ must be equal
 In the other case $e$ is not a root, then there is a path $p'$ from the root to the parent of $e$ which is shorter than the path from the root to $e$. The path $p'$ is also present in the $pf[e := e']$, because the path does not contain $e$. Also, the representative of $e$ in $pf[e := e']$ is equal to the representative of $e'$, and the representative of the parent of $e$ is still the old representative of $e$, therefore they are not in the same representative class, and we can apply the induction hypothesis and conclude that the recursive call terminates, therefore the function terminates.
 \end{proof}
 
-In order to prove the correctness of \lstinline|add_edge|, we show that \lstinline{ufa_union l x y} and \lstinline{add_edge l x y} have the same behaviour, from which we can conclude that the equivalence classes of the union-find forest are the same as those of the proof forest. The theory \lstinline{Union_Find} from the AFP\cite{Sep} already provides the following lemma for \lstinline{ufa_union}:
+In order to prove the correctness of \lstinline|add_edge|, we show that \lstinline{ufa_union l x y} and \lstinline{add_edge l x y} have the same behaviour, from which we can conclude that the equivalence classes of the union-find forest are the same as those of the proof forest. The theory \lstinline{Union_Find} from the AFP \cite{Sep} already provides the following lemma for \lstinline{ufa_union}:
 
 \begin{lstlisting}
 lemma ufa_union_aux:
@@ -241,6 +251,16 @@ fun propagate_loop
 | "propagate_loop _ [] cc = cc"
 \end{lstlisting}
 
+\begin{exmp}
+Let the proof forest be the following:
+
+2 $\xrightarrow{2 = 3}$ 3 \ \ \ 1 $\xrightarrow{\text{1 = 0}}$ 0 \
+
+TODO
+
+2 $\xrightarrow{2 = 3}$ 3 $\xrightarrow[\text{F(2,0) = 1}]{\text{F(2,0) = 3}}$ 1 $\xrightarrow{\text{1 = 0}}$ 0 \
+\end{exmp}
+
 The function \lstinline{are_congruent} returns \lstinline{True} if an equation is in the congruence closure of all the input equations so far. It simply checks if the elements have the same representative or if they have the same representative as the corresponding entry in lookup.
 
 \begin{lstlisting}
@@ -303,7 +323,7 @@ In the proof after the \lstinline{merge} operation, the use list is only modifie
 For the remaining cases, use list is either unchanged, or something is removed from it, therefore the invariant trivially holds.
 \end{proof}
 
-The invariant \lstinline|lookup_invar| for lookup is similar, it states that each entry in the lookup table at index $(i, j)$, for representatives $i$ and $j$, is either \lstinline{None} or is an equation of the form $F(a_1, a_2) = a$ where the representative of $a_1$ is $i$ and the representative of $a_2$  is $j$.
+The invariant \lstinline|lookup_invar| for lookup is similar, it states that each entry in the lookup table at index $(i, j)$, for representatives $i$ and $j$, is either \lstinline{None} or is an equation of the form $F(a_1, a_2) = a$ where the representative of $a_1$ is $i$ and the representative of $a_2$ is $j$.
 
 \begin{proof}
 Each time an equation is added to lookup, it has the desired form and it is added to the index $(rep\_of(l, a_1), rep\_of(l, a_2))$. This happens in the \lstinline{propagate_loop} and in \lstinline{merge}. In the \lstinline{propagate_loop}, the added equation derives from the use list, for which we proved with the previous invariant that its equations have the desired form. In merge, only the equations of the type $F(a_1, a_2) = a$ are added to lookup.
@@ -316,6 +336,8 @@ We need to show that in the \lstinline{propagate_loop} the equation $u1$ we add 
 
 The same holds for the equations added to pending in \lstinline{merge}.
 \end{proof}
+
+The same invariant holds for the labels in \lstinline|pf_labels|. This is easy to prove,  because thy are only modified in \lstinline|propagate_step|, where the added label comes from \lstinline|pending|, therefore the invariant follows from \lstinline|pending_invar|.
 
 There is also an invariant which states that the \lstinline{cc_list}, the first dimension of the use list, both dimensions of lookup, the proof forest and the \lstinline{pf_labels} have the same length. This was trivial to prove, given that the algorithm never changes the length of the lists, and initially the lists have the same length.
 
@@ -355,11 +377,12 @@ lemma Congruence_Closure_eq[case_names left right]:
 It is used to prove equality between congruence closures of $A$ and $B$. It states that it is sufficient to prove that all elements of set $A$ are in the congruence closure of $B$ and vice versa, instead of having to prove that all elements of the congruence closure of $A$ are in the congruence closure of $B$.
 
 \subsection{Correctness}
+\label{subsection:uf-correctness}
 
 To prove the correctness of the congruence closure implementation, we need to show that the invariants imply that \lstinline{are_congruent cc eq} returns \lstinline{True} if and only if the equation $eq$ lies in the congruence closure of the input equations.
 
 \begin{lstlisting}
-theorem are_congruenct_correct:
+theorem are_congruent_correct:
   assumes "cc_invar cc" "pending cc = []"
   shows "eq ∈ Congruence_Closure ((input cc)) ⟷ are_congruent cc eq"
 \end{lstlisting}
@@ -546,7 +569,7 @@ All the above-mentioned invariants hold trivially for the initial case, given th
 
 \begin{lstlisting}
 theorem cc_invar_merge:
-  assumes "cc_invar cc" "valid_vars eq (nr_vars cc)"
+  assumes "cc_invar cc"
   shows "cc_invar (merge cc eq)"
 \end{lstlisting}
 
@@ -600,8 +623,119 @@ If $a$ and $b$ are already in the same equivalence class, then the union-find li
 If $a$ and $b$ are not in the same equivalence class, they are merged by the \lstinline{propagate_step}, therefore the number of equivalence classes descreases by one according to the lemma \lstinline{ufa_union_decreases_nr_eq_classes} and we can prove the goal by using the induction hypothesis.
 \end{proof}
 
-\section{Implementation of the Explain Operation}
+\section{The Explain Operation}
 
-I implemented the explain operation for congruence closure, leaving the proof of termination and correctness open for future work. Nevertheless I would like to dedicate this section on the description of the implementation and a proposal of how the correctness could be proven.
+We will implement the explain operation for congruence closure, leaving the proof of termination and correctness open for future work.  This section describes the implementation, a validity proof and a proposal of how the correctness could be proven.
+
+
+\subsection{Implementation}
+
+The \lstinline{cc_explain} function takes as an argument two constants, and it returns the set of input equations which caused these two constants to be in the same equivalence class. The algorithm finds the path between the two constants in the proof forest, and returns the labels of the edges on the path. For each edge labeled with two equations $F(a_1, a_2) = a$ and $F(b_1, b_2)$, we need to add to the output also the explanation for $a_1 = b_1$ and $a_2 = b_2$. Therefore the function recursively calls the explanation function with the parameters $(a_1, b_1)$ and $(a_2, b_2)$. In order to avoid adding redundant equations to the output, there is an additional union-find data structure, which is local to the \lstinline{cc_explain} operation and which keeps track of the equations that are already part of the output.
+
+In order to initialize the additional union-find, we define an auxiliary \lstinline{cc_explain_aux} which takes as first parameter the congruence closure data structure, as second parameter the union-find and as last parameter a list of pairs of constants. The output of \lstinline{cc_explain_aux} will contain the explanation for all the pairs of constants in the list, except those which are already equivalent in the additional union-find. The union-find is initialized with an empty data structure.
+
+\begin{lstlisting}
+abbreviation cc_explain :: "congruence_closure ⇒ nat ⇒ nat ⇒ equation set"
+  where
+    "cc_explain cc a b ≡ cc_explain_aux cc [0..<nr_vars cc] [(a, b)]"
+\end{lstlisting}
+
+The \lstinline{cc_explain_aux} function computes first the lowest common ancestor between the current pair of constants, then it calls the function \lstinline{explain_along_path}, which has three return values: the $output$ is simply the set of labels on the path from the constant to the lowest common ancestor. For each edge labeled with $F(a_1, a_2) = a$ and $F(b_1, b_2)$,  $(a_1, b_1)$ and $(a_2, b_2)$ are added to the $pending$ list. The $new\_l$ is the additional union-find data structure, modified in order to keep track of the equations that are already in the output.
+
+\begin{lstlisting}
+function (domintros) cc_explain_aux :: "congruence_closure ⇒ nat list ⇒ (nat * nat) list ⇒ equation set"
+  where
+    "cc_explain_aux cc l [] = {}"
+  | "cc_explain_aux cc l ((a, b) # xs) =
+(if are_congruent cc (a ≈ b)
+then
+  (let c = lowest_common_ancestor (proof_forest cc) a b;
+    (output1, new_l, pending1) = explain_along_path cc l a c;
+    (output2, new_new_l, pending2) = explain_along_path cc new_l b c
+  in
+    output1 ∪ output2 ∪ cc_explain_aux cc new_new_l (xs @ pending1 @ pending2))
+else cc_explain_aux cc l xs)"
+  by pat_completeness auto
+\end{lstlisting}
+
+The additional union-find does not use \lstinline{ufa_union} for the union, instead it simply adds the same edge which is in the proof forest for each union. This is not the most efficient strategy, but the union-find can easily be replaced by a classical union-find data structure, by showing that it has the same equivalence classes as this version. However, it is more convenient for the proofs to use this version of union-find. Nieuwenhuis \cite{Nieuwenhuis} also implements a $Highest\_node$ function, in order to find the element of a representative class of the additional union-find which is highest in the proof forest. In our version of union-find, this corresponds to the \lstinline{rep_of} operation, because we do not use the optimization of checking which equivalence class is bigger, we just make the union in the given order. When adding this optimization, a $Highest\_node$ function must be also implemented (which is not difficult, see \cite{Nieuwenhuis}).
+
+\lstinline{explain_along_path} starts at the node $a$ in the proof forest, and recursively traverses all the edges from $a$ to $c$, skipping those edges which have already been traversed sometime before in the algorithm, i.e. the edges which are present in the additional union-find $l$. Therefore it starts at the element $rep\_of(l, a)$, and considers the edge to its parent, it adds the label of the edge to the output, adding the edge to $l$ and if necessary, and updates the pending list. It terminates when it reaches the equivalence class of $c$.
+
+\begin{lstlisting}
+function (domintros) explain_along_path :: "congruence_closure ⇒ nat list ⇒ nat ⇒ nat ⇒
+    (equation set * nat list * (nat * nat) list)"
+  where
+    "explain_along_path cc l a c =
+(if rep_of l a = rep_of l c
+then
+  ({}, l, [])
+else
+  (let b = (proof_forest cc) ! rep_of l a in
+    (
+    case the ((pf_labels cc) ! rep_of l a) of
+        One a' ⇒
+          (let (output, new_l, pending) = explain_along_path cc (l[rep_of l a := b]) b c
+          in ({a'} ∪ output, new_l, pending))
+        | Two (F a$_1$ a$_2$ ≈ a') (F b$_1$ b$_2$ ≈ b') ⇒
+          (let (output, new_l, pending) = explain_along_path cc (l[rep_of l a := b]) b c
+          in ({(F a$_1$ a$_2$ ≈ a'), (F b$_1$ b$_2$ ≈ b')} ∪ output, new_l, [(a$_1$, b$_1$), (a$_2$, b$_2$)] @ pending))
+    )
+  )
+)"
+  by pat_completeness auto
+\end{lstlisting}
+
+The structure of the additional union-find can be formalized with an invariant, which states that all the edges in the additional union-find are also present in the proof forest. As usual, the \lstinline{ufa_invar} holds for the union-find list, and the list has the same length as the \lstinline{proof_forest} list $pf$.
+
+\begin{lstlisting}
+definition explain_list_invar :: "nat list ⇒ nat list ⇒ bool"
+  where
+    "explain_list_invar l pf ≡ (∀ i < length l. l ! i ≠ i ⟶ l ! i = pf ! i) ∧
+(length l = length pf) ∧ ufa_invar l"
+\end{lstlisting}
+
+Each time an edge is added to the union-find in \lstinline{explain_along_path}, it is an edge which is also present in the proof forest, therefore it is easy to prove that this is an invariant.
+
+This invariant implies this useful lemma, which states that each path in the additional union-find is also present in the proof forest.
+
+\begin{lstlisting}
+lemma explain_list_invar_paths:
+  "path l a p b ⟹ explain_list_invar l pf ⟹ path pf a p b"
+\end{lstlisting}
+
+\subsection{Validity}
+
+Similarly to the \lstinline{explain} operation for union-find (see Section \ref{subsection:uf-correctness}), we can prove that the equations in the output of \lstinline{cc_explain} are a subset of the input equations.
+
+\begin{lstlisting}
+theorem cc_explain_valid:
+  assumes "cc_invar cc" "validity_invar cc"
+    "cc_explain_aux_dom (cc, [0..<nr_vars cc], [(a, b)])"
+  shows "cc_explain cc a b ⊆ input cc"
+\end{lstlisting}
+
+Given that we have not yet proven the termination of \lstinline{cc_explain}, we need to assume that it terminates. Furthermore, we assume the \lstinline{cc_invar} which we have previously proven, and we introduce a new invariant, the \lstinline{validity_invar}, which states that all the equations in \lstinline{pf_labels}, \lstinline{lookup}, \lstinline{use_list} and \lstinline{pending} are equations from the \lstinline{input} set. In order to show that this is an invariant, we remark that all the new equations added in \lstinline{merge} to any data structure are also added to the \lstinline{input} set. In \lstinline{propagate}, no new equations are added, the equations are simply moved around between different lists.
+
+With this invariant, we can prove that the output of \lstinline{explain_along_path} is valid.
+
+\begin{lstlisting}
+lemma explain_along_path_valid:
+  assumes "explain_along_path_dom (cc, l, a, c)" "cc_invar cc" "validity_invar cc"
+    "explain_list_invar l (proof_forest cc)"
+    "path (proof_forest cc) c p a"
+  shows "fst (explain_along_path cc l a c) ⊆ input cc"
+\end{lstlisting}
+
+\begin{proof}
+We assumed that \lstinline{explain_along_path} terminates, therefore we can use the induction rule of the function.
+
+If \lstinline{"rep_of l a = rep_of l c"}, then the output of \lstinline{explain_along_path} is the empty set, therefore the proof is trivial.
+
+Else, the new equations added to the output derive from the proof forest, more specifically from \lstinline{((pf_labels cc) ! rep_of l a)}. The \lstinline{validity_invar} states that all edge labels are valid, therefore we only need to prove that $rep_of(l, a)$ is not a root in the proof forest, otherwise the \lstinline{validity_invar} would not be applicable for this index, because there is no outgoing edge from a root. Given that we assumed that there is a path from $c$ to $a$ in the proof forest, we know that $c$ is nearer to the root than $a$ and we can show that if $rep_of(l,a)$ was a root in the proof forest, then $c$ can only be equal to the root, therefore \lstinline{"rep_of l a = rep_of l c"}, which is a contradiction.
+\end{proof}
+
+From this lemma we can easily show the theorem \lstinline{cc_explain_valid} by induction on \lstinline{cc_explain_aux}.
+
 
 TODO
