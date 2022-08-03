@@ -82,12 +82,12 @@ lemma rep_of_add_edge_aux:
 The additional assumption \lstinline{rep_of l x ≠ rep_of l y} does not cause problems, because \lstinline{add_edge} is only executed by the congruence closure algorithm when \lstinline{rep_of l x ≠ rep_of l y}.
 
 \begin{proof}
-We already showed that the function terminates, therefore we can prove it by induction on \lstinline{add_edge}.
+We already showed that the function terminates, therefore we can prove it by computation induction on \lstinline{add_edge}.
 
 The proof uses various lemmas about the behaviour of \lstinline{rep_of} after a function update, which depends on where the function update was, and which element we want to find the representative of. These lemmas are proven by analysing how the paths in the forest change after a function update, which corresponds to adding a path in the forest. With these lemmas the induction is easily proven.
 \end{proof}
 
-We also show that \lstinline|add_edge| has the expected behaviour, which is that it reverses all the edges from the root of $e$ to $e$, and it adds an edge from $e$ to $e'$, i.e. after \lstinline|add_edge| the forest contains a path from $e'$ to the representative of $e$, which is the path which was there before \lstinline|add_edge|, but reversed and with one added edge between $e$ and $e'$. \lstinline|rev| is a function which reverses a list, and \lstinline|path_to_root| is the function described in Subsection \ref{subsubsection:path-to-root}. The proof can be shown by induction on \lstinline|add_edge|.
+We also show that \lstinline|add_edge| has the expected behaviour, which is that it reverses all the edges from the root of $e$ to $e$, and it adds an edge from $e$ to $e'$, i.e. after \lstinline|add_edge| the forest contains a path from $e'$ to the representative of $e$, which is the path which was there before \lstinline|add_edge|, but reversed and with one added edge between $e$ and $e'$. \lstinline|rev| is a function which reverses a list, and \lstinline|path_to_root| is the function described in Subsection \ref{subsubsection:path-to-root}. The proof can be shown by computation induction on \lstinline|add_edge|.
 
 \begin{lstlisting}
 lemma add_edge_correctness:
@@ -251,14 +251,22 @@ fun propagate_loop
 | "propagate_loop _ [] cc = cc"
 \end{lstlisting}
 
-\begin{exmp}
-Let the proof forest be the following:
+\begin{exmp}\label{example:merge}
+Let $cc$ be a congruence closure data structure with an empty use list and lookup, with a union-find list $l$ and with the following proof forest:
 
-2 $\xrightarrow{2 = 3}$ 3 \ \ \ 1 $\xrightarrow{\text{1 = 0}}$ 0 \
+2 $\xleftarrow{3 = 2}$ 3 \ \ \ 1 $\xrightarrow{\text{1 = 0}}$ 0 \
 
-TODO
+Therefore 2 and 3 are in one equivalence class and 1 and 0 are in the other.
 
-2 $\xrightarrow{2 = 3}$ 3 $\xrightarrow[\text{F(2,0) = 1}]{\text{F(2,0) = 3}}$ 1 $\xrightarrow{\text{1 = 0}}$ 0 \
+If we apply \lstinline{merge} with the equation $F(0,2) = 1$, then the algorithm considers the lookup entry at the index $(rep\_of(l, 0), rep\_of(l, 2))$, which is empty, therefore the equation is added to the use list and to lookup.
+
+If we then apply \lstinline|merge| with the equation $F(1,3) = 3$, then the lookup entry at index $(rep\_of(l, 1), rep\_of(l, 3))$ contains $F(0,2) = 1$, and the two equations get added to pending.
+
+Then, \lstinline|propagate| is executed, which first performs the union of $3$ and $1$ in the union-find list and it adds a labeled edge to the proof forest, which then looks like this:
+
+2 $\xrightarrow{3 = 2}$ 3 $\xrightarrow[\text{F(0,2) = 1}]{\text{F(1,3) = 3}}$ 1 $\xrightarrow{\text{1 = 0}}$ 0 \
+
+After the union, the representative of 3 and 2 has changed, therefore the equations $F(1,3) = 3$ in the use list of the old representative of 2 is moved to the use list of the new representative by \lstinline|propagate_loop|, and it is also added to the lookup table with the new representative as index.
 \end{exmp}
 
 The function \lstinline{are_congruent} returns \lstinline{True} if an equation is in the congruence closure of all the input equations so far. It simply checks if the elements have the same representative or if they have the same representative as the corresponding entry in lookup.
@@ -279,7 +287,7 @@ fun are_congruent :: "congruence_closure ⇒ equation ⇒ bool"
 
 \subsection{Invariants}
 
-At this point we can already prove some properties of the congruence closure data structure. Our approach this time is different than the one for the union-find algorithm. Instead of defining an induction rule like in the union-find section and then prove the properties through the induction rule, we define the properties as invariants and then prove that they remain invariant after applying merge. For each invariant, we need to follow the same steps. They are listed here in order to introduce the name for each step:
+At this point we can already prove some properties of the congruence closure data structure. Our approach this time is different than the one for the union-find algorithm. Instead of defining an induction rule like in the union-find section and then prove the properties through the induction rule, we define the properties as invariants and then prove that they remain invariant after applying \lstinline|merge|. For each invariant, we need to follow the same steps. They are listed here in order to introduce a name for each step:
 
 \begin{enumerate}
 	\item Prove that the invariant holds for the initial empty congruence closure.
@@ -379,7 +387,7 @@ It is used to prove equality between congruence closures of $A$ and $B$. It stat
 \subsection{Correctness}
 \label{subsection:uf-correctness}
 
-To prove the correctness of the congruence closure implementation, we need to show that the invariants imply that \lstinline{are_congruent cc eq} returns \lstinline{True} if and only if the equation $eq$ lies in the congruence closure of the input equations.
+To prove that the congruence closure implementation is sound and complete, we need to show that the invariants imply that \lstinline{are_congruent cc eq} returns \lstinline{True} if and only if the equation $eq$ lies in the congruence closure of the input equations.
 
 \begin{lstlisting}
 theorem are_congruent_correct:
@@ -686,6 +694,15 @@ else
   by pat_completeness auto
 \end{lstlisting}
 
+\begin{exmp}
+Let $cc$ be the congruence closure data structure of Example \ref{example:merge}. We want to compute \lstinline|cc_explain cc 3 1|.
+
+The lowest common ancestor of 3 and 1 is 1. We call the function \lstinline{explain_along_path cc l 3 1} which considers all the edge between 3 and 1, in this case only one single edge labeled $F (1,3) = 3$ and $F(0,2) = 1$. The two equations are added to the output and the pairs $(1,0)$ and $(2,3)$ are added to pending.
+
+For the two remaining pairs in pending, the explanations contain one edge each, and the final result contains all the equations that present in the proof forest.
+\end{exmp}
+
+
 The structure of the additional union-find can be formalized with an invariant, which states that all the edges in the additional union-find are also present in the proof forest. As usual, the \lstinline{ufa_invar} holds for the union-find list, and the list has the same length as the \lstinline{proof_forest} list $pf$.
 
 \begin{lstlisting}
@@ -735,7 +752,7 @@ If \lstinline{"rep_of l a = rep_of l c"}, then the output of \lstinline{explain_
 Else, the new equations added to the output derive from the proof forest, more specifically from \lstinline{((pf_labels cc) ! rep_of l a)}. The \lstinline{validity_invar} states that all edge labels are valid, therefore we only need to prove that $rep_of(l, a)$ is not a root in the proof forest, otherwise the \lstinline{validity_invar} would not be applicable for this index, because there is no outgoing edge from a root. Given that we assumed that there is a path from $c$ to $a$ in the proof forest, we know that $c$ is nearer to the root than $a$ and we can show that if $rep_of(l,a)$ was a root in the proof forest, then $c$ can only be equal to the root, therefore \lstinline{"rep_of l a = rep_of l c"}, which is a contradiction.
 \end{proof}
 
-From this lemma we can easily show the theorem \lstinline{cc_explain_valid} by induction on \lstinline{cc_explain_aux}.
+From this lemma we can easily show the theorem \lstinline{cc_explain_valid} by computation induction on \lstinline{cc_explain_aux}.
 
 
 TODO

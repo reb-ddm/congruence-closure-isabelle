@@ -115,7 +115,7 @@ else ⦇uf_list = l, unions = u, au = a⦈)"
 \begin{exmp}
 After a union of 1 and 0, the data structure from Example \ref{empty_ufe} looks as follows:
 \begin{lstlisting}
-⦇uf_list = [0, 0, 2, 3], unions = [(1, 0)], au = [Some 0, None, None, None]⦈
+⦇uf_list = [0, 0, 2, 3], unions = [(1, 0)], au = [None, Some 0, None, None]⦈
 \end{lstlisting}
 It has the following graphical representation:
 0 $\xleftarrow{\text{(1, 0)}}$ 1 \ \ 2 \ \ 3
@@ -172,7 +172,7 @@ It was easy to show that it has the same domain as the \lstinline{rep_of} functi
 lemma path_to_root_domain: "rep_of_dom (l, i) ⟷ path_to_root_dom (l, i)"
 \end{lstlisting}
 
-The correctness of the function follows easily by induction.
+The correctness of the function follows easily by computation induction.
 
 \begin{lstlisting}
 theorem path_to_root_correct:
