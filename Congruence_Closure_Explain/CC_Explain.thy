@@ -335,7 +335,7 @@ qed
 
 subsection \<open>Termination of \<open>explain_along_path\<close>\<close>
 
-lemma explain_along_path_domain:
+theorem explain_along_path_domain:
   assumes "cc_invar cc" 
     "explain_list_invar l (proof_forest cc)"
     "path (proof_forest cc) c p a"
@@ -385,7 +385,411 @@ lemma explain_along_path_domain:
   qed
 qed
 
-subsection \<open>Invariants for the correctness of \<open>explain\<close>\<close>
+
+subsection \<open>Termination of \<open>cc_explain\<close>\<close>
+
+text \<open>The number of equivalence classes does not increase with \<open>explain_along_path\<close>\<close>
+
+lemma list_upd_eq_classes:
+  assumes "a \<noteq> b" "l ! a = a" "a < length l"
+  shows "nr_eq_classes (l[a := b]) < nr_eq_classes l" 
+proof-
+  have *: "i \<noteq> a \<Longrightarrow> i \<in> root_set l \<longleftrightarrow> i \<in> root_set (l[a := b])" for i 
+    by force
+  have **: "finite (root_set l)" 
+    by simp
+  from assms have "a \<in> root_set l"  "a \<notin> root_set (l[a := b])"
+    by auto
+  with * assms have "root_set (l[a := b]) \<subset> root_set l" by blast
+  with ** show ?thesis 
+    unfolding nr_eq_classes_def 
+    by (meson psubset_card_mono)
+qed
+
+lemma explain_along_path_eq_classes':
+  assumes "cc_invar cc"
+    "explain_list_invar l (proof_forest cc)"
+    "path (proof_forest cc) c p a"
+    "rep_of l a \<noteq> rep_of l c"
+  shows "nr_eq_classes (fst (snd (explain_along_path cc l a c))) < nr_eq_classes l"
+proof-
+  have "explain_along_path_dom (cc, l, a, c)" 
+    using assms explain_along_path_domain by simp
+  then show ?thesis
+    using assms proof(induction arbitrary: p rule: explain_along_path.pinduct)
+    case (1 cc l a c)
+    then have invar: "ufa_invar l" "length l = length (proof_forest cc)"
+      unfolding explain_list_invar_def by blast+ 
+    then show ?case                
+    proof(cases "rep_of l a = rep_of l c")
+      case False
+      then obtain cc_l u t pe pf pfl ip where cc: "cc = 
+\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl,
+         input = ip\<rparr>" using congruence_closure.cases by blast
+      let ?union = "(l[rep_of l a := (pf ! rep_of l a)])"
+      from False obtain output' new_l' pend' where recursive_step: "explain_along_path cc
+     ?union (pf ! rep_of l a) c = (output', new_l', pend')"
+        using prod_cases3 by blast
+      have invar: "ufa_invar pf"
+        using "1.prems" unfolding proof_forest_invar_def cc congruence_closure.select_convs by blast
+      then obtain pRAC where pRAC: "pf ! rep_of l a \<noteq> rep_of l a \<and> path pf c pRAC (rep_of l a)" 
+        using "1.prems" False explain_list_invar_imp_valid_rep unfolding cc congruence_closure.select_convs
+        by blast
+      have path_rep: "path l (rep_of l (rep_of l a)) [rep_of l a] (rep_of l a)"
+        using "1.prems" unfolding cc congruence_closure.select_convs
+        using explain_list_invar_def pRAC path_length_1 path_nodes_lt_length_l rep_of_idem by auto
+      then have pRAC': "path pf c (butlast pRAC) (pf ! rep_of l a)" 
+        using "1.prems" unfolding cc congruence_closure.select_convs
+        by (metis False pRAC path_butlast path_length_1)
+      obtain aa a\<^sub>1 a\<^sub>2 bb b\<^sub>1 b\<^sub>2 where valid_eq: "
+          (pfl ! rep_of l a = Some (One (aa \<approx> bb)) \<or> 
+          pfl ! rep_of l a = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb)))
+          \<and> (aa = pf ! rep_of l a \<and> bb = rep_of l a \<or> aa = rep_of l a \<and> bb = pf ! rep_of l a)"
+        using "1.prems" unfolding cc pf_labels_invar_def congruence_closure.select_convs
+        by (meson pRAC path_nodes_lt_length_l)
+      from "1.prems" invar have explain_list_invar: 
+        "explain_list_invar (l[rep_of l a := pf ! rep_of l a]) (proof_forest cc)" 
+        unfolding cc congruence_closure.select_convs 
+        by (metis (no_types, lifting) explain_list_invar_def explain_list_invar_union pRAC pRAC' path_nodes_lt_length_l rep_of_a_and_parent_rep_neq)
+      have rep_neq: "rep_of l a \<noteq> rep_of l (pf ! rep_of l a)"
+        using pRAC "1.prems" False rep_of_a_and_parent_rep_neq unfolding cc congruence_closure.select_convs 
+        using invar by blast
+      then have valid: "(pf ! rep_of l a) < length pf" "ufa_invar (l[rep_of l a := (pf ! rep_of l a)])"
+        using "1.prems" path_nodes_lt_length_l ufa_invarD(2) ufa_union_invar unfolding cc congruence_closure.select_convs 
+        using pRAC' apply blast using ufa_invar_fun_upd' "1.prems" unfolding cc congruence_closure.select_convs 
+        using path_rep explain_list_invar_def pRAC' path_length_1 path_nodes_lt_length_l rep_neq by auto
+      have "rep_of l a \<noteq> (proof_forest cc) ! (rep_of l a)" using cc pRAC by auto
+      then have step: "nr_eq_classes (l[rep_of l a := (proof_forest cc) ! (rep_of l a)]) < nr_eq_classes l" 
+        using list_upd_eq_classes 
+        by (metis (no_types, lifting) "1.prems"(2) "1.prems"(3) explain_list_invar_def path_nodes_lt_length_l rep_of_bound rep_of_min)
+      show ?thesis proof(cases "the (pfl ! rep_of l a)")
+        case (One a')
+        from valid_eq have *: "pfl ! rep_of l a = Some (One a')" 
+          using One by auto
+        have result: "explain_along_path cc l a c = ({a'} \<union> output', new_l', pend')" 
+          using 1 explain_along_path_simp2[OF False] One False * recursive_step cc by simp 
+        have "pf ! rep_of l a \<noteq> rep_of l a" "rep_of l a < length l"
+          using pRAC path_rep path_nodes_lt_length_l by blast+
+        have "(fst (snd (explain_along_path cc (l[rep_of l a := pf ! rep_of l a]) (pf ! rep_of l a) c))) = new_l'"
+          by (simp add: recursive_step)
+        with recursive_step cc pRAC'
+        have *: "rep_of ?union (pf ! rep_of l a) \<noteq> rep_of ?union c \<Longrightarrow>
+nr_eq_classes new_l' < nr_eq_classes ?union" 
+          using 1(2)[OF False _ _ 1(4) explain_list_invar] False One "1.prems" valid 
+          by (metis congruence_closure.select_convs(5) congruence_closure.select_convs(6))
+        have "rep_of ?union (pf ! rep_of l a) = rep_of ?union c \<Longrightarrow>
+ new_l'= ?union" using explain_along_path.psimps 
+          using explain_along_path_simp1 recursive_step by force
+        with cc result step * show ?thesis 
+          using order_less_trans by auto
+      next
+        case (Two x21 x22)
+        then obtain a\<^sub>1 a\<^sub>2 a' b\<^sub>1 b\<^sub>2 b' where *: "(pfl ! rep_of l a)
+= Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> a') (F b\<^sub>1 b\<^sub>2 \<approx> b'))" 
+          by (metis option.sel pending_equation.distinct(1) valid_eq) 
+        have result: "explain_along_path cc l a c = 
+({(F a\<^sub>1 a\<^sub>2 \<approx> a'), (F b\<^sub>1 b\<^sub>2 \<approx> b')} \<union> output', new_l', [(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)] @ pend')" 
+          using False  * recursive_step 1 explain_along_path_simp3
+          unfolding cc congruence_closure.select_convs by simp
+        then have a': "a' = rep_of l a \<and> b' = pf ! rep_of l a
+\<or> a' = pf ! rep_of l a \<and> b' = rep_of l a" 
+          using valid_eq * by auto
+        have "pf ! rep_of l a \<noteq> rep_of l a" 
+          by (simp add: pRAC)
+        have "(fst (snd (explain_along_path cc (l[rep_of l a := pf ! rep_of l a]) (pf ! rep_of l a) c))) = new_l'"
+          by (simp add: recursive_step)
+        with recursive_step cc pRAC'
+        have *: "rep_of ?union (pf ! rep_of l a) \<noteq> rep_of ?union c \<Longrightarrow>
+nr_eq_classes new_l' < nr_eq_classes ?union" 
+          using 1(3)[OF False _ _ _ _ 1(4) explain_list_invar] False Two "1.prems" valid *
+          unfolding cc congruence_closure.select_convs 
+          by simp
+        have "rep_of ?union (pf ! rep_of l a) = rep_of ?union c \<Longrightarrow>
+ new_l'= ?union" using explain_along_path.psimps 
+          using explain_along_path_simp1 recursive_step by force
+        with cc result step * show ?thesis using order_less_trans by auto
+      qed
+    qed (simp add: "1.prems")
+  qed
+qed
+
+lemma explain_along_path_eq_classes:
+  assumes "cc_invar cc"
+    "explain_list_invar l (proof_forest cc)"
+    "path (proof_forest cc) c p a"
+  shows "nr_eq_classes (fst (snd (explain_along_path cc l a c))) \<le> nr_eq_classes l"
+proof-
+  have "explain_along_path_dom (cc, l, a, c)" 
+    using assms explain_along_path_domain by simp
+  then show ?thesis
+    using assms proof(induction arbitrary: p rule: explain_along_path.pinduct)
+    case (1 cc l a c)
+    then show ?case using explain_along_path_eq_classes' explain_along_path_simp1 
+      by (metis Orderings.order_eq_iff fst_conv order.strict_implies_order snd_conv)
+  qed
+qed
+
+text \<open>If the pending list is not empty after \<open>explain_along_path\<close>, then
+the number of equivalence classes must have increased. \<close>
+
+lemma explain_along_path_eq_classes_if_pending_not_empty:
+  assumes "cc_invar cc"
+    "explain_list_invar l (proof_forest cc)"
+    "path (proof_forest cc) c p a"
+    "snd (snd (explain_along_path cc l a c)) \<noteq> []"
+  shows "nr_eq_classes (fst (snd (explain_along_path cc l a c))) < nr_eq_classes l"
+proof-
+  have "explain_along_path_dom (cc, l, a, c)" 
+    using assms explain_along_path_domain by simp
+  then show ?thesis
+    using assms proof(induction arbitrary: p rule: explain_along_path.pinduct)
+    case (1 cc l a c)
+    show ?case 
+    proof(cases "rep_of l a = rep_of l c")
+      case False
+      then show ?thesis using explain_along_path_eq_classes' 1 
+        by blast
+    next
+      case True
+      then have "snd (snd (explain_along_path cc l a c)) = []" 
+        using explain_along_path_simp1 by simp
+      then show ?thesis 
+        by (simp add: "1.prems"(4))
+    qed 
+  qed
+qed
+
+lemma explain_along_path_pending_in_bounds:
+  assumes "cc_invar cc" 
+    "explain_list_invar l (proof_forest cc)"
+    "path (proof_forest cc) c p a"
+  shows "\<forall> (k, j) \<in> set (snd (snd (explain_along_path cc l a c))).
+k < nr_vars cc \<and> j < nr_vars cc"
+proof-
+  have "explain_along_path_dom (cc, l, a, c)"
+    using assms explain_along_path_domain by simp
+  then show ?thesis
+    using assms proof(induction arbitrary: p rule: explain_along_path.pinduct)
+    case (1 cc l a c)
+    then have invar: "ufa_invar l" "length l = length (proof_forest cc)"
+      unfolding explain_list_invar_def by blast+ 
+    then show ?case 
+    proof(cases "rep_of l a = rep_of l c")
+      case False
+      then obtain cc_l u t pe pf pfl ip where cc: "cc = 
+\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl,
+         input = ip\<rparr>" using congruence_closure.cases by blast
+      let ?union = "(l[rep_of l a := (pf ! rep_of l a)])"
+      from False obtain output' new_l' pend' where recursive_step: "explain_along_path cc
+     ?union (pf ! rep_of l a) c = (output', new_l', pend')"
+        using prod_cases3 by blast
+      have invar: "ufa_invar pf"
+        using "1.prems" unfolding proof_forest_invar_def cc congruence_closure.select_convs by blast
+      then obtain pRAC where pRAC: "pf ! rep_of l a \<noteq> rep_of l a \<and> path pf c pRAC (rep_of l a)" 
+        using "1.prems" False explain_list_invar_imp_valid_rep unfolding cc congruence_closure.select_convs
+        by blast
+      have "path l (rep_of l (rep_of l a)) [rep_of l a] (rep_of l a)"
+        using "1.prems" unfolding cc congruence_closure.select_convs
+        using explain_list_invar_def pRAC path_length_1 path_nodes_lt_length_l rep_of_idem by auto
+      then have pRAC': "path pf c (butlast pRAC) (pf ! rep_of l a)" 
+        using "1.prems" unfolding cc congruence_closure.select_convs
+        by (metis False pRAC path_butlast path_length_1)
+      obtain aa a\<^sub>1 a\<^sub>2 bb b\<^sub>1 b\<^sub>2 where valid_eq: "
+(pfl ! rep_of l a = Some (One (aa \<approx> bb)) \<or> 
+          pfl ! rep_of l a = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb)))
+          \<and> (aa = pf ! rep_of l a \<and> bb = rep_of l a \<or> aa = rep_of l a \<and> bb = pf ! rep_of l a)
+        "using "1.prems" unfolding cc pf_labels_invar_def congruence_closure.select_convs
+        by (meson pRAC path_nodes_lt_length_l)
+      from "1.prems" invar have explain_list_invar: "explain_list_invar (l[rep_of l a := pf ! rep_of l a]) (proof_forest cc)" 
+        unfolding cc congruence_closure.select_convs 
+        by (metis (no_types, lifting) explain_list_invar_def explain_list_invar_union pRAC pRAC' path_nodes_lt_length_l rep_of_a_and_parent_rep_neq)
+      have rep_neq: "rep_of l a \<noteq> rep_of l (pf ! rep_of l a)"
+        using pRAC "1.prems" False rep_of_a_and_parent_rep_neq unfolding cc congruence_closure.select_convs 
+        using invar by blast
+      then have valid: "(pf ! rep_of l a) < length pf" "ufa_invar (l[rep_of l a := (pf ! rep_of l a)])"
+        using "1.prems" path_nodes_lt_length_l ufa_invarD(2) ufa_union_invar unfolding cc congruence_closure.select_convs 
+        using pRAC' apply blast      using ufa_invar_fun_upd' "1.prems" unfolding cc congruence_closure.select_convs 
+        using \<open>path l (rep_of l (rep_of l a)) [rep_of l a] (rep_of l a)\<close> explain_list_invar_def pRAC' path_length_1 path_nodes_lt_length_l rep_neq by auto
+      show ?thesis proof(cases "the (pfl ! rep_of l a)")
+        case (One a')
+        from valid_eq have *: "pfl ! rep_of l a = Some (One a')" 
+          using One by auto
+        have result: "explain_along_path cc l a c = ({a'} \<union> output', new_l', pend')" 
+          using 1 explain_along_path_simp2[OF False] One False * recursive_step cc by simp 
+        have "pf ! rep_of l a \<noteq> rep_of l a" 
+          by (simp add: pRAC)
+        from 1(2)[OF False] One "1.prems" recursive_step cc explain_list_invar pRAC' valid have 
+          " \<forall>a\<in>set (snd (snd (explain_along_path cc (l[rep_of l a := pf ! rep_of l a]) (pf ! rep_of l a) c))).
+       case a of (k, j) \<Rightarrow> k < nr_vars cc \<and> j < nr_vars cc" 
+          by simp
+        with cc result show ?thesis 
+          using recursive_step by auto
+      next
+        case (Two x21 x22)
+        then obtain a\<^sub>1 a\<^sub>2 a' b\<^sub>1 b\<^sub>2 b' where *: "(pfl ! rep_of l a)
+= Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> a') (F b\<^sub>1 b\<^sub>2 \<approx> b'))" 
+          by (metis option.sel pending_equation.distinct(1) valid_eq) 
+        have result: "explain_along_path cc l a c = 
+({(F a\<^sub>1 a\<^sub>2 \<approx> a'), (F b\<^sub>1 b\<^sub>2 \<approx> b')} \<union> output', new_l', [(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)] @ pend')" 
+          using False  * recursive_step 1 explain_along_path_simp3
+          unfolding cc congruence_closure.select_convs by simp
+        then have a': "a' = rep_of l a \<and> b' = pf ! rep_of l a
+\<or> a' = pf ! rep_of l a \<and> b' = rep_of l a" 
+          using valid_eq * by auto
+        have "pf ! rep_of l a \<noteq> rep_of l a" 
+          by (simp add: pRAC)
+        from * Two "1.prems" explain_list_invar pRAC
+        have "valid_vars_pending (the (pfl ! rep_of l a)) cc_l"
+          unfolding pf_labels_invar_def cc congruence_closure.select_convs 
+          by (metis path_nodes_lt_length_l)
+        with Two * have new_valid: "a\<^sub>1 < length cc_l" "a\<^sub>2 < length cc_l" "b\<^sub>1 < length cc_l" "b\<^sub>2 < length cc_l"  
+          by auto
+        from 1(3)[OF False] Two * "1.prems" recursive_step cc explain_list_invar pRAC' valid have 
+          "\<forall>a\<in>set (snd (snd (explain_along_path cc (l[rep_of l a := pf ! rep_of l a]) (pf ! rep_of l a) c))).
+       case a of (k, j) \<Rightarrow> k < nr_vars cc \<and> j < nr_vars cc" 
+          unfolding cc congruence_closure.select_convs by simp
+        with result cc recursive_step new_valid show ?thesis
+          by auto
+      qed
+    qed (simp add: explain_along_path_simp1)
+  qed
+qed 
+
+theorem cc_explain_aux_domain:
+  assumes "cc_invar cc"
+    "explain_list_invar l (proof_forest cc)" 
+    "\<forall> (a, b) \<in> set xs . a < nr_vars cc \<and> b < nr_vars cc"
+  shows "cc_explain_aux_dom (cc, l, xs)"
+  using assms proof(induction "nr_eq_classes l" arbitrary: l xs rule: less_induct)
+  case less
+  show ?case using less(2-) less(1) proof(induction xs arbitrary: l)
+    \<comment> \<open>There is an induction 1 on the number of equivalence classes 
+and an induction 2 on the length of xs.\<close>
+    case Nil
+      \<comment> \<open>If xs is empty, the function terminates immediately\<close>
+    then show ?case using cc_explain_aux.domintros 
+      by blast
+  next
+    case (Cons k xs')
+      \<comment> \<open>We define the variables the same was as in \<open>cc_explain_aux\<close>\<close>
+    obtain a b c output1 new_l pending1 output2 new_new_l pending2 where 
+      defs: "(a, b) = k" 
+      "c = lowest_common_ancestor (proof_forest cc) a b"
+      "(output1, new_l, pending1) = explain_along_path cc l a c"
+      "(output2, new_new_l, pending2) = explain_along_path cc new_l b c"
+      by (metis surj_pair)
+
+    have **: "\<forall>a\<in>set xs'. case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc" 
+      using Cons by simp
+    then show ?case proof(cases "are_congruent cc (a \<approx> b)")
+      case False
+        \<comment> \<open>Second case of the function: the recursive call terminates by induction hypothesis 2\<close>
+      have "cc_explain_aux_dom (cc, l, xs')" 
+        using Cons(1)[OF Cons(2,3)] ** Cons.prems(4) by blast
+      then show ?thesis using cc_explain_aux.domintros defs(1) False by blast
+    next
+      case True2: True
+
+\<comment> \<open>First case of the function: we do a case distinction on whether the call to 
+\<open>explain_along_path\<close> added equations to pending.
+
+If it did add equations to pending, then the union-find was definitely updated, 
+therefore the number of equivalence classes decreased. We can use induction hypothesis 1.
+
+If not then then we can use induction hypothesis 2.\<close>
+
+\<comment> \<open>These calculations are just needed to show that \<open>explain_list_invar\<close> is invariant\<close>
+      then obtain cc_l u t pe pf pfl ip where cc: "cc = 
+\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl,
+         input = ip\<rparr>" using congruence_closure.cases by blast
+      then have *: "rep_of cc_l a = rep_of cc_l b" 
+        using True2 by auto
+      have valid: "a < length cc_l" "b < length cc_l" "length cc_l = length pf" using Cons.prems(3) cc 
+          defs(1) apply auto[2] using Cons.prems unfolding inv_same_length_def cc by auto
+      then have "rep_of pf a = rep_of pf b" using "less.prems" cc *  
+        unfolding inv_same_rep_classes_def cc congruence_closure.select_convs by simp
+      then have invar: "ufa_invar pf" 
+        using "less.prems" cc unfolding proof_forest_invar_def by simp
+      then obtain p1 p2 where p: "path (proof_forest cc) c p1 a" "path (proof_forest cc) c p2 b" 
+        using lowest_common_ancestor_correct invar valid defs
+        by (metis \<open>rep_of pf a = rep_of pf b\<close> cc congruence_closure.select_convs(5))
+      have dom1: "explain_along_path_dom (cc, l, a, c)" 
+        using "Cons.prems" explain_along_path_domain p by blast
+      have lengths: "length l = length cc_l" 
+        "length l = length pf" "ufa_invar pf" using "Cons.prems" 
+        unfolding inv_same_length_def explain_list_invar_def proof_forest_invar_def cc congruence_closure.select_convs 
+        by argo+
+      with explain_list_invar_explain_along_path
+      have new_l_inv: "explain_list_invar new_l (proof_forest cc)"
+        using dom1 Cons.prems valid p unfolding cc proof_forest_invar_def congruence_closure.select_convs
+        using cc defs by (metis fst_eqD snd_eqD)
+      then have dom2: "explain_along_path_dom (cc, new_l, b, c)"
+        using "less.prems"(1) explain_along_path_domain p(2) cc by auto
+      from new_l_inv have lengths2: "length l = length new_l" unfolding explain_list_invar_def 
+        using lengths(2) cc by simp
+      then have new_new_l_inv: "explain_list_invar new_new_l (proof_forest cc)" 
+        using explain_list_invar_explain_along_path dom1 dom2 p cc new_l_inv valid "less.prems" lengths lengths2 defs
+        by (metis congruence_closure.select_convs(5) fst_eqD snd_eqD)
+      have 1: "\<forall>a\<in>set xs'. case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc"
+        using less.prems(3) Cons by auto
+      have "pending1 = snd(snd(explain_along_path cc l a c))" unfolding defs(3)[symmetric] by simp
+      then have 3: "\<forall>a\<in>set pending1. case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc"
+        using Cons.prems dom1 p(1) explain_along_path_pending_in_bounds cong case_prodD by blast
+      have "pending2 = snd(snd(explain_along_path cc new_l b c))" unfolding defs(4)[symmetric] by simp
+      then have 4: "\<forall>a\<in>set pending2. case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc"
+        using "less.prems" dom1 p(1) defs explain_along_path_pending_in_bounds[OF "less.prems"(1,2) p(2)] cong 
+        using explain_along_path_pending_in_bounds new_l_inv p(2) by auto
+      have *: "new_l = fst (snd (explain_along_path cc l a c))"
+        "new_new_l = fst (snd (explain_along_path cc new_l b c))" 
+        using defs(3,4)[symmetric] by auto
+
+\<comment> \<open>Now we can do the case distinction and use the two lemmas \<open>explain_along_path_eq_classes\<close>
+and \<open>explain_along_path_eq_classes_if_pending_not_empty\<close>\<close>
+      have new_eq_classes': "nr_eq_classes new_l \<le> nr_eq_classes l" 
+        using explain_along_path_eq_classes Cons.prems(2) less.prems(1) p(1) * by blast
+      with * have new_eq_classes: "nr_eq_classes new_new_l \<le> nr_eq_classes new_l" 
+        using explain_along_path_eq_classes less.prems(1) new_l_inv p(2) by blast
+
+      then show ?thesis proof(cases "pending1 @ pending2 = []")
+        case True
+        then have domain: "cc_explain_aux_dom (cc, new_new_l, xs')" 
+          using new_eq_classes Cons(1)[OF Cons(2) new_new_l_inv  ** ] Cons.prems(4) dual_order.trans new_eq_classes'
+          by simp
+        from True2 True have "xs' @ pending1 @ pending2 = xs'" by blast
+        then show ?thesis using cc_explain_aux.domintros defs True2 domain
+          by (metis Pair_inject lowest_common_ancestor.simps)
+
+      next
+        case False
+        then have cong: "are_congruent cc (a \<approx> b)" using defs Cons True2 by auto
+        have **: "pending1 = snd (snd (explain_along_path cc l a c))"
+          "pending2 = snd (snd (explain_along_path cc new_l b c))" 
+          using defs(3,4)[symmetric] by auto
+        have pending_neq_Nil: "pending1 \<noteq> [] \<or> pending2 \<noteq> []" 
+          using False by blast
+
+        then have "nr_eq_classes new_l < nr_eq_classes l \<or> nr_eq_classes new_new_l < nr_eq_classes new_l"
+          apply(standard) 
+          using explain_along_path_eq_classes_if_pending_not_empty * ** Cons.prems(2) less.prems(1) p(1) apply blast
+          using explain_along_path_eq_classes_if_pending_not_empty less.prems(1) new_l_inv p(2) * ** by blast
+        then have eq_classes: "nr_eq_classes new_new_l < nr_eq_classes l" 
+          by (meson dual_order.strict_trans1 dual_order.strict_trans2 new_eq_classes new_eq_classes')
+
+        have "\<forall>a\<in>set (xs' @ pending1 @ pending2). case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc" 
+          using 1 3 4 by fastforce
+        then have "\<forall>(a, b)\<in>set (xs' @ pending1 @ pending2). a < nr_vars cc \<and> b < nr_vars cc" 
+          by blast
+        with less(1) eq_classes Cons.prems(1) new_new_l_inv cc
+        have "cc_explain_aux_dom (cc, new_new_l, (xs' @ pending1 @ pending2))" 
+          using Cons.prems(4) by blast
+        then show ?thesis using cc_explain_aux.domintros defs False cong 
+          by (metis Pair_inject lowest_common_ancestor.simps)
+      qed
+    qed
+  qed
+qed
+
+subsection \<open>Invariants for the validity of \<open>explain\<close>\<close>
 
 text \<open>We introduce new invariant of the \<open>congruence_closure\<close> in order to prove the correctness
 and validity of explain.\<close> 
@@ -430,7 +834,7 @@ definition validity_invar :: "congruence_closure \<Rightarrow> bool"
       \<and> pending_validity_invar (pending cc) (input cc)"
 
 
-subsection \<open>Validity invariant\<close>
+subsection \<open>Invariant proof\<close>
 
 subsubsection \<open>The invariants remain invariant after the loop of propagate\<close>
 
@@ -952,101 +1356,6 @@ proof-
   qed
 qed
 
-lemma explain_along_path_pending_valid:
-  assumes "cc_invar cc" 
-    "explain_list_invar l (proof_forest cc)"
-    "path (proof_forest cc) c p a"
-  shows "\<forall> (k, j) \<in> set (snd (snd (explain_along_path cc l a c))).
-k < nr_vars cc \<and> j < nr_vars cc"
-proof-
-  have "explain_along_path_dom (cc, l, a, c)"
-    using assms explain_along_path_domain by simp
-  then show ?thesis
-    using assms proof(induction arbitrary: p rule: explain_along_path.pinduct)
-    case (1 cc l a c)
-    then have invar: "ufa_invar l" "length l = length (proof_forest cc)"
-      unfolding explain_list_invar_def by blast+ 
-    then show ?case 
-    proof(cases "rep_of l a = rep_of l c")
-      case False
-      then obtain cc_l u t pe pf pfl ip where cc: "cc = 
-\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl,
-         input = ip\<rparr>" using congruence_closure.cases by blast
-      let ?union = "(l[rep_of l a := (pf ! rep_of l a)])"
-      from False obtain output' new_l' pend' where recursive_step: "explain_along_path cc
-     ?union (pf ! rep_of l a) c = (output', new_l', pend')"
-        using prod_cases3 by blast
-      have invar: "ufa_invar pf"
-        using "1.prems" unfolding proof_forest_invar_def cc congruence_closure.select_convs by blast
-      then obtain pRAC where pRAC: "pf ! rep_of l a \<noteq> rep_of l a \<and> path pf c pRAC (rep_of l a)" 
-        using "1.prems" False explain_list_invar_imp_valid_rep unfolding cc congruence_closure.select_convs
-        by blast
-      have "path l (rep_of l (rep_of l a)) [rep_of l a] (rep_of l a)"
-        using "1.prems" unfolding cc congruence_closure.select_convs
-        using explain_list_invar_def pRAC path_length_1 path_nodes_lt_length_l rep_of_idem by auto
-      then have pRAC': "path pf c (butlast pRAC) (pf ! rep_of l a)" 
-        using "1.prems" unfolding cc congruence_closure.select_convs
-        by (metis False pRAC path_butlast path_length_1)
-      obtain aa a\<^sub>1 a\<^sub>2 bb b\<^sub>1 b\<^sub>2 where valid_eq: "
-(pfl ! rep_of l a = Some (One (aa \<approx> bb)) \<or> 
-          pfl ! rep_of l a = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb)))
-          \<and> (aa = pf ! rep_of l a \<and> bb = rep_of l a \<or> aa = rep_of l a \<and> bb = pf ! rep_of l a)
-        "using "1.prems" unfolding cc pf_labels_invar_def congruence_closure.select_convs
-        by (meson pRAC path_nodes_lt_length_l)
-      from "1.prems" invar have explain_list_invar: "explain_list_invar (l[rep_of l a := pf ! rep_of l a]) (proof_forest cc)" 
-        unfolding cc congruence_closure.select_convs 
-        by (metis (no_types, lifting) explain_list_invar_def explain_list_invar_union pRAC pRAC' path_nodes_lt_length_l rep_of_a_and_parent_rep_neq)
-      have rep_neq: "rep_of l a \<noteq> rep_of l (pf ! rep_of l a)"
-        using pRAC "1.prems" False rep_of_a_and_parent_rep_neq unfolding cc congruence_closure.select_convs 
-        using invar by blast
-      then have valid: "(pf ! rep_of l a) < length pf" "ufa_invar (l[rep_of l a := (pf ! rep_of l a)])"
-        using "1.prems" path_nodes_lt_length_l ufa_invarD(2) ufa_union_invar unfolding cc congruence_closure.select_convs 
-        using pRAC' apply blast      using ufa_invar_fun_upd' "1.prems" unfolding cc congruence_closure.select_convs 
-        using \<open>path l (rep_of l (rep_of l a)) [rep_of l a] (rep_of l a)\<close> explain_list_invar_def pRAC' path_length_1 path_nodes_lt_length_l rep_neq by auto
-      show ?thesis proof(cases "the (pfl ! rep_of l a)")
-        case (One a')
-        from valid_eq have *: "pfl ! rep_of l a = Some (One a')" 
-          using One by auto
-        have result: "explain_along_path cc l a c = ({a'} \<union> output', new_l', pend')" 
-          using 1 explain_along_path_simp2[OF False] One False * recursive_step cc by simp 
-        have "pf ! rep_of l a \<noteq> rep_of l a" 
-          by (simp add: pRAC)
-        from 1(2)[OF False] One "1.prems" recursive_step cc explain_list_invar pRAC' valid have 
-          " \<forall>a\<in>set (snd (snd (explain_along_path cc (l[rep_of l a := pf ! rep_of l a]) (pf ! rep_of l a) c))).
-       case a of (k, j) \<Rightarrow> k < nr_vars cc \<and> j < nr_vars cc" 
-          by simp
-        with cc result show ?thesis 
-          using recursive_step by auto
-      next
-        case (Two x21 x22)
-        then obtain a\<^sub>1 a\<^sub>2 a' b\<^sub>1 b\<^sub>2 b' where *: "(pfl ! rep_of l a)
-= Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> a') (F b\<^sub>1 b\<^sub>2 \<approx> b'))" 
-          by (metis option.sel pending_equation.distinct(1) valid_eq) 
-        have result: "explain_along_path cc l a c = 
-({(F a\<^sub>1 a\<^sub>2 \<approx> a'), (F b\<^sub>1 b\<^sub>2 \<approx> b')} \<union> output', new_l', [(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)] @ pend')" 
-          using False  * recursive_step 1 explain_along_path_simp3
-          unfolding cc congruence_closure.select_convs by simp
-        then have a': "a' = rep_of l a \<and> b' = pf ! rep_of l a
-\<or> a' = pf ! rep_of l a \<and> b' = rep_of l a" 
-          using valid_eq * by auto
-        have "pf ! rep_of l a \<noteq> rep_of l a" 
-          by (simp add: pRAC)
-        from * Two "1.prems" explain_list_invar pRAC
-        have "valid_vars_pending (the (pfl ! rep_of l a)) cc_l"
-          unfolding pf_labels_invar_def cc congruence_closure.select_convs 
-          by (metis path_nodes_lt_length_l)
-        with Two * have new_valid: "a\<^sub>1 < length cc_l" "a\<^sub>2 < length cc_l" "b\<^sub>1 < length cc_l" "b\<^sub>2 < length cc_l"  
-          by auto
-        from 1(3)[OF False] Two * "1.prems" recursive_step cc explain_list_invar pRAC' valid have 
-          "\<forall>a\<in>set (snd (snd (explain_along_path cc (l[rep_of l a := pf ! rep_of l a]) (pf ! rep_of l a) c))).
-       case a of (k, j) \<Rightarrow> k < nr_vars cc \<and> j < nr_vars cc" 
-          unfolding cc congruence_closure.select_convs by simp
-        with result cc recursive_step new_valid show ?thesis
-          by auto
-      qed
-    qed (simp add: explain_along_path_simp1)
-  qed
-qed 
 
 lemma cc_explain_aux_valid:
   assumes "cc_explain_aux_dom (cc, l, xs)" "cc_invar cc" "validity_invar cc"
@@ -1102,9 +1411,9 @@ lemma cc_explain_aux_valid:
     have 1: "\<forall>a\<in>set xs. case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc"
       by (simp add: "2.prems"(4))
     have 3: "\<forall>a\<in>set pending1. case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc"
-      using "2.prems" dom1 p(1) rec1 explain_along_path_pending_valid by auto
+      using "2.prems" dom1 p(1) rec1 explain_along_path_pending_in_bounds by auto
     have 4: "\<forall>a\<in>set pending2. case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc"
-      using p(2) rec2 explain_along_path_pending_valid[OF "2.prems"(1) new_l_inv] by auto
+      using p(2) rec2 explain_along_path_pending_in_bounds[OF "2.prems"(1) new_l_inv] by auto
     have "\<forall>a\<in>set (xs @ pending1 @ pending2). case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc" 
       using 1 3 4 by fastforce
     with 2(2)[OF True c_def] rec1 rec2 "2.prems" cc new_new_l_inv
@@ -1121,404 +1430,19 @@ qed (simp add: cc_explain_aux.psimps)
 theorem cc_explain_valid:
   assumes "cc_invar cc" "validity_invar cc"
     "valid_vars (a \<approx> b) (nr_vars cc)"
-    "cc_explain_aux_dom (cc, [0..<nr_vars cc], [(a, b)])"
   shows "cc_explain cc a b \<subseteq> input cc"
 proof-
   have "length (proof_forest cc) = nr_vars cc" 
     using assms unfolding inv_same_length_def by blast
   then have **: "explain_list_invar [0..<nr_vars cc] (proof_forest cc)" 
     by (metis explain_list_invar_initial)
-  have "\<forall> (a,b)\<in> set [(a, b)] . a < nr_vars cc \<and> b < nr_vars cc"
+  have *: "\<forall> (a,b)\<in> set [(a, b)] . a < nr_vars cc \<and> b < nr_vars cc"
     using assms by simp
+  have "cc_explain_aux_dom (cc, [0..<nr_vars cc], [(a, b)])" 
+    using cc_explain_aux_domain assms ** by simp
   with cc_explain_aux_valid show ?thesis 
-    using ** assms by presburger
+    using ** assms * by presburger
 qed
 
-subsection \<open>Termination of \<open>cc_explain\<close>\<close>
-
-text \<open>The number of equivalence classes does not increase with \<open>explain_along_path\<close>\<close>
-
-
-lemma list_upd_eq_classes':
-  assumes "a \<noteq> b" "l ! a = a" "a < length l"
-  shows "nr_eq_classes (l[a := b]) < nr_eq_classes l" 
-proof-
-  have *: "i \<noteq> a \<Longrightarrow> i \<in> root_set l \<longleftrightarrow> i \<in> root_set (l[a := b])" for i 
-    by force
-  have **: "finite (root_set l)" 
-    by simp
-  from assms have "a \<in> root_set l"  "a \<notin> root_set (l[a := b])"
-    by auto
-  with * assms have "root_set (l[a := b]) \<subset> root_set l" by blast
-  with ** show ?thesis 
-    unfolding nr_eq_classes_def 
-    by (meson psubset_card_mono)
-qed
-
-lemma list_upd_eq_classes:
-  assumes "a \<noteq> b"
-  shows "nr_eq_classes (l[a := b]) \<le> nr_eq_classes l" 
-proof(cases "a < length l")
-  case True
-  have *: "i \<noteq> a \<Longrightarrow> i \<in> root_set l \<longleftrightarrow> i \<in> root_set (l[a := b])" for i 
-    by force
-  have **: "finite (root_set l)" 
-    by simp
-  show ?thesis proof(cases "l ! a = a")
-    case True2: True
-    with True list_upd_eq_classes' assms show ?thesis by fastforce
-  next
-    case False
-    with True assms have "a \<notin> root_set (l[a := b])" 
-      by simp
-    with * have "root_set (l[a := b]) \<subseteq> root_set l" 
-      by fast
-    with ** show ?thesis 
-      unfolding nr_eq_classes_def by (meson card_mono)
-  qed
-next
-  case False
-  then show ?thesis 
-    by simp
-qed
-
-lemma explain_along_path_eq_classes:
-  assumes "cc_invar cc"
-    "explain_list_invar l (proof_forest cc)"
-    "path (proof_forest cc) c p a"
-  shows "nr_eq_classes (fst (snd (explain_along_path cc l a c))) \<le> nr_eq_classes l"
-proof-
-  have "explain_along_path_dom (cc, l, a, c)" 
-    using assms explain_along_path_domain by simp
-  then show ?thesis
-    using assms proof(induction arbitrary: p rule: explain_along_path.pinduct)
-    case (1 cc l a c)
-    then have invar: "ufa_invar l" "length l = length (proof_forest cc)"
-      unfolding explain_list_invar_def by blast+ 
-    have step: "nr_eq_classes (l[rep_of l a := (proof_forest cc) ! (rep_of l a)]) \<le> nr_eq_classes l" 
-      by (metis "1.prems"(3) dual_order.irrefl invar(1) invar(2) leI list_upd_eq_classes list_update_id path_nodes_lt_length_l rep_of_min)
-    then show ?case 
-    proof(cases "rep_of l a = rep_of l c")
-      case False
-      then obtain cc_l u t pe pf pfl ip where cc: "cc = 
-\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl,
-         input = ip\<rparr>" using congruence_closure.cases by blast
-      let ?union = "(l[rep_of l a := (pf ! rep_of l a)])"
-      from False obtain output' new_l' pend' where recursive_step: "explain_along_path cc
-     ?union (pf ! rep_of l a) c = (output', new_l', pend')"
-        using prod_cases3 by blast
-      have invar: "ufa_invar pf"
-        using "1.prems" unfolding proof_forest_invar_def cc congruence_closure.select_convs by blast
-      then obtain pRAC where pRAC: "pf ! rep_of l a \<noteq> rep_of l a \<and> path pf c pRAC (rep_of l a)" 
-        using "1.prems" False explain_list_invar_imp_valid_rep unfolding cc congruence_closure.select_convs
-        by blast
-      have path_rep: "path l (rep_of l (rep_of l a)) [rep_of l a] (rep_of l a)"
-        using "1.prems" unfolding cc congruence_closure.select_convs
-        using explain_list_invar_def pRAC path_length_1 path_nodes_lt_length_l rep_of_idem by auto
-      then have pRAC': "path pf c (butlast pRAC) (pf ! rep_of l a)" 
-        using "1.prems" unfolding cc congruence_closure.select_convs
-        by (metis False pRAC path_butlast path_length_1)
-      obtain aa a\<^sub>1 a\<^sub>2 bb b\<^sub>1 b\<^sub>2 where valid_eq: "
-          (pfl ! rep_of l a = Some (One (aa \<approx> bb)) \<or> 
-          pfl ! rep_of l a = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb)))
-          \<and> (aa = pf ! rep_of l a \<and> bb = rep_of l a \<or> aa = rep_of l a \<and> bb = pf ! rep_of l a)"
-        using "1.prems" unfolding cc pf_labels_invar_def congruence_closure.select_convs
-        by (meson pRAC path_nodes_lt_length_l)
-      from "1.prems" invar have explain_list_invar: 
-        "explain_list_invar (l[rep_of l a := pf ! rep_of l a]) (proof_forest cc)" 
-        unfolding cc congruence_closure.select_convs 
-        by (metis (no_types, lifting) explain_list_invar_def explain_list_invar_union pRAC pRAC' path_nodes_lt_length_l rep_of_a_and_parent_rep_neq)
-      have rep_neq: "rep_of l a \<noteq> rep_of l (pf ! rep_of l a)"
-        using pRAC "1.prems" False rep_of_a_and_parent_rep_neq unfolding cc congruence_closure.select_convs 
-        using invar by blast
-      then have valid: "(pf ! rep_of l a) < length pf" "ufa_invar (l[rep_of l a := (pf ! rep_of l a)])"
-        using "1.prems" path_nodes_lt_length_l ufa_invarD(2) ufa_union_invar unfolding cc congruence_closure.select_convs 
-        using pRAC' apply blast using ufa_invar_fun_upd' "1.prems" unfolding cc congruence_closure.select_convs 
-        using path_rep explain_list_invar_def pRAC' path_length_1 path_nodes_lt_length_l rep_neq by auto
-      show ?thesis proof(cases "the (pfl ! rep_of l a)")
-        case (One a')
-        from valid_eq have *: "pfl ! rep_of l a = Some (One a')" 
-          using One by auto
-        have result: "explain_along_path cc l a c = ({a'} \<union> output', new_l', pend')" 
-          using 1 explain_along_path_simp2[OF False] One False * recursive_step cc by simp 
-        have "pf ! rep_of l a \<noteq> rep_of l a" "rep_of l a < length l"
-          using pRAC path_rep path_nodes_lt_length_l by blast+
-        have "(fst (snd (explain_along_path cc (l[rep_of l a := pf ! rep_of l a]) (pf ! rep_of l a) c))) = new_l'"
-          by (simp add: recursive_step)
-        with recursive_step cc pRAC'
-        have "nr_eq_classes new_l' \<le> nr_eq_classes (l[rep_of l a := pf ! (rep_of l a)])" 
-          using 1(2)[OF False _ _ 1(4) explain_list_invar ] False One "1.prems" valid by simp
-        with cc result step show ?thesis 
-          by auto
-      next
-        case (Two x21 x22)
-        then obtain a\<^sub>1 a\<^sub>2 a' b\<^sub>1 b\<^sub>2 b' where *: "(pfl ! rep_of l a)
-= Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> a') (F b\<^sub>1 b\<^sub>2 \<approx> b'))" 
-          by (metis option.sel pending_equation.distinct(1) valid_eq) 
-        have result: "explain_along_path cc l a c = 
-({(F a\<^sub>1 a\<^sub>2 \<approx> a'), (F b\<^sub>1 b\<^sub>2 \<approx> b')} \<union> output', new_l', [(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)] @ pend')" 
-          using False  * recursive_step 1 explain_along_path_simp3
-          unfolding cc congruence_closure.select_convs by simp
-        then have a': "a' = rep_of l a \<and> b' = pf ! rep_of l a
-\<or> a' = pf ! rep_of l a \<and> b' = rep_of l a" 
-          using valid_eq * by auto
-        have "pf ! rep_of l a \<noteq> rep_of l a" 
-          by (simp add: pRAC)
-        have "(fst (snd (explain_along_path cc (l[rep_of l a := pf ! rep_of l a]) (pf ! rep_of l a) c))) = new_l'"
-          by (simp add: recursive_step)
-        with recursive_step cc pRAC'
-        have "nr_eq_classes new_l' \<le> nr_eq_classes (l[rep_of l a := pf ! (rep_of l a)])" 
-          using 1(3,4) False explain_list_invar Two "1.prems" valid * by auto
-        with cc result step show ?thesis 
-          by auto
-      qed
-    qed (simp add: explain_along_path_simp1)
-  qed
-qed
-
-text \<open>If the pending list is not empty after \<open>explain_along_path\<close>, then
-the number of equivalence classes must have increased. \<close>
-
-lemma explain_along_path_eq_classes_if_pending_not_empty:
-  assumes "cc_invar cc"
-    "explain_list_invar l (proof_forest cc)"
-    "path (proof_forest cc) c p a"
-    "snd (snd (explain_along_path cc l a c)) \<noteq> []"
-  shows "nr_eq_classes (fst (snd (explain_along_path cc l a c))) < nr_eq_classes l"
-proof-
-  have "explain_along_path_dom (cc, l, a, c)" 
-    using assms explain_along_path_domain by simp
-  then show ?thesis
-    using assms proof(induction arbitrary: p rule: explain_along_path.pinduct)
-    case (1 cc l a c)
-    then have invar: "ufa_invar l" "length l = length (proof_forest cc)"
-      unfolding explain_list_invar_def by blast+ 
-    have step: "nr_eq_classes (l[rep_of l a := (proof_forest cc) ! (rep_of l a)]) \<le> nr_eq_classes l" 
-      by (metis "1.prems"(3) dual_order.irrefl invar(1) invar(2) leI list_upd_eq_classes list_update_id path_nodes_lt_length_l rep_of_min)
-    show ?case 
-    proof(cases "rep_of l a = rep_of l c")
-      case False
-      then obtain cc_l u t pe pf pfl ip where cc: "cc = 
-\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl,
-         input = ip\<rparr>" using congruence_closure.cases by blast
-      let ?union = "(l[rep_of l a := (pf ! rep_of l a)])"
-      from False obtain output' new_l' pend' where recursive_step: "explain_along_path cc
-     ?union (pf ! rep_of l a) c = (output', new_l', pend')"
-        using prod_cases3 by blast
-      have invar: "ufa_invar pf"
-        using "1.prems" unfolding proof_forest_invar_def cc congruence_closure.select_convs by blast
-      then obtain pRAC where pRAC: "pf ! rep_of l a \<noteq> rep_of l a \<and> path pf c pRAC (rep_of l a)" 
-        using "1.prems" False explain_list_invar_imp_valid_rep unfolding cc congruence_closure.select_convs
-        by blast
-      have path_rep: "path l (rep_of l (rep_of l a)) [rep_of l a] (rep_of l a)"
-        using "1.prems" unfolding cc congruence_closure.select_convs
-        using explain_list_invar_def pRAC path_length_1 path_nodes_lt_length_l rep_of_idem by auto
-      then have pRAC': "path pf c (butlast pRAC) (pf ! rep_of l a)" 
-        using "1.prems" unfolding cc congruence_closure.select_convs
-        by (metis False pRAC path_butlast path_length_1)
-      obtain aa a\<^sub>1 a\<^sub>2 bb b\<^sub>1 b\<^sub>2 where valid_eq: "
-          (pfl ! rep_of l a = Some (One (aa \<approx> bb)) \<or> 
-          pfl ! rep_of l a = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> aa) (F b\<^sub>1 b\<^sub>2 \<approx> bb)))
-          \<and> (aa = pf ! rep_of l a \<and> bb = rep_of l a \<or> aa = rep_of l a \<and> bb = pf ! rep_of l a)"
-        using "1.prems" unfolding cc pf_labels_invar_def congruence_closure.select_convs
-        by (meson pRAC path_nodes_lt_length_l)
-      from "1.prems" invar have explain_list_invar: 
-        "explain_list_invar (l[rep_of l a := pf ! rep_of l a]) (proof_forest cc)" 
-        unfolding cc congruence_closure.select_convs 
-        by (metis (no_types, lifting) explain_list_invar_def explain_list_invar_union pRAC pRAC' path_nodes_lt_length_l rep_of_a_and_parent_rep_neq)
-      have rep_neq: "rep_of l a \<noteq> rep_of l (pf ! rep_of l a)"
-        using pRAC "1.prems" False rep_of_a_and_parent_rep_neq unfolding cc congruence_closure.select_convs 
-        using invar by blast
-      then have valid: "(pf ! rep_of l a) < length pf" "ufa_invar (l[rep_of l a := (pf ! rep_of l a)])"
-        using "1.prems" path_nodes_lt_length_l ufa_invarD(2) ufa_union_invar unfolding cc congruence_closure.select_convs 
-        using pRAC' apply blast using ufa_invar_fun_upd' "1.prems" unfolding cc congruence_closure.select_convs 
-        using path_rep explain_list_invar_def pRAC' path_length_1 path_nodes_lt_length_l rep_neq by auto
-      show ?thesis proof(cases "the (pfl ! rep_of l a)")
-        case (One a')
-        from valid_eq have *: "pfl ! rep_of l a = Some (One a')" 
-          using One by auto
-        have result: "explain_along_path cc l a c = ({a'} \<union> output', new_l', pend')" 
-          using 1 explain_along_path_simp2[OF False] One False * recursive_step cc by simp 
-        have "pf ! rep_of l a \<noteq> rep_of l a" "rep_of l a < length l"
-          using pRAC path_rep path_nodes_lt_length_l by blast+
-        have **:"(fst (snd (explain_along_path cc (l[rep_of l a := pf ! rep_of l a]) (pf ! rep_of l a) c))) = new_l'"
-          by (simp add: recursive_step)
-        have pend':"pend' \<noteq> []" using "1.prems"(4) result by force
-        with ** cc result step
-        have "nr_eq_classes new_l' < nr_eq_classes (l[rep_of l a := pf ! (rep_of l a)])" 
-          using 1(2)[OF False _ _ 1(4) explain_list_invar ] False One "1.prems" valid 
-          by (metis congruence_closure.select_convs(5) congruence_closure.select_convs(6) old.prod.inject pRAC' prod.collapse recursive_step)
-        then show ?thesis 
-          by (metis "**" \<open>pf ! rep_of l a \<noteq> rep_of l a\<close> dual_order.trans leD leI list_upd_eq_classes recursive_step result snd_eqD)
-      next
-        case (Two x21 x22)
-        then obtain a\<^sub>1 a\<^sub>2 a' b\<^sub>1 b\<^sub>2 b' where *: "(pfl ! rep_of l a)
-= Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> a') (F b\<^sub>1 b\<^sub>2 \<approx> b'))" 
-          by (metis option.sel pending_equation.distinct(1) valid_eq) 
-        have result: "explain_along_path cc l a c = 
-({(F a\<^sub>1 a\<^sub>2 \<approx> a'), (F b\<^sub>1 b\<^sub>2 \<approx> b')} \<union> output', new_l', [(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)] @ pend')" 
-          using False  * recursive_step 1 explain_along_path_simp3
-          unfolding cc congruence_closure.select_convs by simp
-        then have a': "a' = rep_of l a \<and> b' = pf ! rep_of l a
-\<or> a' = pf ! rep_of l a \<and> b' = rep_of l a" 
-          using valid_eq * by auto
-        have "pf ! rep_of l a \<noteq> rep_of l a" 
-          by (simp add: pRAC)
-        have "(fst (snd (explain_along_path cc (l[rep_of l a := pf ! rep_of l a]) (pf ! rep_of l a) c))) = new_l'"
-          by (simp add: recursive_step)
-        have explain_list_inv: "explain_list_invar ?union (proof_forest cc)" 
-          using explain_list_invar by auto
-        have **: "nr_eq_classes new_l' \<le> nr_eq_classes (l[rep_of l a := pf ! (rep_of l a)])" 
-          using explain_along_path_eq_classes[OF "1.prems"(1) explain_list_inv] recursive_step pRAC' cc
-          by fastforce
-        have "nr_eq_classes (l[rep_of l a := pf ! (rep_of l a)]) < nr_eq_classes l" 
-          by (metis "1.prems"(2) "1.prems"(3) \<open>pf ! rep_of l a \<noteq> rep_of l a\<close> explain_list_invar_def list_upd_eq_classes' path_nodes_lt_length_l path_rep rep_of_min)
-        with cc result step ** show ?thesis 
-          by auto
-      qed
-    next
-      case True
-      then have "snd (snd (explain_along_path cc l a c)) = []" 
-        using explain_along_path_simp1 by simp
-      then show ?thesis 
-        by (simp add: "1.prems"(4))
-    qed 
-  qed
-qed
-
-lemma cc_explain_aux_domain:
-  assumes "cc_invar cc"
-    "explain_list_invar l (proof_forest cc)" 
-    "\<forall> (a, b) \<in> set xs . a < nr_vars cc \<and> b < nr_vars cc"
-  shows "cc_explain_aux_dom (cc, l, xs)"
-  using assms proof(induction "nr_eq_classes l" arbitrary: l xs rule: less_induct)
-  case less
-  show ?case using less(2-) less(1) proof(induction xs arbitrary: l)
-    \<comment> \<open>There is an induction 1 on the number of equivalence classes 
-and an induction 2 on the length of xs.\<close>
-    case Nil
-      \<comment> \<open>If xs is emty, the function terminates immediately\<close>
-    then show ?case using cc_explain_aux.domintros 
-      by blast
-  next
-    case (Cons k xs')
-      \<comment> \<open>We define the variables the same was as in \<open>cc_explain_aux\<close>\<close>
-    obtain a b c output1 new_l pending1 output2 new_new_l pending2 where 
-      defs: "(a, b) = k" 
-      "c = lowest_common_ancestor (proof_forest cc) a b"
-      "(output1, new_l, pending1) = explain_along_path cc l a c"
-      "(output2, new_new_l, pending2) = explain_along_path cc new_l b c"
-      by (metis surj_pair)
-
-    have **: "\<forall>a\<in>set xs'. case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc" 
-      using Cons by simp
-    then show ?case proof(cases "are_congruent cc (a \<approx> b)")
-      case False
-        \<comment> \<open>Second case of the function: the recursive call terminates by induction hypothesis 2\<close>
-      have "cc_explain_aux_dom (cc, l, xs')" 
-        using Cons(1)[OF Cons(2,3)] ** Cons.prems(4) by blast
-      then show ?thesis using cc_explain_aux.domintros defs(1) False by blast
-    next
-      case True2: True
-
-\<comment> \<open>First case of the function: we do a case distinction on whether the call to 
-\<open>explain_along_path\<close> added equations to pending.
-
-If it did add equations to pending, then the union-find was definitely updated, 
-therefore the number of equivalence classes decreased. We can use induction hypothesis 1.
-
-If not then then we can use induction hypothesis 2.\<close>
-
-\<comment> \<open>These calculations are just needed to show that \<open>explain_list_invar\<close> is invariant\<close>
-      then obtain cc_l u t pe pf pfl ip where cc: "cc = 
-\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl,
-         input = ip\<rparr>" using congruence_closure.cases by blast
-      then have *: "rep_of cc_l a = rep_of cc_l b" 
-        using True2 by auto
-      have valid: "a < length cc_l" "b < length cc_l" "length cc_l = length pf" using Cons.prems(3) cc 
-          defs(1) apply auto[2] using Cons.prems unfolding inv_same_length_def cc by auto
-      then have "rep_of pf a = rep_of pf b" using "less.prems" cc *  
-        unfolding inv_same_rep_classes_def cc congruence_closure.select_convs by simp
-      then have invar: "ufa_invar pf" 
-        using "less.prems" cc unfolding proof_forest_invar_def by simp
-      then obtain p1 p2 where p: "path (proof_forest cc) c p1 a" "path (proof_forest cc) c p2 b" 
-        using lowest_common_ancestor_correct invar valid defs
-        by (metis \<open>rep_of pf a = rep_of pf b\<close> cc congruence_closure.select_convs(5))
-      have dom1: "explain_along_path_dom (cc, l, a, c)" 
-        using "Cons.prems" explain_along_path_domain p by blast
-      have lengths: "length l = length cc_l" 
-        "length l = length pf" "ufa_invar pf" using "Cons.prems" 
-        unfolding inv_same_length_def explain_list_invar_def proof_forest_invar_def cc congruence_closure.select_convs 
-        by argo+
-      with explain_list_invar_explain_along_path
-      have new_l_inv: "explain_list_invar new_l (proof_forest cc)"
-        using dom1 Cons.prems valid p unfolding cc proof_forest_invar_def congruence_closure.select_convs
-        using cc defs by (metis fst_eqD snd_eqD)
-      then have dom2: "explain_along_path_dom (cc, new_l, b, c)"
-        using "less.prems"(1) explain_along_path_domain p(2) cc by auto
-      from new_l_inv have lengths2: "length l = length new_l" unfolding explain_list_invar_def 
-        using lengths(2) cc by simp
-      then have new_new_l_inv: "explain_list_invar new_new_l (proof_forest cc)" 
-        using explain_list_invar_explain_along_path dom1 dom2 p cc new_l_inv valid "less.prems" lengths lengths2
-        by (metis congruence_closure.select_convs(5) fst_eqD defs snd_eqD)
-      have 1: "\<forall>a\<in>set xs'. case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc"
-        using less.prems(3) Cons by auto
-      have "pending1 = snd(snd(explain_along_path cc l a c))" unfolding defs(3)[symmetric] by simp
-      then have 3: "\<forall>a\<in>set pending1. case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc"
-        using Cons.prems dom1 p(1) explain_along_path_pending_valid cong case_prodD by blast
-      have "pending2 = snd(snd(explain_along_path cc new_l b c))" unfolding defs(4)[symmetric] by simp
-      then have 4: "\<forall>a\<in>set pending2. case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc"
-        using "less.prems" dom1 p(1) defs explain_along_path_pending_valid[OF "less.prems"(1,2) p(2)] cong 
-        using explain_along_path_pending_valid new_l_inv p(2) by auto
-      have *: "new_l = fst(snd(explain_along_path cc l a c))"
-        "new_new_l = fst(snd(explain_along_path cc new_l b c))" 
-        using defs(3,4)[symmetric] by auto
-      have new_eq_classes': "nr_eq_classes new_l \<le> nr_eq_classes l" 
-        using explain_along_path_eq_classes Cons.prems(2) less.prems(1) p(1) * by blast
-      with * have new_eq_classes: "nr_eq_classes new_new_l \<le> nr_eq_classes new_l" 
-        using explain_along_path_eq_classes less.prems(1) new_l_inv p(2) by blast
-
-      then show ?thesis proof(cases "pending1 @ pending2 = []")
-        case True
-        then have domain: "cc_explain_aux_dom (cc, new_new_l, xs')" 
-          using new_eq_classes Cons(1)[OF Cons(2) new_new_l_inv  ** ] Cons.prems(4) dual_order.trans new_eq_classes'
-          by simp
-        from True2 True have "xs' @ pending1 @ pending2 = xs'" by blast
-        then show ?thesis using cc_explain_aux.domintros defs True2 domain
-          by (metis Pair_inject lowest_common_ancestor.simps)
-
-      next
-        case False
-        then have cong: "are_congruent cc (a \<approx> b)" using defs Cons True2 by auto
-        have **: "pending1 = snd(snd(explain_along_path cc l a c))"
-          "pending2 = snd(snd(explain_along_path cc new_l b c))" 
-          using defs(3,4)[symmetric] by auto
-        have pending_neq_Nil: "pending1 \<noteq> [] \<or> pending2 \<noteq> []" 
-          using False by blast
-
-        then have "nr_eq_classes new_l < nr_eq_classes l \<or> nr_eq_classes new_new_l < nr_eq_classes new_l"
-          apply(standard) 
-          using explain_along_path_eq_classes_if_pending_not_empty * ** Cons.prems(2) less.prems(1) p(1) apply blast
-          using explain_along_path_eq_classes_if_pending_not_empty less.prems(1) new_l_inv p(2) * ** by blast
-        then have eq_classes: "nr_eq_classes new_new_l < nr_eq_classes l" 
-          by (meson dual_order.strict_trans1 dual_order.strict_trans2 new_eq_classes new_eq_classes')
-
-
-        have "\<forall>a\<in>set (xs' @ pending1 @ pending2). case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc" 
-          using 1 3 4 by fastforce
-        then have "\<forall>(a, b)\<in>set (xs' @ pending1 @ pending2). a < nr_vars cc \<and> b < nr_vars cc" 
-          by blast
-        with less(1) eq_classes Cons.prems(1) new_new_l_inv cc
-        have "cc_explain_aux_dom (cc, new_new_l, (xs' @ pending1 @ pending2))" 
-          using Cons.prems(4) by blast
-        then show ?thesis using cc_explain_aux.domintros defs False cong 
-          by (metis Pair_inject lowest_common_ancestor.simps)
-      qed
-    qed
-
-
-
-  qed
-qed
 
 end

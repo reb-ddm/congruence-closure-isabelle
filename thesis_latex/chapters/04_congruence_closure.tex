@@ -586,7 +586,7 @@ We already proved for each individual invariant, that they hold after propagate.
 The proof for \lstinline|merge| uses the fact that \lstinline{propagate} terminates, which will be proven in the following section.
 \end{proof}
 
-\subsection{Termination}
+\subsection{Termination}\label{section:termination-propagate}
 
 We already proved that the functions \lstinline|add_edge| and \lstinline|add_label| terminate, the only missing proof is the termination of \lstinline|propagate|. All the remaining functions are simple enough for Isabelle to prove their termination automatically.
 
@@ -721,9 +721,94 @@ lemma explain_list_invar_paths:
   "path l a p b ⟹ explain_list_invar l pf ⟹ path pf a p b"
 \end{lstlisting}
 
+\subsection{Termination}
+
+The \lstinline{explain_along_path_domain} function starts at the node $a$ and recursively goes to the parent node until it reaches $c$. Therefore the function terminates if $c$ is an ancestor of $a$.
+
+\begin{lstlisting}
+theorem explain_along_path_domain:
+  assumes "cc_invar cc"
+    "explain_list_invar l (proof_forest cc)"
+    "path (proof_forest cc) c p a"
+  shows "explain_along_path_dom (cc, l, a, c)"
+\end{lstlisting}
+
+\begin{proof}
+The proof is by induction on the length of the path $p$.
+
+If the path has length 1 or if \lstinline{rep_of l a = rep_of l c}, the function terminates immediately.
+
+If the path is longer, then the union-find has this path:
+
+$a \longrightarrow rep\_of(l,a)$
+
+and the proof forest contains the same path, which continues until it reaches $c$:
+
+$a \longrightarrow rep\_of(l,a) \rightarrow pf ! rep\_of(l,a) \longrightarrow c$
+
+The long arrows reperesent paths of arbitrary length, including paths with no edges, and the short arrow represents exactly one edge.
+
+Therefore there is a shorter path from $c$ to $pf ! rep\_of(l,a)$ in the proof forest and we can apply the induction hypothesis for the recursive call of \lstinline{explain_along_path}. Given that the recursive call terminates, the function also terminates.
+\end{proof}
+
+The function \lstinline{explain_along_path} is only executed in \lstinline{cc_explain_aux} when $c$ is the lowest common ancestor of $a$ and $b$, therefore the assumption that there is a path from $c$ to $a$ always holds when the function is executed.
+
+In order to prove the termination of \lstinline{cc_explain_aux}, we use the same idea as for the termination proof of \lstinline{propagate} in Subsection \ref{section:termination-propagate}, we consider the number of equivalence classes of the additional union-find, and prove that the number of equivalence classes decreases in each call of \lstinline{explain_along_path}.
+
+First, we prove that the number of equivalence classes decreases with a function update, if the updated index is a root:
+
+\begin{lstlisting}
+lemma list_upd_eq_classes:
+  assumes "a ≠ b" "l ! a = a" "a < length l"
+  shows "nr_eq_classes (l[a := b]) < nr_eq_classes l"
+\end{lstlisting}
+
+By analizing the function \lstinline{explain_along_path}, we see that each time the union-find list is updated, the updated index is a root, therefore the number of equivalence classes decreases.
+However, if \lstinline{rep_of l a = rep_of l c}, the union-find list is never updated, therefore we can only show that the number of equivalence classes does not decrease:
+
+\begin{lstlisting}
+lemma explain_along_path_eq_classes:
+  assumes "cc_invar cc"
+    "explain_list_invar l (proof_forest cc)"
+    "path (proof_forest cc) c p a"
+  shows "nr_eq_classes (fst (snd (explain_along_path cc l a c))) ≤ nr_eq_classes l"
+\end{lstlisting}
+
+We can show that it strictly decreases if the pending list is not empty after \lstinline{explain_along_path}, because we always update the union-find list when we add elements to pending:
+
+\begin{lstlisting}
+lemma explain_along_path_eq_classes_if_pending_not_empty:
+  assumes "cc_invar cc"
+    "explain_list_invar l (proof_forest cc)"
+    "path (proof_forest cc) c p a"
+    "snd (snd (explain_along_path cc l a c)) ≠ []"
+  shows "nr_eq_classes (fst (snd (explain_along_path cc l a c))) < nr_eq_classes l"
+\end{lstlisting}
+
+With these two lemmas, we can prove that \lstinline{cc_explain_aux} terminates:
+
+\begin{lstlisting}
+theorem cc_explain_aux_domain:
+  assumes "cc_invar cc"
+    "explain_list_invar l (proof_forest cc)"
+  shows "cc_explain_aux_dom (cc, l, xs)"
+\end{lstlisting}
+
+
+\begin{proof}
+We show it by using a nested induction: the outer induction is on the number of equivalence classes, and the inner induction is on the length of $xs$.
+
+If $xs$ is empty, then the function terminates.
+
+If \lstinline{are_congruent (a ≈ b)}, then we do a case distinction: if both \lstinline{pending1} and \lstinline{pending2} are empty, then the length of $xs$ decreases and we can use the induction hypothesis of the inner induction. In this case we need the lemma \lstinline{explain_along_path_eq_classes}, because we also need to show that the number of equivalence classes does not increase. If one of the pending lists is not empty, we use \lstinline{explain_along_path_eq_classes_if_pending_not_empty} to show that the \lstinline{nr_eq_classes} has decreased, and we use the first induction hypothesis.
+
+If \lstinline{are_congruent (a ≈ b)} does not hold, then the length of $xs$ decreases and we can use the second induction hypothesis.
+\end{proof}
+
+
 \subsection{Validity}
 
-Similarly to the \lstinline{explain} operation for union-find (see Section \ref{subsection:uf-correctness}), we can prove that the equations in the output of \lstinline{cc_explain} are a subset of the input equations.
+Similarly to the \lstinline{explain} operation for union-find (see Subsection \ref{subsection:uf-correctness}), we can prove that the equations in the output of \lstinline{cc_explain} are a subset of the input equations.
 
 \begin{lstlisting}
 theorem cc_explain_valid:
@@ -754,5 +839,6 @@ Else, the new equations added to the output derive from the proof forest, more s
 
 From this lemma we can easily show the theorem \lstinline{cc_explain_valid} by computation induction on \lstinline{cc_explain_aux}.
 
+\subsection{Correctness}
 
 TODO
