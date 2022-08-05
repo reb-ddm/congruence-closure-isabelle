@@ -10,7 +10,7 @@ The union-find data structure is used to keep track of the equivalence closure o
 
 The equivalence classes are modeled with a forest, which is a graph where each connected component is a tree. Initially, the graph contains $n$ vertices and no edges, then each \lstinline{union} adds a directed edge. The connected components of the graph represent the equivalence classes. Each tree in the forest has a root, which is also the representative of the equivalence class, and each edge in the tree is directed towards the root. In order to keep this invariant, at each \lstinline{union a b}, the new edge is added between the representative of $a$ (which will be denoted as $rep\_of(l, a)$, where $l$ is the union-find forest) and $rep\_of(l, b)$.
 
-The union-find forest is modeled by a list $l$ of length $n$, where at each index $i$ the list contains the parent of the element $i$ in the forest. If $i$ does not have a parent, i.e., it is a root, then the list contains the element $i$ itself at the index $i$, e.g. $l!i = i$.
+The union-find forest is modeled by a list $l$ of length $n$, where at each index $i$ the list contains the parent of the element $i$ in the forest. If $i$ does not have a parent, i.e., it is a root, then the list contains the element $i$ itself at the index $i$, e.g., $l!i = i$.
 
 The original union-find algorithm \cite{Tarjan} contains two tions: path compression in the \lstinline{find} method, and choosing the representative of the bigger class to be the new representative of the merged class in \lstinline{union}. These optimizations are irrelevant for the correctness of the algorithm, therefore we leave them out of this implementation in order to simplify the proofs.
 
@@ -46,9 +46,9 @@ The theory contains several lemmas, including the lemma which states that the in
 \section{Union-Find Data Structure}
 \label{section:uf-data}
 
-The section below describes the implementation of a union-find data structure, which was modified in order to support an \lstinline{explain} operation, as described in \cite{Nieuwenhuis}.
+The section below describes the implementation of a union-find data structure, which was modified in order to support an \emph{explain} operation, as described in \cite{Nieuwenhuis}.
 
-The data structure for the Union, Find and Explain operations consists of the following three lists:
+The data structure for the \emph{union}, \emph{find} and \emph{explain} operations consists of the following three lists:
 
 \begin{itemize}
 	\item \lstinline{uf_list}: This is the usual union-find list, which contains the parent node of each element in the forest data structure. It is the one described in Section \ref{section:uf-algorithm}.
@@ -138,11 +138,11 @@ The result of \lstinline|apply_unions [(1,0), (3,2), (3,1)] (initial_ufe 4)|, wh
 
 \subsection{Helper Functions for Explain}
 
-We implement the explain function following the description of the first version of the union-find algorithm in the paper \cite{Nieuwenhuis}.
+We implement the \lstinline|explain| function following the description of the first version of the union-find algorithm in the paper \cite{Nieuwenhuis}.
 
-The explain function takes as parameter two elements $x$ and $y$ and calculates a subset of the input unions which explain why the two given variables are in the same equivalence class. If we consider the graph which has as nodes the elements and as edges the input unions, then the output of explain would be all the unions on the path from $x$ to $y$. However, the union-find forest in our data structure does not have as edges the unions, but only edges between representatives of the elements of the unions.
+The \lstinline|explain| function takes as parameter two elements $x$ and $y$ and calculates a subset of the input unions which explain why the two given variables are in the same equivalence class. If we consider the graph which has as nodes the elements and as edges the input unions, then the output of \lstinline|explain| would be all the unions on the path from $x$ to $y$. However, the union-find forest in our data structure does not have as edges the unions, but only edges between representatives of the elements of the unions.
 
-From this graph, we can calculate the desired output in the following way: first add the last union $(a, b)$ made between the equivalence class of $x$ and the one of $y$, then recursively call the explain operation with the new parameters $(x, a)$ and $(b, y)$ (or $(x, b)$ and $(a, y)$, depending on which branch $a$ and $b$ are on). The last union is the edge with the highest label in the union-find forest.
+From this graph, we can calculate the desired output in the following way: first add the last union $(a, b)$ made between the equivalence class of $x$ and the one of $y$, then recursively call the \lstinline|explain| operation with the new parameters $(x, a)$ and $(b, y)$ (or $(x, b)$ and $(a, y)$, depending on which branch $a$ and $b$ are on). The last union is the edge with the highest label in the union-find forest.
 
 $(a, b)$ is calculated by finding the lowest common ancestor $lca$ of $x$ and $y$, and then finding the newest union on the path from $x$ to $lca$ and from $y$ to $lca$.
 
@@ -281,7 +281,7 @@ theorem find_newest_on_path_correct:
 
 \subsection{Explain}
 
-We can now define the explain operation, as describbed in the previous Subsection.
+We can now define the \lstinline|explain| operation, as describbed in the previous Subsection.
 In order to find the overall newest edge, we first compute the newest edge on the $x$ branch, then the one on the $y$ branch, and then choose the larger one in a case distinction at the end.
 
 \begin{lstlisting}
@@ -353,12 +353,12 @@ lemma apply_unions_induct[consumes 1, case_names initial union]:
   shows "P ufe"
 \end{lstlisting}
 
-This induction rule can be used for most of the proofs about explain.
+This induction rule can be used for most of the proofs about \lstinline|explain|.
 
 \subsection{Termination Proof}
 \label{subsection:termination}
 
-An important result was to show that the function always terminates if \lstinline{ufe_invar} holds. We will show this using \lstinline|apply_unions_invar|, therefore we need to show that if the function terminates before \lstinline{ufe_union} is applied, then it also terminates afterwards, assuming that $x$ and $y$ are in the same representative class, where $x$ and $y$ are the last two parameters of explain.
+An important result was to show that the function always terminates if \lstinline{ufe_invar} holds. We will show this using \lstinline|apply_unions_invar|, therefore we need to show that if the function terminates before \lstinline{ufe_union} is applied, then it also terminates afterwards, assuming that $x$ and $y$ are in the same representative class, where $x$ and $y$ are the last two parameters of \lstinline|explain|.
 
 \begin{lstlisting}
 lemma explain_domain_ufe_union_invar:
@@ -369,11 +369,11 @@ lemma explain_domain_ufe_union_invar:
 \end{lstlisting}
 
 \begin{proof}
-We can use the partial induction rule of \lstinline|explain|, given that our first assumption is that explain terminates.
+We can use the partial induction rule of \lstinline|explain|, given that our first assumption is that \lstinline|explain| terminates.
 
 We show only the case when \lstinline|newest_index_x ≥ newest_index_y|, because the other case is symmetric to it. The Isabelle code also contains proofs about the symmetry of \lstinline{explain}, which are used in order to avoid duplicate proofs for the two cases of the \lstinline{explain} function, but they will not be discussed here, as they are not essential to prove the correctness of the function.
 
-Initially, we remark that the lowest common ancestor and the newest index on path do not change after a union was applied. Therefore we will refer to the variables with the same names as in the function definition, e.g. $lca$, $ax$, etc., without specifying if we refer to e.g. \lstinline|lowest_common_ancestor l x y| or \lstinline|lowest_common_ancestor (ufa_union l x2 y2) $\:\:$x y|.
+Initially, we remark that the lowest common ancestor and the newest index on path do not change after a union was applied. Therefore we will refer to the variables with the same names as in the function definition, e.g., $lca$, $ax$, etc., without specifying if we refer to, e.g., \lstinline|lowest_common_ancestor l x y| or \lstinline|lowest_common_ancestor (ufa_union l x2 y2) $\:\:$x y|.
 
 We assume that $x$ and $y$ are in the same representative class after the union. Given that $(ax, bx)$ is the newest branch on the path fom $ax$ to the lowest common ancestor $lca$ of $x$ and $y$, we know that every edge on the path from $x$ to $ax$ was also present before the union. Therefore $rep\_of(l, ax) = rep\_of(l, x)$ holds before the union, and we can apply the induction hypothesis and conclude \lstinline|explain_dom(ufe_union ufe x2 y2, x, ax)|. $(ax, bx)$ is also newer than the newest branch on the path fom $y$ to the $lca$, therefore $rep\_of(l, y) = rep\_of(l, bx)$, and the induction hypothesis shows that \lstinline|explain_dom(ufe_union ufe x2 y2, bx, y)|. The two recursive calls terminate, therefore \lstinline|explain| terminates.
 \end{proof}
@@ -396,7 +396,7 @@ For the induction step, if $x$ and $y$ are not in the same representative class 
 
 \subsection{Correctness Proof}
 
-There are two properties which define the correctness of explain: foremost, the equivalence closure of \lstinline{explain x y} should contain the pair $(x, y)$ (we shall refer to this property as ``correctness''), additionally, the elements in the output should only be equations which are part of the input (we shall refer to this property as ``validity''). The proposition about the validity of \lstinline{explain} is the following:
+There are two properties which define the correctness of \lstinline|explain|: foremost, the equivalence closure of \lstinline{explain x y} should contain the pair $(x, y)$ (we shall refer to this property as ``correctness''), additionally, the elements in the output should only be equations which are part of the input (we shall refer to this property as ``validity''). The proposition about the validity of \lstinline{explain} is the following:
 
 \begin{lstlisting}
 theorem explain_valid:
@@ -426,7 +426,7 @@ lemma au_valid:
 
 It is easily proven, given that all the values that are added to \lstinline|au| by \lstinline|ufe_union| are valid.
 
-Thus we can prove the lemma about the validity of the explain function.
+Thus we can prove the lemma about the validity of the \lstinline|explain| function.
 It remains to show the correctness.
 
 \begin{lstlisting}
@@ -444,5 +444,5 @@ For the case where \lstinline|x = y|, the algorithm returns the empty set, and b
 As before, for the remaining cases we consider only the case where \lstinline|newest_index_x ≥ newest_index_y|.
 From the induction hypothesis, we know that $(x, ax) \in$\lstinline{(symcl (explain ufe x y))*} and $(bx, y) \in\:$\lstinline{(symcl (explain ufe x y))*}.
 
-Because of the definition of explain, it holds that $(ax, bx) \in\:$\lstinline{(explain x y)}. Therefore from the transitivity of the equivalence closure it follows that $(x, y) \in\:$\lstinline{(symcl (explain ufe x y))*}.
+Because of the definition of \lstinline|explain|, it holds that $(ax, bx) \in\:$\lstinline{(explain x y)}. Therefore from the transitivity of the equivalence closure it follows that $(x, y) \in\:$\lstinline{(symcl (explain ufe x y))*}.
 \end{proof}

@@ -5,7 +5,7 @@
 
 \section{Isabelle/HOL}
 
-Isabelle\cite{isabelle} is an automated theorem prover, which can be used among other things for the verification of algorithms. It provides different types of logic, the most used one being Higher-Order Logic (HOL), which is the one used in this thesis. For reasons of self-containedness of this thesis, this chapter introduces the notation used by Isabelle/HOL.
+Isabelle \cite{isabelle} is an interactive theorem prover, which can be used among other things for the verification of algorithms. It provides different types of logic, the most used one being Higher-Order Logic (HOL), which is the one used in this thesis. This chapter introduces the notation used by Isabelle/HOL.
 
 \subsubsection{Lists}
 
@@ -13,7 +13,7 @@ The syntax for the empty list in Isabelle is \lstinline|[]|, and longer lists ar
 
 \subsubsection{Functions}
 
-In Isabelle, the termination of functions must be proven. In the case of simple functions, Isabelle can prove it automatically. This is done for functions which are declared with the \lstinline{fun} keyword. For example the declaration \lstinline|fun f :: 'a ⇒ 'b| describes a function $f$ with a parameter of the type $'a$ and it returns a value of the type $'b$. Afterwards, the recursive equations of the function are defined. Isabelle automatically defines induction rules for each function.
+In Isabelle, the termination of functions must be proven. In the case of simple functions, Isabelle can prove it automatically. This is done for functions which are declared with the \lstinline{fun} keyword. For example, the declaration \lstinline|fun f :: 'a ⇒ 'b| describes a function $f$ with a parameter of the type $'a$ and it returns a value of the type $'b$. Afterwards, the recursive equations of the function are defined. Isabelle automatically defines induction rules for each function.
 
 Partial functions can also be defined in Isabelle, with the \lstinline{function} keyword.
 The definition looks like this:
@@ -36,20 +36,20 @@ For a more detailed description of functions in Isabelle, see \cite{functions}.
 
 \subsubsection{Records}
 
-Records are similar to tuples, where each component has a name. For example, for the implementation of the union-find explain operations, we need three lists, which are grouped together in a record. The syntax is \lstinline{ufe = ⦇uf_list = l, unions = u, au = a⦈}, and to select for example the first component, we can write \lstinline{uf_list ufe}. The meaning of the three lists will be described in Section \ref{section:uf-data}.
+Records are similar to tuples, where each component has a name. For example, for the implementation of the union-find \emph{explain} operations, we need three lists, which are grouped together in a record. The syntax is \lstinline{ufe = ⦇uf_list = l, unions = u, au = a⦈}, and to select, for example, the first component, we can write \lstinline{uf_list ufe}. The meaning of the three lists will be described in Section \ref{section:uf-data}.
 
 For more information on records, see \cite{isabelle}, chapter 8.3.
 
 \subsubsection{equivalence closure}
 
-The theory ``Partial\_Equivalence\_Relation''\cite{Collections-AFP} defines the symmetric closure \lstinline{symcl} of a relation and the reflexiv-transitive closure is already part of the Isabelle/HOL distribution, and its syntax is \lstinline{R*}. The two definitions can be combined to have an abstraction of the equivalence closure. For example the equivalence closure of the relation $R$ is \lstinline{(symcl R)*}.
+The theory ``Partial\_Equivalence\_Relation''\cite{Collections-AFP} defines the symmetric closure \lstinline{symcl} of a relation and the reflexiv-transitive closure is already part of the Isabelle/HOL distribution, and its syntax is \lstinline{R*}. The two definitions can be combined to have an abstraction of the equivalence closure. For example, the equivalence closure of the relation $R$ is \lstinline{(symcl R)*}.
 
 \subsubsection{Datatypes}
 \label{subsubsection:datatypes}
 
 New datatypes can be defined with the \lstinline|datatype| keyword. New datatypes consist of constructors and existing types. A concrete syntax for the new datatypes can be defined in brackets.
 
-For example we define a new datatype for the two types of input equations used in the congruence closure algorithm. Equations of the type $a = b$ will be written as \lstinline{a ≈ b}, and equations of the type $F(a, b) = c$ are written as \lstinline{F a b ≈ c}.
+For example, we define a new datatype for the two types of input equations used in the congruence closure algorithm. Equations of the type $a = b$ will be written as \lstinline{a ≈ b}, and equations of the type $F(a, b) = c$ are written as \lstinline{F a b ≈ c}.
 
 \begin{lstlisting}
 datatype equation = Constants nat nat ("_ ≈ _")
@@ -66,13 +66,15 @@ If \lstinline{'a} is an ordered type, the order is extended to \lstinline{'a opt
 
 \subsection{Related work}
 
-Efficient union-find algorithms have been known for a long time, see \cite{unionfind-og, Tarjan}. Given its importance as an algorithm, it was already formalized and verified in some of the most important theorem provers, such as Isabelle and Coq \cite{unionfind-persistent}. The code in this thesis uses the union-find formalization in Isabelle by Lammich, which was first published in a journal \cite{unionfind-isabelle} and later presented at a conference \cite{unionfind-isabelle-conference}. It includes the functions for \emph{union} and \emph{find}, as well as an invariant which charachterizes the validity of the union-find data structure. It will be described in more detail in Section \ref{section:uf-isabelle}.
+Efficient union-find algorithms have been known for a long time, see \cite{unionfind-og, Tarjan}. Given its importance as an algorithm, it was already formalized and verified in some of the most important theorem provers, such as Isabelle and Coq \cite{unionfind-persistent}. The code in this thesis uses the union-find formalization in Isabelle by Lammich, which was first published in a journal \cite{unionfind-isabelle} and later presented at a conference \cite{unionfind-isabelle-conference}. It includes the functions for \emph{union} and \emph{find}, as well as an invariant which characterizes the validity of the union-find data structure. It will be described in more detail in Section \ref{section:uf-isabelle}.
 
 Based on the union-find implementation, efficient congruence closure algorithms have been developed by Shostak \cite{congruenceclosure-og2}, Nelson and Oppen \cite{congruenceclosure-og} and Downey at al. \cite{congruenceclosure-og3}.
-Nieuwenhuis and Oliveras \cite{Nieuwenhuis} extend the algorithm by an \emph{explain} operation, which is necessary in the context of decision procedures, for example for theorem provers.
+Nieuwenhuis and Oliveras \cite{Nieuwenhuis} extended the algorithm by an \emph{explain} operation, which is necessary in the context of decision procedures, for example, for theorem provers.
 
-Congruence closure is implemented in most automatic theorem provers. Pierre Corbineau implemented a \lstinline|congruence| tactic for the theorem prover Coq \cite{congruenceclosure-coq, congruence-coq}, based on the algorithm of Downey at al. \cite{congruenceclosure-og3}, and with an \emph{explain} operation which is similar to the union-find explain presented in this thesis, and not as efficient as the \emph{explain} operation introduced by Nieuwenhuis \cite{Nieuwenhuis}.
+Congruence closure is implemented in most automated theorem provers. Pierre Corbineau implemented a \lstinline|congruence| tactic for the theorem prover Coq \cite{congruenceclosure-coq, congruence-coq}, based on the algorithm of Downey at al. \cite{congruenceclosure-og3}, and with an \emph{explain} operation which is similar to the union-find \emph{explain} presented in this thesis, and not as efficient as the \emph{explain} operation introduced by Nieuwenhuis \cite{Nieuwenhuis}.
 
-Lean also has a congruence-closure based decision procedure \cite{congruenceclosure-lean}, which is additionally able to handle dependent types.
+Lean also has a congruence closure-based decision procedure \cite{congruenceclosure-lean}, which is additionally able to handle dependent types.
 
-Isabelle/HOL includes a tool called \lstinline|sledgehammer| \cite{sledgehammer}, which uses external SMT solvers, e.g. Z3 \cite{z3} and CVC4 \cite{cvc4}, whose implementation is based on congruence closure. However, there is no built-in congruence closure proof method for Isabelle yet. The verified algorithm of this paper can be used in the future in order to build such a proof method.
+Isabelle/HOL includes a tool called \lstinline|sledgehammer| \cite{sledgehammer}, which uses external SMT solvers, e.g., Z3 \cite{z3} and CVC4 \cite{cvc4}, whose implementation is based on congruence closure.
+
+However, there is no built-in congruence closure proof method for Isabelle yet. The verified algorithm of this paper can be used in the future in order to build such a proof method.

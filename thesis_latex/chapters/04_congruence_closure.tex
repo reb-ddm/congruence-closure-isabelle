@@ -19,7 +19,7 @@ The algorithm uses a modified version of the union find algorithm for maintainin
 
 \subsection{Modified Union Find Algorithm}
 
-In order to implement an explain operation with a reasonable runtime for the congruence closure data structure, the paper \cite{Nieuwenhuis} introduces an alternative union-find algorithm. Additionally to the union-find forest, there is a new data structure, the \emph{proof forest}, i.e., a forest which has as nodes the variables, and as edges the unions that were made. Each time \lstinline{ufa_union} is called on the union-find forest, the proof forest is modified with \lstinline{add_edge}. In order to avoid the creation of cycles, redundant unions are ignored.
+In order to implement an \emph{explain} operation with a reasonable runtime for the congruence closure data structure, the paper \cite{Nieuwenhuis} introduces an alternative union-find algorithm. Additionally to the union-find forest, there is a new data structure, the \emph{proof forest}, i.e., a forest which has as nodes the variables, and as edges the unions that were made. Each time \lstinline{ufa_union} is called on the union-find forest, the proof forest is modified with \lstinline{add_edge}. In order to avoid the creation of cycles, redundant unions are ignored.
 
 \subsubsection{add\_edge}
 \label{subsubsection:addedge}
@@ -120,7 +120,7 @@ datatype pending_equation = One equation
   | Two equation equation
 \end{lstlisting}
 
-The name \lstinline{pending_equation} derives from the fact that it is also the type of the elements of the pending list, which will be described in the next section. Theoretically this allows also for invalid equations for example two equations of the type $a = b$ and $c = d$, but we will prove in the next sections that the equations in the labels list are always either \lstinline{One} ($a = b$) or \lstinline{Two} ($F(a_1, a_2) = a$) ($F(b_1, b_2) = b$).
+The name \lstinline{pending_equation} derives from the fact that it is also the type of the elements of the pending list, which will be described in the next section. Theoretically this allows also for invalid equations, for example, two equations of the type $a = b$ and $c = d$, but we will prove in the next sections that the equations in the labels list are always either \lstinline{One} ($a = b$) or \lstinline{Two} ($F(a_1, a_2) = a$) ($F(b_1, b_2) = b$).
 
 Each time an edge gets added to the proof forest, the labels need to be updated as well. The function \lstinline{add_label} adds a label to the new edge, and modifies the labels for the edges which are modified by \lstinline{add_edge}:
 
@@ -354,7 +354,7 @@ The remaining invariants will be described later on, when they become relevant.
 \subsection{Abstract Formalization of Congruence Closure}
 \label{subsection:abstraction}
 
-In order to prove the correctness of the algorithm, we define an abstraction of congruence closure. We cannot use any previously defined definitions, because the data structure that we use can only represent a subset of all possible equations, for example it cannot represent equations of the type $a = F(b, c)$ or $F (F (a, b), c) = d$. For this reason, we define an inductive set which represents the congruence closure of a set of equations and only uses our restricted definition of equation.
+In order to prove the correctness of the algorithm, we define an abstraction of congruence closure. We cannot use any previously defined definitions, because the data structure that we use can only represent a subset of all possible equations, for example, it cannot represent equations of the type $a = F(b, c)$ or $F (F (a, b), c) = d$. For this reason, we define an inductive set which represents the congruence closure of a set of equations and only uses our restricted definition of equation.
 
 \begin{lstlisting}
 inductive_set Congruence_Closure :: "equation set ⇒ equation set" for S
@@ -633,7 +633,7 @@ If $a$ and $b$ are not in the same equivalence class, they are merged by the \ls
 
 \section{The Explain Operation}
 
-We will implement the explain operation for congruence closure, leaving the proof of termination and correctness open for future work.  This section describes the implementation, a validity proof and a proposal of how the correctness could be proven.
+We will implement the \emph{explain} operation for congruence closure, leaving the proof of termination and correctness open for future work.  This section describes the implementation, a validity proof and a proposal of how the correctness could be proven.
 
 
 \subsection{Implementation}

@@ -3,24 +3,26 @@
 
 \chapter{Introduction}\label{chapter:introduction}
 
+Congruence closure is used in automated theorem proving in order to determine whether an equation is implied by a given set of equations containing constants and uninterpreted function symbols. Equivalence closure is similar, but it only considers equations between constants.
+
 The equivalence closure of a relation is the smallest superset of the relation that is reflexive, symmetric and transitive. For example, $a = c$ is in the equivalence closure of $a = b$ and $b = c$. Algorithms for maintaining the equivalence closure have been known for a long time \cite{unionfind-og}, the most widely used being the union-find algorithm due to its simplicity and almost constant runtime \cite{Tarjan}.
 
-The congruence closure of a set of equations is similar, but it considers functions in addition to constants. Further to reflexivity, symmetry and transitivity, it satisfies monotonicity, i.e., $f(x_1, ... ,x_n) = f(y_1, ... ,y_n)$ if $x_i = y_i$ for all $i$ between $1$ and $n$ \cite{Nieuwenhuis}. For example, the equation $c = e$ belongs to the congruence closure of $f(a,b) = c$, $f(d,b) = e$ and $a = d$. Several approaches to solve this problem have been described with different runtimes and applications, as shown by \cite{congruenceclosure-og2,congruenceclosure-og,congruenceclosure-og3,Nieuwenhuis}.
+Further to reflexivity, symmetry and transitivity, the congruence closure satisfies monotonicity, i.e., $f(x_1, ... ,x_n) = f(y_1, ... ,y_n)$ if $x_i = y_i$ for all $i$ between $1$ and $n$ \cite{Nieuwenhuis}. For example, the equation $c = e$ belongs to the congruence closure of $f(a,b) = c$, $f(d,b) = e$ and $a = d$. Several approaches to solve this problem have been described with different runtimes and applications, as shown by \cite{congruenceclosure-og2,congruenceclosure-og,congruenceclosure-og3,Nieuwenhuis}.
 
-These algorithms are used in decision procedures such as satisfiability modulo theories (SMT) solvers \cite{z3}. It is required in these settings to generate an explanation by finding the set of input equations, which caused the congruence. These can then be used to generate a certificate of the congruence, which can be verified by a program. Nieuwenhuis and Oliveras have presented an efficient version of the congruence closure algorithm and two versions of the union-find algorithm, each with their own explain operation, in a conference paper \cite{Nieuwenhuis}, which was later extended, see \cite{Nieuwenhuis2}.
+These algorithms are used in decision procedures such as satisfiability modulo theories (SMT) solvers \cite{z3}. It is required in these settings to generate an explanation by finding the set of input equations, which caused the congruence. These can then be used to generate a certificate of the congruence, which can be verified by a program. Nieuwenhuis and Oliveras have presented an efficient version of the congruence closure algorithm and two versions of the union-find algorithm, each with their own \emph{explain} operation, in a conference paper \cite{Nieuwenhuis}, which was later extended, see \cite{Nieuwenhuis2}.
 
-The descriptions of the algorithms contain informal proofs, but the algorithms can be verified by an interactive theorem prover in order to strengthen our confidence in their correctness. In this thesis we will implement the algorithms of the paper \cite{Nieuwenhuis} and prove their correctness in the theorem prover Isabelle/HOL.  The description of the congruence closure algorithms contains an informal proof, but to my knowledge, this thesis presents the first proof of the union-find explain algorithm and of the congruence closure algorithm in Isabelle/HOL. Our implementation is based on the union-find formalization by Lammich \cite{unionfind-isabelle} in Isabelle/HOL. Given that the focus of this paper is on the verification of the algorithms, a few optimizations are left out of the implementation, such as path compression for union-find.
+The descriptions of the algorithms contain informal proofs, but the algorithms can be verified by an interactive theorem prover in order to strengthen our confidence in their correctness. In this thesis we will implement the algorithms of the paper \cite{Nieuwenhuis} and prove their correctness in the theorem prover Isabelle/HOL.  The description of the congruence closure algorithms contains an informal proof, but to my knowledge, this thesis presents the first verified formalization of the union-find \emph{explain} algorithm and of the congruence closure algorithm in Isabelle/HOL. Our implementation is based on the union-find formalization by Lammich \cite{unionfind-isabelle} in Isabelle/HOL. Given that the focus of this paper is on the verification of the algorithms, a few optimizations are left out of the implementation, such as path compression for union-find.
 
 
 \section{Outline}
 This thesis is organized as follows: Chapter 2 gives a brief overview of the notation used by Isabelle and discusses some related work.
 
-In Chapter 3 the union-find implementation by Lammich \cite{unionfind-isabelle} is described and the explain operation is presented together with its correctness and termination proofs.
+In Chapter 3 the union-find implementation by Lammich \cite{unionfind-isabelle} is described and the \emph{explain} operation is presented together with its correctness and termination proofs.
 
-Chapter 4 looks at the congruence closure implementation and its correctness and termination proof. It also describes the explain operation for congruence closure with its termination proof and discusses a possible proof outline for its correctness. For reasons of time, the actual proof has not been finished yet.
+Chapter 4 looks at the congruence closure implementation and its correctness and termination proof. It also describes the \emph{explain} operation for congruence closure with its termination proof. The correctness proof is not part of this thesis. However, a proposed outline of the proof is presented.
 
-The last chapter summarizes the results and gives an outlook on the proofs which are open for future work.
+The last chapter summarizes the results and gives an outlook on the future work.
 
-The Isabelle code of this thesis is available on GitHub\footnote{https://github.com/reb-ddm/congruence-closure-isabelle}.
-The code also contains the examples of this thesis, in the files \lstinline|Examples_Thesis.thy| and \lstinline|CC_Examples_Thesis.thy|.
+The Isabelle code of this thesis is available on GitHub\footnote{\url{https://github.com/reb-ddm/congruence-closure-isabelle}}.
+The code also contains the examples of this thesis in the files \lstinline|Examples_Thesis.thy| and \lstinline|CC_Examples_Thesis.thy|.
 

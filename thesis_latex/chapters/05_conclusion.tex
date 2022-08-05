@@ -3,9 +3,16 @@
 
 \chapter{Conclusion}\label{chapter:conclusion}
 
+This thesis described the implementation of an \emph{explain} operation for the union-find algorithm implemented by Lammich \cite{unionfind-isabelle} in Isabelle/HOL. It can be used to generate certificates of equality for equations between constants. We formally proved that the algorithm terminates and returns a correct output. The implementation can be used independently of the congruence closure algorithm.
 
-Correctness proof complicated because of many invariants about validity, in bounds, right structure, etc.
+The paper \cite{Nieuwenhuis} shows the minimality of the set of equations produced by the \emph{explain} operation. For future work, this property could be formalized and verified in Isabelle.
 
-Termination proof easier, no invariants
+The other main focus of this thesis was the implementation of the functions \lstinline|merge| and \lstinline|are_congruent|, as described in \cite{Nieuwenhuis}, which maintain the congruence closure of a set of equations. Invariants of the merge operation were identified and proven. The algorithm terminates and is sound and complete.
 
-\section{Future work}
+The \emph{explain} operation for congruence closure can produce certificates which validate the congruence of two terms. We proved the termination of the function and we discussed its correctness.
+
+The formalization of the correctness proof for the \emph{explain} function is still open for future work.
+
+The code of this thesis can be used in order to implement an automatic proof strategy for Isabelle/HOL. It can be refined by using the imperative code framework of Isabelle \cite{imperativehol} and the optimisations which were left out of this thesis can be included in the refinement. In order to use it as a proof strategy that works for arbitrary terms, it is also necessary to implement the initial transformations of the equations to the form used by this algorithm.
+
+The applications which use the \emph{explain} operations for union-find and congruence closure usually want to reconstruct the proof for certain equations and they could do so more easily if the output of the \emph{explain} operations was not given in the form of a set of equations, but rather as a tree of equations. The refinement of the algorithm could modify the output format accordingly.
