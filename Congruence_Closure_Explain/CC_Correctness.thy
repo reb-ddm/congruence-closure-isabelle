@@ -69,9 +69,9 @@ proof(rule conjI)+
   have "representativeE (initial_cc n) \<union> pending_set (pending (initial_cc n)) = {}" 
     unfolding representativeE_def by simp
   moreover have "input (initial_cc n) = {}"  by simp
-  ultimately show "inv2 (initial_cc n)" unfolding inv2_def
+  ultimately show "correctness_invar (initial_cc n)" unfolding correctness_invar_def
     by auto
-  show "inv_same_rep_classes (initial_cc n)" unfolding inv_same_rep_classes_def
+  show "same_eq_classes_invar (initial_cc n)" unfolding same_eq_classes_invar_def
   proof(standard, standard, standard, standard)
     fix i j
     assume "i < length (proof_forest (initial_cc n))"
@@ -82,8 +82,8 @@ proof(rule conjI)+
             rep_of (proof_forest (initial_cc n)) j)" 
       by force
   qed
-  show "inv_same_length (initial_cc n) (nr_vars (initial_cc n))" 
-    unfolding inv_same_length_def by simp
+  show "same_length_invar (initial_cc n) (nr_vars (initial_cc n))" 
+    unfolding same_length_invar_def by simp
   show "pending_invar (initial_cc n)" 
     unfolding pending_invar_def by simp
   show "lookup_invar2 (initial_cc n)" 
@@ -251,10 +251,10 @@ proof-
   obtain l u t pe pf pfl ip where cc: "cc = 
 \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     using congruence_closure.cases by blast
-  have "inv2 cc" 
+  have "correctness_invar cc" 
     by (simp add: assms(2))
   then have "eq \<in> Congruence_Closure (input cc) \<longleftrightarrow> eq \<in> Congruence_Closure (representativeE cc)"
-    unfolding inv2_def using assms 
+    unfolding correctness_invar_def using assms 
     by simp
   also have "... \<longleftrightarrow> are_congruent cc eq"
   proof

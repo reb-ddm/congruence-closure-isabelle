@@ -28,7 +28,7 @@ proof_forest = pf, pf_labels = pfl, input = ip\<rparr> l a c = (output, new_l, p
     "pf_labels_invar \<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, 
 proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     "explain_list_invar l pf"
-  shows "(a \<approx> c) \<in> Congruence_Closure (representatives_set l \<union> output 
+  shows "(a \<approx> c) \<in> Congruence_Closure (cc_list_set l \<union> output 
 \<union> pending_set_explain pend)"
   using assms proof(induction "\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, 
 proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
@@ -38,8 +38,8 @@ proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     unfolding explain_list_invar_def by blast+ 
   then show ?case proof(cases "rep_of l a = rep_of l c")
     case True
-    then have "(a \<approx> c) \<in> Congruence_Closure (representatives_set l)"
-      using CC_same_rep_representatives_set[of l a c] 1 invar by argo
+    then have "(a \<approx> c) \<in> Congruence_Closure (cc_list_set l)"
+      using CC_same_rep_cc_list_set[of l a c] 1 invar by argo
     then show ?thesis 
       using Congruence_Closure_split_rule by auto
   next
@@ -70,32 +70,32 @@ pf_labels = pfl,  input = ip\<rparr>"
       using "1.prems" path_nodes_lt_length_l ufa_invarD(2) ufa_union_invar invar apply (metis rep_of_bound)
       using ufa_invar_fun_upd' "1.prems" invar 
       by (metis rep_neq pRAC path_nodes_lt_length_l rep_of_idem ufa_invarD(2))
-    have "(a \<approx> (rep_of l a)) \<in> Congruence_Closure (representatives_set l)"
+    have "(a \<approx> (rep_of l a)) \<in> Congruence_Closure (cc_list_set l)"
       by (auto simp add: "1.prems" rep_of_iff invar)
     then have 4: "(a \<approx> (rep_of l a)) \<in> Congruence_Closure 
-(representatives_set l \<union> output \<union> pending_set_explain pend)"
+(cc_list_set l \<union> output \<union> pending_set_explain pend)"
       using Congruence_Closure_split_rule by auto
         \<comment> \<open>If \<open>(pf ! rep_of l a) \<approx> c\<close> is in the congruence closure of the recursive call, 
         then it will also be in the congruence closure of the output.\<close>
     have cc_output: "((pf ! rep_of l a) \<approx> c) \<in>
- Congruence_Closure (representatives_set ?union \<union> output'
+ Congruence_Closure (cc_list_set ?union \<union> output'
 \<union> pending_set_explain pend')
 \<Longrightarrow> ((pf ! rep_of l a) \<approx> (rep_of l a)) \<in> Congruence_Closure
-        (representatives_set l \<union> output \<union> pending_set_explain pend) 
+        (cc_list_set l \<union> output \<union> pending_set_explain pend) 
 \<Longrightarrow> output' \<subseteq> output
 \<Longrightarrow> pending_set_explain pend' \<subseteq> pending_set_explain pend 
 \<Longrightarrow> ((pf ! rep_of l a) \<approx> c) \<in> Congruence_Closure
-        (representatives_set l \<union> output \<union> pending_set_explain pend)"
+        (cc_list_set l \<union> output \<union> pending_set_explain pend)"
     proof(rule Congruence_Closure_imp)
       fix eq
-      assume prems: "eq \<in> representatives_set ?union \<union> output' \<union> pending_set_explain pend'"
+      assume prems: "eq \<in> cc_list_set ?union \<union> output' \<union> pending_set_explain pend'"
         "((pf ! rep_of l a) \<approx> (rep_of l a))
-         \<in> Congruence_Closure (representatives_set l \<union> output \<union> pending_set_explain pend)"
+         \<in> Congruence_Closure (cc_list_set l \<union> output \<union> pending_set_explain pend)"
         "output' \<subseteq> output" "pending_set_explain pend' \<subseteq> pending_set_explain pend"
       then consider (output_or_pending) "eq \<in> output' \<union> pending_set_explain pend'"
         | (rep_set) k where "eq = (k \<approx> rep_of ?union k)" "k < length ?union" "?union ! k \<noteq> k"
         by blast                      
-      then show "eq \<in> Congruence_Closure (representatives_set l \<union> output \<union> pending_set_explain pend)"
+      then show "eq \<in> Congruence_Closure (cc_list_set l \<union> output \<union> pending_set_explain pend)"
       proof(cases)
         case output_or_pending
         then show ?thesis
@@ -115,12 +115,12 @@ pf_labels = pfl,  input = ip\<rparr>"
             using rep_neq rep_of_fun_upd_rep_of invar by force
           with "1.prems" invar have
             *: "((pf ! rep_of l a) \<approx> (rep_of ?union k))
-\<in> Congruence_Closure (representatives_set l \<union> output \<union> pending_set_explain pend)"
-            by (metis (no_types, lifting) Congruence_Closure.symmetric Congruence_Closure_split_rule a_eq_rep_of_a_in_CC_representatives_set(2) valid(1))
+\<in> Congruence_Closure (cc_list_set l \<union> output \<union> pending_set_explain pend)"
+            by (metis (no_types, lifting) Congruence_Closure.symmetric Congruence_Closure_split_rule a_eq_rep_of_a_in_CC_cc_list_set(2) valid(1))
           then have
             "(k \<approx> (rep_of l a))
-\<in> Congruence_Closure (representatives_set l \<union> output \<union> pending_set_explain pend)"
-            by (metis (no_types, lifting) symmetric Congruence_Closure_split_rule True a_eq_rep_of_a_in_CC_representatives_set(2) length_list_update rep_set(2))
+\<in> Congruence_Closure (cc_list_set l \<union> output \<union> pending_set_explain pend)"
+            by (metis (no_types, lifting) symmetric Congruence_Closure_split_rule True a_eq_rep_of_a_in_CC_cc_list_set(2) length_list_update rep_set(2))
           with * show ?thesis 
             using prems by (metis (no_types, lifting) symmetric transitive1 rep_set(1))
         next
@@ -128,7 +128,7 @@ pf_labels = pfl,  input = ip\<rparr>"
           with "1.prems" have "rep_of ?union k = rep_of l k" 
             using rep_of_fun_upd' rep_of_idem rep_set(2) invar by auto
           then show ?thesis 
-            using symmetric Congruence_Closure_split_rule a_eq_rep_of_a_in_CC_representatives_set(2) rep_set by force
+            using symmetric Congruence_Closure_split_rule a_eq_rep_of_a_in_CC_cc_list_set(2) rep_set by force
         qed 
       qed 
     qed
@@ -138,7 +138,7 @@ pf_labels = pfl,  input = ip\<rparr>"
         using One by auto
       with recursive_step 1(2)[OF False] have IH: 
         "(pf ! rep_of l a \<approx> c) \<in>
- Congruence_Closure (representatives_set (l[rep_of l a := (pf ! rep_of l a)]) \<union> output'
+ Congruence_Closure (cc_list_set (l[rep_of l a := (pf ! rep_of l a)]) \<union> output'
 \<union> pending_set_explain pend')" 
         using "1.prems" One pRAC' * valid explain_list_invar by simp
       have result: "(output, new_l, pend) = ({a'} \<union> output', new_l', pend')" 
@@ -150,12 +150,12 @@ pf_labels = pfl,  input = ip\<rparr>"
 Congruence_Closure ({a'} \<union> output')" 
         by blast
       with result have 2: "(rep_of l a \<approx> pf ! rep_of l a) \<in> 
-Congruence_Closure (representatives_set l \<union> output \<union> pending_set_explain pend)"
+Congruence_Closure (cc_list_set l \<union> output \<union> pending_set_explain pend)"
         using Congruence_Closure_split_rule by (metis (no_types, lifting) Pair_inject sup_commute)
       from result have "output' \<subseteq> output"  "pending_set_explain pend' \<subseteq> pending_set_explain pend"
         by blast+
       with cc_output have 3: "(pf ! rep_of l a \<approx> c) \<in> Congruence_Closure
-        (representatives_set l \<union> output \<union> pending_set_explain pend)" 
+        (cc_list_set l \<union> output \<union> pending_set_explain pend)" 
         using "2" IH by blast
       from 2 3 4 show ?thesis by blast
     next
@@ -165,7 +165,7 @@ Congruence_Closure (representatives_set l \<union> output \<union> pending_set_e
         by (metis option.sel pending_equation.distinct(1) valid_eq) 
       with recursive_step 1(3)[OF False] have IH: 
         "(pf ! rep_of l a \<approx> c) \<in>
- Congruence_Closure (representatives_set ?union \<union> output'
+ Congruence_Closure (cc_list_set ?union \<union> output'
 \<union> pending_set_explain pend')" 
         using * pRAC' valid explain_list_invar "1.prems" by auto 
       have result: "(output, new_l, pend) = 
@@ -175,19 +175,19 @@ Congruence_Closure (representatives_set l \<union> output \<union> pending_set_e
       then have a': "a' = rep_of l a \<and> b' = pf ! rep_of l a
 \<or> a' = pf ! rep_of l a \<and> b' = rep_of l a" 
         using valid_eq * by auto
-      have "(a\<^sub>1 \<approx> b\<^sub>1) \<in> Congruence_Closure (representatives_set l \<union> output \<union> pending_set_explain pend)"
-        "(a\<^sub>2 \<approx> b\<^sub>2) \<in> Congruence_Closure (representatives_set l \<union> output \<union> pending_set_explain pend)"
-        "(F a\<^sub>1 a\<^sub>2 \<approx> a') \<in> Congruence_Closure (representatives_set l \<union> output \<union> pending_set_explain pend)"
-        "(F b\<^sub>1 b\<^sub>2 \<approx> b') \<in> Congruence_Closure (representatives_set l \<union> output \<union> pending_set_explain pend)"
+      have "(a\<^sub>1 \<approx> b\<^sub>1) \<in> Congruence_Closure (cc_list_set l \<union> output \<union> pending_set_explain pend)"
+        "(a\<^sub>2 \<approx> b\<^sub>2) \<in> Congruence_Closure (cc_list_set l \<union> output \<union> pending_set_explain pend)"
+        "(F a\<^sub>1 a\<^sub>2 \<approx> a') \<in> Congruence_Closure (cc_list_set l \<union> output \<union> pending_set_explain pend)"
+        "(F b\<^sub>1 b\<^sub>2 \<approx> b') \<in> Congruence_Closure (cc_list_set l \<union> output \<union> pending_set_explain pend)"
         using result by auto
       then have 2: "((rep_of l a) \<approx> (pf ! rep_of l a)) \<in> 
-Congruence_Closure (representatives_set l \<union> output \<union> pending_set_explain pend)" 
+Congruence_Closure (cc_list_set l \<union> output \<union> pending_set_explain pend)" 
         using a' monotonic by blast
-      from result have "representatives_set l \<union> output' \<union> pending_set_explain pend'
-\<subseteq> representatives_set l \<union> output \<union> pending_set_explain pend" 
+      from result have "cc_list_set l \<union> output' \<union> pending_set_explain pend'
+\<subseteq> cc_list_set l \<union> output \<union> pending_set_explain pend" 
         using pending_set_explain_Cons by auto
       with cc_output have "((pf ! rep_of l a) \<approx> c) \<in> Congruence_Closure
-        (representatives_set l \<union> output \<union> pending_set_explain pend)"
+        (cc_list_set l \<union> output \<union> pending_set_explain pend)"
         using Congruence_Closure_monotonic 2 result IH by auto
       then show ?thesis using 4 2 by blast
     qed
@@ -555,7 +555,7 @@ explain_list_invar l (proof_forest cc)
 \<longrightarrow>
   (\<forall> (a, b) \<in> set eqs .
     are_congruent cc (a \<approx> b) \<longrightarrow>
-    (a \<approx> b) \<in> Congruence_Closure (cc_explain_aux cc l eqs \<union> representatives_set l))
+    (a \<approx> b) \<in> Congruence_Closure (cc_explain_aux cc l eqs \<union> cc_list_set l))
 )"
 
 lemma cc_explain_correctness_invar':
@@ -564,7 +564,7 @@ lemma cc_explain_correctness_invar':
     "(\<forall> (a, b) \<in> set eqs . a < nr_vars cc \<and> b < nr_vars cc)"
     "(a, b) \<in> set eqs"
     "are_congruent cc (a \<approx> b)"
-  shows "(a \<approx> b) \<in> Congruence_Closure (cc_explain_aux cc l eqs \<union> representatives_set l)"
+  shows "(a \<approx> b) \<in> Congruence_Closure (cc_explain_aux cc l eqs \<union> cc_list_set l)"
   using assms unfolding cc_explain_correctness_invar_def by blast
 
 lemma path_invariant_after_add_edge:
@@ -656,11 +656,11 @@ proof(standard, standard, standard, standard, standard, standard, standard)
   then have explain_list_invar_base: "explain_list_invar la (proof_forest ?base)" 
     "nr_vars ?step = nr_vars ?base"
     unfolding congruence_closure.select_convs sorry
-  then show "(aa \<approx> ba) \<in> Congruence_Closure (cc_explain_aux ?step la eqs \<union> representatives_set la)"
+  then show "(aa \<approx> ba) \<in> Congruence_Closure (cc_explain_aux ?step la eqs \<union> cc_list_set la)"
   proof(cases "are_congruent ?base (aa \<approx> ba)")
     case True
     then have 
-      "(aa \<approx> ba) \<in> Congruence_Closure (cc_explain_aux ?base la eqs \<union> representatives_set la)"
+      "(aa \<approx> ba) \<in> Congruence_Closure (cc_explain_aux ?base la eqs \<union> cc_list_set la)"
       using assms cc_explain_correctness_invar' explain_list_invar_base prems 
       by simp
     then show ?thesis sorry
@@ -700,7 +700,7 @@ proof(standard, standard, standard, standard, standard, standard, standard)
     by auto
   then show "(a \<approx> b)
        \<in> Congruence_Closure
-           (cc_explain_aux (initial_cc n) l eqs \<union> representatives_set l)" 
+           (cc_explain_aux (initial_cc n) l eqs \<union> cc_list_set l)" 
     by blast
 qed
 
@@ -712,14 +712,14 @@ theorem cc_explain_correct:
   shows "(a \<approx> b) \<in> Congruence_Closure (cc_explain cc a b)"
 proof-
   have "explain_list_invar [0..<nr_vars cc] (proof_forest cc)"
-    using explain_list_invar_initial assms(2) unfolding inv_same_length_def by metis
+    using explain_list_invar_initial assms(2) unfolding same_length_invar_def by metis
   moreover have "(\<forall>(a, b)\<in>set [(a, b)]. a < nr_vars cc \<and> b < nr_vars cc)"
     using assms by auto
   moreover have "(a, b) \<in> set [(a, b)]" by simp
   ultimately have *: "(a \<approx> b) \<in> Congruence_Closure 
-(cc_explain_aux cc [0..<nr_vars cc] [(a, b)] \<union> representatives_set [0..<nr_vars cc])"
+(cc_explain_aux cc [0..<nr_vars cc] [(a, b)] \<union> cc_list_set [0..<nr_vars cc])"
     using assms unfolding cc_explain_correctness_invar_def by blast
-  then have "representatives_set [0..<nr_vars cc] = {}"
+  then have "cc_list_set [0..<nr_vars cc] = {}"
     by simp
   then show ?thesis 
     by (metis "*" Un_empty_right)

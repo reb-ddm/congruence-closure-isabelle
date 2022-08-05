@@ -249,7 +249,7 @@ from subsequent union with \<open>ufe_union\<close>, starting from the initial e
 It also says that the unions were made with valid variables, aka the numbers are less than 
 the length of the union find list.\<close>
 
-abbreviation "ufe_invar ufe \<equiv> 
+abbreviation "ufe_valid_invar ufe \<equiv> 
   valid_unions (unions ufe) (length (uf_list ufe)) \<and>
   apply_unions (unions ufe) (initial_ufe (length (uf_list ufe))) = ufe"
 
@@ -282,7 +282,7 @@ lemma apply_unions_length_uf_list:
   done
 
 lemma length_au:
-  "ufe_invar ufe \<Longrightarrow> length (au ufe) = length (uf_list ufe)"
+  "ufe_valid_invar ufe \<Longrightarrow> length (au ufe) = length (uf_list ufe)"
   by (metis apply_unions_length_au length_replicate ufe_data_structure.select_convs(3))
 
 lemma ufe_union_length_unions_le:
@@ -332,12 +332,12 @@ lemma length_uf_list_initial: "initial_ufe n = ufe \<Longrightarrow> length (uf_
 
 paragraph \<open>Lemmata about the preservation of the invariant\<close>
 
-lemma union_ufe_invar:
+lemma union_ufe_valid_invar:
   assumes "ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr>"
-    and "ufe_invar ufe"
+    and "ufe_valid_invar ufe"
     and "x < length l"
     and "y < length l"
-  shows "ufe_invar (ufe_union ufe x y)"
+  shows "ufe_valid_invar (ufe_union ufe x y)"
 proof(cases "rep_of l x = rep_of l y")
   case True
   with assms ufe_union1 show ?thesis 
@@ -375,10 +375,10 @@ next
     by simp
 qed
 
-theorem apply_unions_ufe_invar:
-  assumes "ufe_invar ufe"
+theorem apply_unions_ufe_valid_invar:
+  assumes "ufe_valid_invar ufe"
     and "valid_unions u (length (uf_list ufe))"
-  shows "ufe_invar (apply_unions u ufe)"
+  shows "ufe_valid_invar (apply_unions u ufe)"
   using assms proof(induction "length u" arbitrary: u)
   case 0
   then show ?case by auto
@@ -391,7 +391,7 @@ next
   have valid_unions: "valid_unions un' (length (uf_list ufe))" 
     by (metis Suc.prems(2) Suc_lessD Suc_mono un' length_append_singleton nth_append_first)
   let ?c = "apply_unions un' ufe"
-  have c: "ufe_invar ?c" 
+  have c: "ufe_valid_invar ?c" 
     using Suc un' valid_unions assms(1) by auto
   have "apply_unions u ufe = apply_unions [xy] ?c" 
     by (simp add: un' apply_unions_cons)
@@ -401,13 +401,13 @@ next
     using ufe_data_structure.cases by blast
   have "x2 < length (uf_list ?c) \<and> y2 < length (uf_list ?c)"
     by (metis Suc.prems(2) un' xy apply_unions_length_uf_list fst_conv length_append_singleton lessI nth_append_length snd_conv)
-  with * c union_ufe_invar ufe show ?case 
+  with * c union_ufe_valid_invar ufe show ?case 
     by simp
 qed
 
-paragraph \<open>\<open>ufe_invar\<close> implies \<open>ufa_invar\<close>.\<close>
+paragraph \<open>\<open>ufe_valid_invar\<close> implies \<open>ufa_invar\<close>.\<close>
 
-lemma ufe_invar_imp_ufa_invar_aux: 
+lemma ufe_valid_invar_imp_ufa_invar_aux: 
   "ufa_invar (uf_list ufe) \<Longrightarrow> valid_unions u (length (uf_list ufe)) \<Longrightarrow> ufa_invar (uf_list (apply_unions u ufe))"
 proof(induction u ufe rule: apply_unions.induct)
   case (1 p)
@@ -427,17 +427,17 @@ next
     by simp
 qed
 
-lemma ufe_invar_initial: "ufe_invar (initial_ufe n)"
+lemma ufe_valid_invar_initial: "ufe_valid_invar (initial_ufe n)"
   by simp
 
-theorem ufe_invar_imp_ufa_invar: "ufe_invar ufe \<Longrightarrow> ufa_invar (uf_list ufe)"
-  by (metis apply_unions_length_uf_list ufa_init_invar ufe_data_structure.select_convs(1) ufe_invar_imp_ufa_invar_aux)
+theorem ufe_valid_invar_imp_ufa_invar: "ufe_valid_invar ufe \<Longrightarrow> ufa_invar (uf_list ufe)"
+  by (metis apply_unions_length_uf_list ufa_init_invar ufe_data_structure.select_convs(1) ufe_valid_invar_imp_ufa_invar_aux)
 
 paragraph \<open>Induction rule on the union find algorithm.\<close>
 lemma apply_unions_induct[consumes 1, case_names initial union]:
-  assumes "ufe_invar ufe"
+  assumes "ufe_valid_invar ufe"
   assumes "P (initial_ufe (length (uf_list ufe)))"
-  assumes "\<And>pufe x y. ufe_invar pufe \<Longrightarrow> x < length (uf_list pufe) \<Longrightarrow> y < length (uf_list pufe)
+  assumes "\<And>pufe x y. ufe_valid_invar pufe \<Longrightarrow> x < length (uf_list pufe) \<Longrightarrow> y < length (uf_list pufe)
     \<Longrightarrow> P pufe \<Longrightarrow> P (ufe_union pufe x y)"
   shows "P ufe"
   using assms proof(induction "length (unions ufe)" arbitrary: ufe)
@@ -480,22 +480,22 @@ next
       by (metis Suc_eq_plus1 add_right_cancel pufe2 ufe_union_length_unions_Suc)
     have length_eq: "length (uf_list pufe) = length (uf_list ufe)" 
       using pufe2 ufe_union_length_uf_list by auto
-    then have "ufe_invar pufe" 
-      using apply_unions_ufe_invar length_uf_list_initial pufe ufe_invar_initial un_valid by presburger
+    then have "ufe_valid_invar pufe" 
+      using apply_unions_ufe_valid_invar length_uf_list_initial pufe ufe_valid_invar_initial un_valid by presburger
     with Suc have "P pufe" 
       using \<open>x = length (unions pufe)\<close> length_eq by fastforce
     from Suc(3) u have "x2 < length (uf_list pufe)" "y2 < length (uf_list pufe)"
        apply (metis length_eq fst_conv length_Suc_rev_conv lessI nth_append_length)
       by (metis Suc(3) u length_eq snd_conv length_Suc_rev_conv lessI nth_append_length)
     with Suc show ?thesis 
-      using \<open>P pufe\<close> \<open>ufe_invar pufe\<close> pufe2 by blast
+      using \<open>P pufe\<close> \<open>ufe_valid_invar pufe\<close> pufe2 by blast
   qed
 qed
 
-paragraph \<open>Properties of some functions when \<open>ufe_invar\<close> holds.\<close>
+paragraph \<open>Properties of some functions when \<open>ufe_valid_invar\<close> holds.\<close>
 
 lemma no_redundant_unions:
-  assumes invar: "ufe_invar a"
+  assumes invar: "ufe_valid_invar a"
     and unions_a: "unions a = p @ [(x, y)] @ t"
     and l: "l = apply_unions p (initial_ufe (length (uf_list a)))"
   shows "rep_of (uf_list l) x \<noteq> rep_of (uf_list l) y"
@@ -539,14 +539,14 @@ lemma au_none_iff_root_union:
     and "i < length l"
     and "x < length l"
     and "y < length l"
-    and "ufe_invar ufe"
+    and "ufe_valid_invar ufe"
     and "ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr>"
   shows "(au (ufe_union ufe x y)) ! i = None \<longleftrightarrow> (uf_list (ufe_union ufe x y)) ! i = i"
 proof
   assume prem: "au (ufe_union ufe x y) ! i = None"
   with assms(6) have i: "rep_of l x \<noteq> rep_of l y \<Longrightarrow> a[rep_of l x := Some (length u)] ! i = None"
     by simp
-  from assms rep_of_less_length_l ufe_invar_imp_ufa_invar have "rep_of l x < length l" 
+  from assms rep_of_less_length_l ufe_valid_invar_imp_ufa_invar have "rep_of l x < length l" 
     by (metis ufe_data_structure.select_convs(1))
   from length_au assms have "length a = length l" 
     by (metis ufe_data_structure.select_convs(1,3))
@@ -565,7 +565,7 @@ next
 qed
 
 lemma au_none_iff_root:
-  assumes "ufe_invar ufe"
+  assumes "ufe_valid_invar ufe"
     and "ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr>" 
     and "i < length l"
   shows "a ! i = None \<longleftrightarrow> l ! i = i"
@@ -585,7 +585,7 @@ next
 qed
 
 lemma au_Some_if_not_root:
-  assumes "ufe_invar ufe"
+  assumes "ufe_valid_invar ufe"
     and "ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr>" 
     and "i < length l"
     and "l ! i \<noteq> i"
@@ -612,7 +612,7 @@ lemma rep_of_ufa_union_invar:
   using assms ufa_union_aux by simp
 
 lemma rep_of_ufe_union_invar:
-  assumes "ufe_invar ufe"
+  assumes "ufe_valid_invar ufe"
     and "x < length (uf_list ufe)"
     and "y < length (uf_list ufe)"
     and "x2 < length (uf_list ufe)"
@@ -622,7 +622,7 @@ lemma rep_of_ufe_union_invar:
 proof-
   obtain l1 u1 a1 where ufe: "ufe = \<lparr>uf_list = l1, unions = u1, au = a1\<rparr>" 
     using ufe_data_structure.cases by blast
-  with assms(1) ufe_invar_imp_ufa_invar have "ufa_invar l1" 
+  with assms(1) ufe_valid_invar_imp_ufa_invar have "ufa_invar l1" 
     by (metis ufe_data_structure.select_convs(1))
   with assms rep_of_ufa_union_invar 
   have "rep_of (ufa_union l1 x2 y2) x = rep_of (ufa_union l1 x2 y2) y" 
@@ -632,7 +632,7 @@ proof-
 qed
 
 lemma au_ufe_union_Some_invar:
-  "ufe_invar ufe \<Longrightarrow> (au ufe) ! i = Some k 
+  "ufe_valid_invar ufe \<Longrightarrow> (au ufe) ! i = Some k 
     \<Longrightarrow> x < length (uf_list ufe) \<Longrightarrow> y < length (uf_list ufe)
     \<Longrightarrow> (au (ufe_union ufe x y)) ! i = Some k"
 proof(cases "rep_of (uf_list ufe) x = rep_of (uf_list ufe) y")
@@ -644,7 +644,7 @@ proof(cases "rep_of (uf_list ufe) x = rep_of (uf_list ufe) y")
     by simp
 next
   case False
-  assume "(au ufe) ! i = Some k" and invar: "ufe_invar ufe"
+  assume "(au ufe) ! i = Some k" and invar: "ufe_valid_invar ufe"
     and x: "x < length (uf_list ufe)" and y: "y < length (uf_list ufe)"
   obtain l1 u1 a1 where ufe:"ufe = \<lparr>uf_list = l1, unions = u1, au = a1\<rparr>" 
     using ufe_data_structure.cases by blast
@@ -654,7 +654,7 @@ next
   then show ?thesis
   proof(cases "i = rep_of l1 x")
     case True
-    from invar ufe_invar_imp_ufa_invar have "ufa_invar l1" 
+    from invar ufe_valid_invar_imp_ufa_invar have "ufa_invar l1" 
       by (metis ufe ufe_data_structure.select_convs(1))
     with rep_of_root x have "l1 ! rep_of l1 x = rep_of l1 x" 
       by (metis ufe ufe_data_structure.select_convs(1))
@@ -675,7 +675,7 @@ next
 qed
 
 lemma no_root_ufe_union_invar:
-  assumes invar: "ufe_invar ufe"
+  assumes invar: "ufe_valid_invar ufe"
     and ufe: "ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr>"
     and no_root: "l ! i \<noteq> i" and x: "x < length l" and y: "y < length l"
   shows "(uf_list (ufe_union ufe x y)) ! i = l ! i"
@@ -693,7 +693,7 @@ next
   then show ?thesis
   proof(cases "i = rep_of l x")
     case True
-    from invar ufe_invar_imp_ufa_invar have "ufa_invar l" 
+    from invar ufe_valid_invar_imp_ufa_invar have "ufa_invar l" 
       by (metis ufe ufe_data_structure.select_convs(1))
     with rep_of_root x have "l ! rep_of l x = rep_of l x" 
       by simp
@@ -799,20 +799,20 @@ qed
 
 lemma lowest_common_ancestor_ufe_union_invar:
   assumes "ufe = \<lparr>uf_list = l, unions = un, au = a\<rparr>"
-    and "ufe_invar ufe" and "rep_of l x = rep_of l y"
+    and "ufe_valid_invar ufe" and "rep_of l x = rep_of l y"
     and "x < length l" and "y < length l" 
     and "x2 < length l" and "y2 < length l"
   shows "lowest_common_ancestor (uf_list (ufe_union ufe x2 y2)) x y = lowest_common_ancestor l x y"
 proof-
   from assms(1,2) have "ufa_invar l" 
-    by (metis ufe_data_structure.select_convs(1) ufe_invar_imp_ufa_invar)
+    by (metis ufe_data_structure.select_convs(1) ufe_valid_invar_imp_ufa_invar)
   then show ?thesis 
     using assms lowest_common_ancestor_ufa_union_invar by auto
 qed
 
 lemma find_newest_on_path_dom_ufe_union:
   assumes "path l y p x" 
-    and "ufe_invar ufe" and "ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr>"
+    and "ufe_valid_invar ufe" and "ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr>"
     and "x < length l"
     and "y < length l"
     and "x2 < length l"
@@ -828,7 +828,7 @@ next
   then have p:"path (uf_list (ufe_union ufe x2 y2)) u3 p3 v"
     using path_nodes_lt_length_l by blast
   with step have *: "(uf_list (ufe_union ufe x2 y2)) ! u3 = l3 ! u3" 
-    by (metis nth_list_update_neq rep_of_min ufe_data_structure.select_convs(1) ufe_invar_imp_ufa_invar ufe_union1_uf_list ufe_union2_uf_list)
+    by (metis nth_list_update_neq rep_of_min ufe_data_structure.select_convs(1) ufe_valid_invar_imp_ufa_invar ufe_union1_uf_list ufe_union2_uf_list)
   with step have "r < length (uf_list (ufe_union ufe x2 y2))" 
     by (metis ufe_data_structure.select_convs(1) ufe_union_length_uf_list)
   with p path.step have "path (uf_list (ufe_union ufe x2 y2)) r (r # p3) v" 
@@ -838,13 +838,13 @@ qed
 
 lemma find_newest_on_path_ufe_union_invar:
   assumes "path l y p x" 
-    and "ufe_invar ufe" and "ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr>"
+    and "ufe_valid_invar ufe" and "ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr>"
     and "x < length l" and "y < length l" 
     and "x2 < length l" and "y2 < length l"
   shows "find_newest_on_path (uf_list (ufe_union ufe x2 y2)) (au (ufe_union ufe x2 y2)) x y = find_newest_on_path l a x y"
 proof-
   from assms have *:"ufa_invar l" 
-    by (metis ufe_data_structure.select_convs(1) ufe_invar_imp_ufa_invar)
+    by (metis ufe_data_structure.select_convs(1) ufe_valid_invar_imp_ufa_invar)
   then have "find_newest_on_path_dom(l, a, x, y)" 
     using assms find_newest_on_path_domain by auto
   then show ?thesis
@@ -855,7 +855,7 @@ proof-
     from 1 find_newest_on_path_dom_ufe_union have path: "path ?l2 y3 p x3" 
       by (metis (no_types, lifting))
     with 1 find_newest_on_path_domain have dom:"find_newest_on_path_dom (?l2, ?a2, x3, y3)" 
-      by (metis path_nodes_lt_length_l ufe_data_structure.select_convs(1) ufe_invar_imp_ufa_invar union_ufe_invar)
+      by (metis path_nodes_lt_length_l ufe_data_structure.select_convs(1) ufe_valid_invar_imp_ufa_invar union_ufe_valid_invar)
     then show ?case 
     proof(cases "x3 = y3")
       case True
@@ -883,7 +883,7 @@ proof-
 qed
 
 lemma unions_ufe_union_invar:
-  assumes "ufe_invar ufe" and "ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr>"
+  assumes "ufe_valid_invar ufe" and "ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr>"
     and "i < length u" and "x2 < length l" and "y2 < length l"
   shows "u ! i = (unions (ufe_union ufe x2 y2)) ! i"
 proof(cases "rep_of l x2 = rep_of l y2")
@@ -900,7 +900,7 @@ qed
 
 lemma path_ufe_union_invar: 
   assumes "path (uf_list ufe) a p b"
-    and "ufe_invar ufe"
+    and "ufe_valid_invar ufe"
     and "x2 < length (uf_list ufe)" and "y2 < length (uf_list ufe)"
   shows "path (uf_list (ufe_union ufe x2 y2)) a p b"
   using assms proof(induction "(uf_list ufe)" a p b rule: path.induct)
@@ -910,7 +910,7 @@ lemma path_ufe_union_invar:
 next
   case (step r u p v)
   then have "uf_list (ufe_union ufe x2 y2) ! u = r" 
-    by (metis nth_list_update_neq rep_of_root ufe_invar_imp_ufa_invar ufe_union_uf_list)
+    by (metis nth_list_update_neq rep_of_root ufe_valid_invar_imp_ufa_invar ufe_union_uf_list)
   with step show ?case 
     using path.step ufe_union_length_uf_list by presburger
 qed
@@ -918,7 +918,7 @@ qed
 paragraph \<open>Lemmata about validity of au and find_newest_on_path\<close>
 
 lemma au_Some_valid:
-  assumes "ufe_invar ufe"
+  assumes "ufe_valid_invar ufe"
     and "i < length (au ufe)"
     and "au ufe ! i = Some x"
   shows "x < length (unions ufe)"
@@ -975,7 +975,7 @@ proof-
 qed
 
 lemma au_valid:
-  assumes "ufe_invar ufe"
+  assumes "ufe_valid_invar ufe"
     and "i < length (au ufe)"
   shows "au ufe ! i < Some (length (unions ufe))"
   apply(cases "au ufe ! i")
@@ -983,13 +983,13 @@ lemma au_valid:
 
 lemma find_newest_on_path_Some:
   assumes path: "path l y p x"
-    and invar: "ufe_invar \<lparr>uf_list = l, unions = un, au = a\<rparr>"
+    and invar: "ufe_valid_invar \<lparr>uf_list = l, unions = un, au = a\<rparr>"
     and xy: "x \<noteq> y"
   obtains k where "find_newest_on_path l a x y = Some k \<and> k < length un"
 proof-
   assume a: "\<And>k. find_newest_on_path l a x y = Some k \<and> k < length un \<Longrightarrow> thesis"
   from invar have 1: "ufa_invar l" 
-    by (metis ufe_data_structure.select_convs(1) ufe_invar_imp_ufa_invar)
+    by (metis ufe_data_structure.select_convs(1) ufe_valid_invar_imp_ufa_invar)
   from path have 2: "x < length l" 
     by (simp add: path_nodes_lt_length_l)
   from path xy path_no_root have no_root: "l ! x \<noteq> x" 
@@ -1080,7 +1080,7 @@ qed
 
 lemma find_newest_on_path_if_None:
   assumes path: "path l y p x"
-    and invar: "ufe_invar \<lparr>uf_list = l, unions = un, au = a\<rparr>"
+    and invar: "ufe_valid_invar \<lparr>uf_list = l, unions = un, au = a\<rparr>"
     and None: "find_newest_on_path l a x y = None"
   shows "x = y"
 proof-
@@ -1092,7 +1092,7 @@ qed
 
 lemma find_newest_on_path_valid:
   assumes path: "path l y p x"
-    and invar: "ufe_invar \<lparr>uf_list = l, unions = un, au = a\<rparr>"
+    and invar: "ufe_valid_invar \<lparr>uf_list = l, unions = un, au = a\<rparr>"
   shows "find_newest_on_path l a x y < Some (length un)"
 proof(cases "x = y")
   case True
@@ -1110,16 +1110,16 @@ qed
 
 lemma find_newest_x_neq_None_or_find_newest_y_neq_None:
   assumes "x \<noteq> y"
-    and "ufe_invar  \<lparr>uf_list = l, unions = un, au = a\<rparr>"
+    and "ufe_valid_invar  \<lparr>uf_list = l, unions = un, au = a\<rparr>"
     and "x < length l"
     and "y < length l"
     and "rep_of l x = rep_of l y"
   shows "find_newest_on_path l a y (lowest_common_ancestor l x y) \<noteq> None
           \<or> find_newest_on_path l a x (lowest_common_ancestor l x y) \<noteq> None"
 proof(rule ccontr)
-  from ufe_invar_imp_ufa_invar have "ufa_invar l" 
+  from ufe_valid_invar_imp_ufa_invar have "ufa_invar l" 
     by (metis assms(2) ufe_data_structure.select_convs(1))
-  with lowest_common_ancestor_correct assms ufe_invar_imp_ufa_invar obtain pLcaX pLcaY 
+  with lowest_common_ancestor_correct assms ufe_valid_invar_imp_ufa_invar obtain pLcaX pLcaY 
     where pLcaX: "path l (lowest_common_ancestor l x y) pLcaX x" and pLcaY:"path l (lowest_common_ancestor l x y) pLcaY y"
     by presburger
   then have dom_y: "find_newest_on_path_dom(l, a, y, (lowest_common_ancestor l x y))"

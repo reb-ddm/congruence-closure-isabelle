@@ -175,9 +175,9 @@ abbreviation nr_vars :: "congruence_closure \<Rightarrow> nat"
   where
     "nr_vars cc \<equiv> length (cc_list cc)"
 
-abbreviation representatives_set :: "nat list \<Rightarrow> equation set"
+abbreviation cc_list_set :: "nat list \<Rightarrow> equation set"
   where
-    "representatives_set l \<equiv> {a \<approx> rep_of l a |a. a < length l \<and> l ! a \<noteq> a}"
+    "cc_list_set l \<equiv> {a \<approx> rep_of l a |a. a < length l \<and> l ! a \<noteq> a}"
 
 abbreviation lookup_entries_set :: "congruence_closure \<Rightarrow> equation set"
   where
@@ -188,7 +188,7 @@ abbreviation lookup_entries_set :: "congruence_closure \<Rightarrow> equation se
 
 definition representativeE :: "congruence_closure \<Rightarrow> equation set"
   where
-    "representativeE cc = representatives_set (cc_list cc) \<union> lookup_entries_set cc"
+    "representativeE cc = cc_list_set (cc_list cc) \<union> lookup_entries_set cc"
 
 text \<open>Converts the list of pending equations to a set of pending equations.\<close>
 fun pending_set :: "pending_equation list \<Rightarrow> equation set"
@@ -325,9 +325,9 @@ lemma pending_left_right_valid:
 
 text \<open>The second invariant from the article, very important for the correctness proof.\<close>
 
-definition inv2 :: "congruence_closure \<Rightarrow> bool"
+definition correctness_invar :: "congruence_closure \<Rightarrow> bool"
   where
-    "inv2 cc \<equiv> 
+    "correctness_invar cc \<equiv> 
 Congruence_Closure (representativeE cc \<union> pending_set (pending cc)) = Congruence_Closure (input cc)"
 
 text \<open>The union find data structure and the proof forest have the same equivalence classes. \<close>
@@ -336,30 +336,30 @@ abbreviation pf_l_same_eq_classes :: "nat list \<Rightarrow> nat list \<Rightarr
     "pf_l_same_eq_classes pf l \<equiv> (\<forall> i < length pf . (\<forall> j < length pf . rep_of l i = rep_of l j 
 \<longleftrightarrow> rep_of pf i = rep_of pf j))"
 
-definition inv_same_rep_classes :: "congruence_closure \<Rightarrow> bool"
+definition same_eq_classes_invar :: "congruence_closure \<Rightarrow> bool"
   where
-    "inv_same_rep_classes cc \<equiv> pf_l_same_eq_classes (proof_forest cc) (cc_list cc)"
+    "same_eq_classes_invar cc \<equiv> pf_l_same_eq_classes (proof_forest cc) (cc_list cc)"
 
-lemma inv_same_rep_classes_not_divided: 
-  assumes "i < length (proof_forest cc)" "j < length (proof_forest cc)" "inv_same_rep_classes cc"
+lemma same_eq_classes_invar_not_divided: 
+  assumes "i < length (proof_forest cc)" "j < length (proof_forest cc)" "same_eq_classes_invar cc"
   shows "rep_of (cc_list cc) i = rep_of (cc_list cc) j \<longleftrightarrow> rep_of (proof_forest cc) i = rep_of (proof_forest cc) j"
-  using assms unfolding inv_same_rep_classes_def by presburger
+  using assms unfolding same_eq_classes_invar_def by presburger
 
-lemma inv_same_rep_classes_divided: 
+lemma same_eq_classes_invar_divided: 
   assumes "i < length pf" "j < length pf" 
-    "inv_same_rep_classes \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
+    "same_eq_classes_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
   shows "rep_of l i = rep_of l j \<longleftrightarrow> rep_of pf i = rep_of pf j"
-  using assms unfolding inv_same_rep_classes_def congruence_closure.select_convs by blast
+  using assms unfolding same_eq_classes_invar_def congruence_closure.select_convs by blast
 
 text \<open>The lists in the data structure all have the same length.\<close>
-definition inv_same_length :: "congruence_closure \<Rightarrow> nat \<Rightarrow> bool"
+definition same_length_invar :: "congruence_closure \<Rightarrow> nat \<Rightarrow> bool"
   where
-    "inv_same_length cc n \<equiv> 
+    "same_length_invar cc n \<equiv> 
 (((nr_vars cc = n \<and> length (use_list cc) = n) \<and> length (lookup cc) = n) \<and> 
 length (proof_forest cc) = n) \<and> length (pf_labels cc) = n"
 
 
-text \<open>The following two invariants are important for the proofs about inv2:\<close>
+text \<open>The following two invariants are important for the proofs about correctness_invar:\<close>
 text \<open>All equations in the lookup table are also present in both relevant use_lists.\<close>
 
 abbreviation contains_similar_equation
@@ -370,7 +370,7 @@ abbreviation contains_similar_equation
     (F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set ((use_list cc) ! a')
       \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
       \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2
-      \<and> (b \<approx> c) \<in> Congruence_Closure (representatives_set (cc_list cc) \<union> pending_set (pending cc))
+      \<and> (b \<approx> c) \<in> Congruence_Closure (cc_list_set (cc_list cc) \<union> pending_set (pending cc))
   )
 "
 
@@ -395,12 +395,12 @@ a' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a'
   (\<exists> b\<^sub>1 b\<^sub>2 b.
       (lookup_entry (lookup cc) (cc_list cc) c\<^sub>1 c\<^sub>2 = Some (F b\<^sub>1 b\<^sub>2 \<approx> b)
       \<and>
-      (b \<approx> c) \<in> Congruence_Closure (representatives_set (cc_list cc) \<union> pending_set (pending cc)))
+      (b \<approx> c) \<in> Congruence_Closure (cc_list_set (cc_list cc) \<union> pending_set (pending cc)))
     \<or>
       ((F b\<^sub>1 b\<^sub>2 \<approx> b) \<in> set u_a
       \<and> rep_of (cc_list cc) b\<^sub>1 = rep_of (cc_list cc) c\<^sub>1 
       \<and> rep_of (cc_list cc) b\<^sub>2 = rep_of (cc_list cc) c\<^sub>2)
-      \<and> (b \<approx> c) \<in> Congruence_Closure (representatives_set (cc_list cc) \<union> pending_set (pending cc)) 
+      \<and> (b \<approx> c) \<in> Congruence_Closure (cc_list_set (cc_list cc) \<union> pending_set (pending cc)) 
   )
 )"
 
@@ -415,7 +415,7 @@ a' < nr_vars cc \<longrightarrow> (cc_list cc) ! a' = a'
   (\<exists> b\<^sub>1 b\<^sub>2 b.
       (lookup_entry (lookup cc) (cc_list cc) c\<^sub>1 c\<^sub>2 = Some (F b\<^sub>1 b\<^sub>2 \<approx> b)
       \<and>
-      (b \<approx> c) \<in> Congruence_Closure (representatives_set (cc_list cc) \<union> pending_set (pending cc)))
+      (b \<approx> c) \<in> Congruence_Closure (cc_list_set (cc_list cc) \<union> pending_set (pending cc)))
   )
 )" unfolding use_list_invar2'_def
   by simp
@@ -443,8 +443,8 @@ definition pf_labels_invar :: "congruence_closure \<Rightarrow> bool"
 abbreviation cc_invar :: "congruence_closure \<Rightarrow> bool"
   where
     "cc_invar cc \<equiv> (((((((((cc_list_invar cc \<and> use_list_invar cc) \<and> lookup_invar cc) 
-        \<and> proof_forest_invar cc) \<and> inv2 cc) \<and> inv_same_rep_classes cc) 
-        \<and> inv_same_length cc (nr_vars cc)) \<and> pending_invar cc) \<and> lookup_invar2 cc) 
+        \<and> proof_forest_invar cc) \<and> correctness_invar cc) \<and> same_eq_classes_invar cc) 
+        \<and> same_length_invar cc (nr_vars cc)) \<and> pending_invar cc) \<and> lookup_invar2 cc) 
         \<and> use_list_invar2 cc) \<and> pf_labels_invar cc"
 
 text \<open>
@@ -513,23 +513,23 @@ qed
 
 subsection \<open>Lemmata for \<open>Congruence_Closure\<close> with our \<open>congruence_closure\<close> data structure\<close>
 
-lemma a_eq_rep_of_a_in_CC_representatives_set:
+lemma a_eq_rep_of_a_in_CC_cc_list_set:
   assumes "a < length l"
   shows
-    "(a \<approx> (rep_of l a)) \<in> Congruence_Closure (representatives_set l)"
-    "((rep_of l a) \<approx> a) \<in> Congruence_Closure (representatives_set l)"
+    "(a \<approx> (rep_of l a)) \<in> Congruence_Closure (cc_list_set l)"
+    "((rep_of l a) \<approx> a) \<in> Congruence_Closure (cc_list_set l)"
 proof-
-  have *: "rep_of l a = a \<Longrightarrow> (a \<approx> (rep_of l a)) \<in> Congruence_Closure (representatives_set l)" 
+  have *: "rep_of l a = a \<Longrightarrow> (a \<approx> (rep_of l a)) \<in> Congruence_Closure (cc_list_set l)" 
     by auto
-  have "rep_of l a \<noteq> a \<Longrightarrow> (a \<approx> (rep_of l a)) \<in> (representatives_set l)" 
+  have "rep_of l a \<noteq> a \<Longrightarrow> (a \<approx> (rep_of l a)) \<in> (cc_list_set l)" 
     unfolding representativeE_def
     using assms rep_of_refl by force
   then have "rep_of l a \<noteq> a \<Longrightarrow> (a \<approx> (rep_of l a)) 
-\<in> Congruence_Closure (representatives_set l)" 
+\<in> Congruence_Closure (cc_list_set l)" 
     by auto
-  with * show "(a \<approx> (rep_of l a)) \<in> Congruence_Closure (representatives_set l)" 
+  with * show "(a \<approx> (rep_of l a)) \<in> Congruence_Closure (cc_list_set l)" 
     by blast
-  with symmetric show "((rep_of l a) \<approx> a) \<in> Congruence_Closure (representatives_set l)" 
+  with symmetric show "((rep_of l a) \<approx> a) \<in> Congruence_Closure (cc_list_set l)" 
     by simp
 qed
 
@@ -538,7 +538,7 @@ lemma a_eq_rep_of_a_in_CC:
   shows
     "(a \<approx> (rep_of (cc_list cc) a)) \<in> Congruence_Closure (representativeE cc)"
     "((rep_of (cc_list cc) a) \<approx> a) \<in> Congruence_Closure (representativeE cc)"
-  unfolding representativeE_def using assms Congruence_Closure_union a_eq_rep_of_a_in_CC_representatives_set
+  unfolding representativeE_def using assms Congruence_Closure_union a_eq_rep_of_a_in_CC_cc_list_set
   by blast+
 
 lemma CC_F_rep_of_a_imp_F_a:
@@ -594,15 +594,15 @@ proof-
     by fast
 qed
 
-lemma CC_same_rep_representatives_set:
+lemma CC_same_rep_cc_list_set:
   assumes "rep_of l a = rep_of l b"
     "a < length l" "b < length l"
-  shows "(a \<approx> b) \<in> Congruence_Closure (representatives_set l)"
+  shows "(a \<approx> b) \<in> Congruence_Closure (cc_list_set l)"
 proof-
-  have "(a \<approx> rep_of l a) \<in> Congruence_Closure (representatives_set l)"
-    "(rep_of l b \<approx> b) \<in> Congruence_Closure (representatives_set l)"
-     apply (simp add: a_eq_rep_of_a_in_CC_representatives_set(1) assms(2))
-    by (simp add: a_eq_rep_of_a_in_CC_representatives_set(2) assms(3))
+  have "(a \<approx> rep_of l a) \<in> Congruence_Closure (cc_list_set l)"
+    "(rep_of l b \<approx> b) \<in> Congruence_Closure (cc_list_set l)"
+     apply (simp add: a_eq_rep_of_a_in_CC_cc_list_set(1) assms(2))
+    by (simp add: a_eq_rep_of_a_in_CC_cc_list_set(2) assms(3))
   then show ?thesis 
     using assms(1) by auto
 qed
@@ -611,7 +611,7 @@ lemma CC_same_rep:
   assumes "rep_of (cc_list cc) a = rep_of (cc_list cc) b"
     "a < nr_vars cc" "b < nr_vars cc"
   shows "(a \<approx> b) \<in> Congruence_Closure (representativeE cc)"
-  using CC_same_rep_representatives_set assms Congruence_Closure_union
+  using CC_same_rep_cc_list_set assms Congruence_Closure_union
   unfolding representativeE_def 
   by blast
 
@@ -653,7 +653,7 @@ lemma update_lookup_preserves_length:
   apply(cases eq)
   by auto
 
-lemma add_edge_inv_same_rep_classes_invar:  
+lemma add_edge_same_eq_classes_invar_invar:  
   assumes  "pf_l_same_eq_classes pf l" "ufa_invar pf" "ufa_invar l"
     "a < length l" "b < length l"
     "rep_of l a \<noteq> rep_of l b" "length pf = length l"

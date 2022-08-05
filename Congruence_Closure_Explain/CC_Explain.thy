@@ -704,9 +704,9 @@ If not then then we can use induction hypothesis 2.\<close>
       then have *: "rep_of cc_l a = rep_of cc_l b" 
         using True2 by auto
       have valid: "a < length cc_l" "b < length cc_l" "length cc_l = length pf" using Cons.prems(3) cc 
-          defs(1) apply auto[2] using Cons.prems unfolding inv_same_length_def cc by auto
+          defs(1) apply auto[2] using Cons.prems unfolding same_length_invar_def cc by auto
       then have "rep_of pf a = rep_of pf b" using "less.prems" cc *  
-        unfolding inv_same_rep_classes_def cc congruence_closure.select_convs by simp
+        unfolding same_eq_classes_invar_def cc congruence_closure.select_convs by simp
       then have invar: "ufa_invar pf" 
         using "less.prems" cc unfolding proof_forest_invar_def by simp
       then obtain p1 p2 where p: "path (proof_forest cc) c p1 a" "path (proof_forest cc) c p2 b" 
@@ -716,7 +716,7 @@ If not then then we can use induction hypothesis 2.\<close>
         using "Cons.prems" explain_along_path_domain p by blast
       have lengths: "length l = length cc_l" 
         "length l = length pf" "ufa_invar pf" using "Cons.prems" 
-        unfolding inv_same_length_def explain_list_invar_def proof_forest_invar_def cc congruence_closure.select_convs 
+        unfolding same_length_invar_def explain_list_invar_def proof_forest_invar_def cc congruence_closure.select_convs 
         by argo+
       with explain_list_invar_explain_along_path
       have new_l_inv: "explain_list_invar new_l (proof_forest cc)"
@@ -838,7 +838,7 @@ subsection \<open>Invariant proof\<close>
 subsubsection \<open>The invariants remain invariant after the loop of propagate\<close>
 
 lemma validity_invar_loop:
-  assumes "validity_invar cc" "rep_b < length l" "inv_same_length cc (nr_vars cc)"
+  assumes "validity_invar cc" "rep_b < length l" "same_length_invar cc (nr_vars cc)"
     "quadratic_table (lookup cc)" "\<forall> eq \<in> set u_a . eq \<in> (input cc)"
     "(\<forall> j < length u_a . use_list_valid_element (u_a ! j) (cc_list cc) rep_b)"
     "cc_list_invar cc"
@@ -864,16 +864,16 @@ lemma validity_invar_loop:
       by fastforce
     have "rep_of l a\<^sub>1 < length t" "rep_of l a\<^sub>2 < length (t ! rep_of l a\<^sub>2)"
       using "1.prems" unfolding cc_list_invar_def congruence_closure.select_convs  
-      by (simp add: inv_same_length_def rep_of_bound u1'(2,3))+
+      by (simp add: same_length_invar_def rep_of_bound u1'(2,3))+
     from "1.prems" have "eq \<in> ip" unfolding validity_invar_def congruence_closure.select_convs 
-      unfolding cc_list_invar_def congruence_closure.select_convs inv_same_length_def
+      unfolding cc_list_invar_def congruence_closure.select_convs same_length_invar_def
       by (metis (no_types, lifting) \<open>lookup_entry t l a\<^sub>1 a\<^sub>2 = Some eq\<close> \<open>rep_of l a\<^sub>1 < length t\<close> nth_mem option.distinct(1) option.sel rep_of_bound u1'(3))
     have "pending_eq_in_set (link_to_lookup t l u1) ip" 
       using \<open>eq \<in> ip\<close> \<open>lookup_entry t l a\<^sub>1 a\<^sub>2 = Some eq\<close> u1'(1) u1_in_ip by fastforce
     with "1.prems" have v: "validity_invar ?loop1" 
       unfolding validity_invar_def by simp
-    with "1.prems" have i: "inv_same_length ?loop1 (nr_vars ?loop1)" 
-      unfolding inv_same_length_def by simp
+    with "1.prems" have i: "same_length_invar ?loop1 (nr_vars ?loop1)" 
+      unfolding same_length_invar_def by simp
     then show ?thesis 
       using 1 True "*" i v cc_list_invar_def by auto
   next
@@ -886,8 +886,8 @@ lemma validity_invar_loop:
       by (metis in_set_upd_cases nth_mem option.sel)
     with "1.prems" use_list have v: "validity_invar ?loop2" 
       unfolding validity_invar_def by simp
-    with "1.prems" have i: "inv_same_length ?loop2 (nr_vars ?loop2)" 
-      unfolding inv_same_length_def congruence_closure.select_convs 
+    with "1.prems" have i: "same_length_invar ?loop2 (nr_vars ?loop2)" 
+      unfolding same_length_invar_def congruence_closure.select_convs 
       by (simp add: update_lookup_preserves_length)
     have "quadratic_table (lookup ?loop2)" 
       using "1.prems" unfolding congruence_closure.select_convs u1' update_lookup.simps
@@ -933,13 +933,13 @@ qed
 lemma validity_invar_mini_step:
   assumes "validity_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), 
 proof_forest = pf, pf_labels = pfl, input = ip\<rparr>" (is "validity_invar ?base")  
-    "inv_same_length \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf,
+    "same_length_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf,
  pf_labels = pfl, input = ip\<rparr> (length l)"
     "quadratic_table t" "use_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), 
 proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     "ufa_invar l"  "rep_of l a \<noteq> rep_of l b" "a = left eq" "b = right eq"
     "ufa_invar pf" "a < length l" "b < length l"
-    "inv_same_rep_classes \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, 
+    "same_eq_classes_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, 
 pf_labels = pfl, input = ip\<rparr>"
     "pf_labels_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, 
 pf_labels = pfl, input = ip\<rparr>"
@@ -957,7 +957,7 @@ proof(rule conjI)+
   have 2: "pending_eq_in_set eq ip" 
     using assms unfolding validity_invar_def by force
   have "length l = length pf" "length l = length pfl" 
-    using assms unfolding inv_same_length_def by auto
+    using assms unfolding same_length_invar_def by auto
   then show "pf_labels_validity_invar (pf_labels ?step) (input ?step)"
     using 1 2 assms pf_labels_validity_invar_add_label 
     unfolding validity_invar_def congruence_closure.select_convs by presburger
@@ -976,13 +976,13 @@ paragraph \<open>Invariant after one step of propagate\<close>
 lemma validity_invar_step:
   assumes "validity_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), 
 proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
-    "inv_same_length \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf,
+    "same_length_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf,
  pf_labels = pfl, input = ip\<rparr> (length l)"
     "quadratic_table t" "use_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), 
 proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
     "ufa_invar l"  "rep_of l a \<noteq> rep_of l b" "a = left eq" "b = right eq"
     "ufa_invar pf" "a < length l" "b < length l"
-    "inv_same_rep_classes \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, 
+    "same_eq_classes_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, 
 pf_labels = pfl, input = ip\<rparr>"
     "pf_labels_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, 
 pf_labels = pfl, input = ip\<rparr>"
@@ -999,10 +999,10 @@ proof-
     using validity_invar_mini_step assms by blast
   have 2: "rep_of l b < length (ufa_union l a b)" 
     by (simp add: assms(5,11) rep_of_bound)
-  have 3: "inv_same_length ?mini_step (nr_vars ?mini_step)"
-    using inv_same_length_mini_step assms by auto
+  have 3: "same_length_invar ?mini_step (nr_vars ?mini_step)"
+    using same_length_invar_mini_step assms by auto
   have 4: "rep_of l a < length u" 
-    using assms rep_of_less_length_l unfolding inv_same_length_def by auto
+    using assms rep_of_less_length_l unfolding same_length_invar_def by auto
   then have 5: "\<forall>eq\<in>set (u ! rep_of l a). eq \<in> input ?mini_step" using assms unfolding validity_invar_def 
     by auto
   have 6: "\<forall>j<length (u ! rep_of l a).
@@ -1128,7 +1128,7 @@ proof(rule conjI)+
       have valid: "l ! rep_of l a\<^sub>1 = rep_of l a\<^sub>1 \<and> l ! rep_of l a\<^sub>2 = rep_of l a\<^sub>2"
         "rep_of l a\<^sub>1 < length l \<and> rep_of l a\<^sub>2 < length l"
         "length l = length t" "length l = length (t ! rep_of l a\<^sub>1)"
-        using assms rep_of_min rep_of_less_length_l unfolding cc_list_invar_def inv_same_length_def lookup_invar_def 
+        using assms rep_of_min rep_of_less_length_l unfolding cc_list_invar_def same_length_invar_def lookup_invar_def 
         by auto 
       with entry_not_none have "(the (lookup_entry t l a\<^sub>1 a\<^sub>2)) \<in> input ?step" using assms unfolding validity_invar_def 
         by (metis congruence_closure.select_convs(3,7) insertI2 nth_mem)
@@ -1184,7 +1184,7 @@ proof(rule conjI)+
       next
         case False': False
         have valid: "rep_of l a\<^sub>1 < length t"
-          using assms rep_of_less_length_l unfolding cc_list_invar_def inv_same_length_def by simp
+          using assms rep_of_less_length_l unfolding cc_list_invar_def same_length_invar_def by simp
         have "row = (lookup ?step) ! rep_of l a\<^sub>1"  
           using False' prems unfolding update_lookup.simps congruence_closure.select_convs 
           by (metis (no_types, opaque_lifting) in_set_conv_nth nth_list_update_neq update_lookup.simps(1) update_lookup_preserves_length)
@@ -1322,7 +1322,7 @@ proof-
         have "pf ! rep_of l a \<noteq> rep_of l a" "rep_of l a < length l"
           using pRAC path_rep path_nodes_lt_length_l by blast+
         then have a': "a' \<in> ip" using "1.prems" 
-          unfolding validity_invar_def cc congruence_closure.select_convs explain_list_invar_def inv_same_length_def using One valid_eq 
+          unfolding validity_invar_def cc congruence_closure.select_convs explain_list_invar_def same_length_invar_def using One valid_eq 
           by (metis nth_mem option.discI pending_eq_in_set.simps(1))
         from recursive_step cc explain_list_invar pRAC' have "output' \<subseteq> ip" 
           using 1(2) False One "1.prems" valid by auto
@@ -1344,7 +1344,7 @@ proof-
           by (simp add: pRAC)
         then have a'_b': "(F a\<^sub>1 a\<^sub>2 \<approx> a') \<in> ip" " (F b\<^sub>1 b\<^sub>2 \<approx> b') \<in> ip" 
           using "1.prems" unfolding validity_invar_def 
-          by (metis "*" cc congruence_closure.select_convs(5) congruence_closure.select_convs(6) congruence_closure.select_convs(7) inv_same_length_def nth_mem option.collapse option.distinct(1) option.inject pRAC path_nodes_lt_length_l pending_eq_in_set.simps(2))+
+          by (metis "*" cc congruence_closure.select_convs(5) congruence_closure.select_convs(6) congruence_closure.select_convs(7) same_length_invar_def nth_mem option.collapse option.distinct(1) option.inject pRAC path_nodes_lt_length_l pending_eq_in_set.simps(2))+
         from 1(3)[OF False] * Two "1.prems" explain_list_invar valid pRAC' recursive_step
         have "output' \<subseteq> ip" 
           unfolding cc congruence_closure.select_convs by simp
@@ -1370,9 +1370,9 @@ lemma cc_explain_aux_valid:
     then have *: "rep_of cc_l a = rep_of cc_l b" 
       using True by auto
     have valid: "a < length cc_l" "b < length cc_l" "length cc_l = length pf" using "2.prems" cc 
-        apply auto[2] using "2.prems" unfolding inv_same_length_def cc by auto
+        apply auto[2] using "2.prems" unfolding same_length_invar_def cc by auto
     then have "rep_of pf a = rep_of pf b" using "2.prems" cc *  
-      unfolding inv_same_rep_classes_def cc congruence_closure.select_convs by simp
+      unfolding same_eq_classes_invar_def cc congruence_closure.select_convs by simp
     then have invar: "ufa_invar pf" 
       using "2.prems" cc unfolding proof_forest_invar_def by simp
     define c where "c = lowest_common_ancestor (proof_forest cc) a b"
@@ -1389,7 +1389,7 @@ lemma cc_explain_aux_valid:
       using "2.prems" explain_along_path_domain p by blast
     have lengths: "length l = length cc_l" 
       "length l = length pf" "ufa_invar pf" using "2.prems" 
-      unfolding inv_same_length_def explain_list_invar_def proof_forest_invar_def cc congruence_closure.select_convs 
+      unfolding same_length_invar_def explain_list_invar_def proof_forest_invar_def cc congruence_closure.select_convs 
       by argo+
     with explain_list_invar_explain_along_path
     have new_l_inv: "explain_list_invar new_l (proof_forest cc)"
@@ -1431,7 +1431,7 @@ theorem cc_explain_valid:
   shows "cc_explain cc a b \<subseteq> input cc"
 proof-
   have "length (proof_forest cc) = nr_vars cc" 
-    using assms unfolding inv_same_length_def by blast
+    using assms unfolding same_length_invar_def by blast
   then have **: "explain_list_invar [0..<nr_vars cc] (proof_forest cc)" 
     by (metis explain_list_invar_initial)
   have *: "\<forall> (a,b)\<in> set [(a, b)] . a < nr_vars cc \<and> b < nr_vars cc"

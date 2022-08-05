@@ -60,7 +60,7 @@ In this thesis, we will use the notation \lstinline{a ≈ b} and \lstinline{F a 
 
 \subsubsection{option}
 
-The type \lstinline{option} models optional values. The value of a variable with type \lstinline{'a option} is either \lstinline|None| or \lstinline|Some a| where $a$ is a value with type $'a$. The function \lstinline|the| applied to \lstinline|Some a| returns \lstinline|a|, and it returns \lstinline|undefined| if the parameter is \lstinline|None|.
+The type \lstinline{option} models optional values. The value of a variable with type \lstinline{'a option} is either \lstinline|None| or \lstinline|Some x| where $x$ is a value with type $'a$. The function \lstinline|the| applied to \lstinline|Some x| returns \lstinline|x|, and it returns \lstinline|undefined| if the parameter is \lstinline|None|.
 
 If \lstinline{'a} is an ordered type, the order is extended to \lstinline{'a option}, where \lstinline{None ≤ x} for all \lstinline|x|, and \lstinline{Some x ≤ Some y} iff \lstinline{x ≤ y}. This is defined in the Theory ``Option\_ord'' of the HOL library, which is included with the standard Isabelle/HOL distribution.
 

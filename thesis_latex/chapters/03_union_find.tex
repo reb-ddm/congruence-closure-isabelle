@@ -323,7 +323,7 @@ The validity invariant of the data structure expresses that the data structure d
 It also states that the unions were made with valid variables, i.e., variables which are in bounds.
 
 \begin{lstlisting}
-abbreviation "ufe_invar ufe ≡
+abbreviation "ufe_valid_invar ufe ≡
   valid_unions (unions ufe) (length (uf_list ufe)) ∧
   apply_unions (unions ufe) (initial_ufe (length (uf_list ufe))) = ufe"
 \end{lstlisting}
@@ -331,24 +331,24 @@ abbreviation "ufe_invar ufe ≡
 With this definition, it is easy to show that the invariant holds after a union.
 
 \begin{lstlisting}
-lemma union_ufe_invar:
-  assumes "ufe_invar ufe"
-  shows "ufe_invar (ufe_union ufe x y)"
+lemma union_ufe_valid_invar:
+  assumes "ufe_valid_invar ufe"
+  shows "ufe_valid_invar (ufe_union ufe x y)"
 \end{lstlisting}
 
 It is also useful to prove that the old invariant, \lstinline{ufa_invar}, is implied by the new invariant, so that we can use all the previously proved lemmas about \lstinline{ufa_invar}. This is easily shown by computation induction on the function \lstinline{apply_unions}, and by using the lemma from the Theory ``Union Find'', which states that \lstinline{ufa_invar} holds after having applied \lstinline{ufa_union}, and by proving that it holds for the initial empty data structure.
 
 \begin{lstlisting}
-theorem ufe_invar_imp_ufa_invar: "ufe_invar ufe ⟹ ufa_invar (uf_list ufe)"
+theorem ufe_valid_invar_imp_ufa_invar: "ufe_valid_invar ufe ⟹ ufa_invar (uf_list ufe)"
 \end{lstlisting}
 
 With this definition of the invariant, we can prove a new induction rule, which will be very useful for proving many properties of a union-find data structure. The induction rule, called \lstinline{apply_unions_induct}, has as an assumption that the invariant holds for the given data structure $ufe$, and shows that a certain predicate holds for $ufe$. The base case that needs to be proven is that it holds for the initial data structure, and the induction step is that the property remains invariant after applying a union.
 
 \begin{lstlisting}
 lemma apply_unions_induct[consumes 1, case_names initial union]:
-  assumes "ufe_invar ufe"
+  assumes "ufe_valid_invar ufe"
   assumes "P (initial_ufe (length (uf_list ufe)))"
-  assumes "⋀pufe x y. ufe_invar pufe ⟹ x < length (uf_list pufe) ⟹ y < length (uf_list pufe)
+  assumes "⋀pufe x y. ufe_valid_invar pufe ⟹ x < length (uf_list pufe) ⟹ y < length (uf_list pufe)
     ⟹ P pufe ⟹ P (ufe_union pufe x y)"
   shows "P ufe"
 \end{lstlisting}
@@ -358,12 +358,12 @@ This induction rule can be used for most of the proofs about \lstinline|explain|
 \subsection{Termination Proof}
 \label{subsection:termination}
 
-An important result was to show that the function always terminates if \lstinline{ufe_invar} holds. We will show this using \lstinline|apply_unions_invar|, therefore we need to show that if the function terminates before \lstinline{ufe_union} is applied, then it also terminates afterwards, assuming that $x$ and $y$ are in the same representative class, where $x$ and $y$ are the last two parameters of \lstinline|explain|.
+An important result was to show that the function always terminates if \lstinline{ufe_valid_invar} holds. We will show this using \lstinline|apply_unions_invar|, therefore we need to show that if the function terminates before \lstinline{ufe_union} is applied, then it also terminates afterwards, assuming that $x$ and $y$ are in the same representative class, where $x$ and $y$ are the last two parameters of \lstinline|explain|.
 
 \begin{lstlisting}
 lemma explain_domain_ufe_union_invar:
   assumes "explain_dom (ufe, x, y)"
-    and "ufe_invar ufe"
+    and "ufe_valid_invar ufe"
     and "rep_of (uf_list ufe) x = rep_of (uf_list ufe) y"
   shows "explain_dom (ufe_union ufe x2 y2, x, y)"
 \end{lstlisting}
@@ -382,7 +382,7 @@ Using this result we can prove the termination of \lstinline|explain|:
 
 \begin{lstlisting}
 theorem explain_domain:
-  assumes "ufe_invar ufe"
+  assumes "ufe_valid_invar ufe"
   shows "explain_dom (ufe, x, y)"
 \end{lstlisting}
 
@@ -400,7 +400,7 @@ There are two properties which define the correctness of \lstinline|explain|: fo
 
 \begin{lstlisting}
 theorem explain_valid:
-  assumes "ufe_invar ufe"
+  assumes "ufe_valid_invar ufe"
     and "k ∈ (explain ufe x y)"
   shows "k ∈ set (unions ufe)"
 \end{lstlisting}
@@ -410,7 +410,7 @@ We know from Subsection \ref{subsection:termination} that when the invariant hol
 \begin{lstlisting}
 lemma find_newest_on_path_Some:
   assumes "path l y p x"
-    and "ufe_invar ⦇uf_list = l, unions = un, au = a⦈"
+    and "ufe_valid_invar ⦇uf_list = l, unions = un, au = a⦈"
     and "x ≠ y"
   obtains k where "find_newest_on_path l a x y = Some k ∧ k < length un"
 \end{lstlisting}
@@ -419,7 +419,7 @@ This follows from the following lemma, that shows that the entries in the \emph{
 
 \begin{lstlisting}
 lemma au_valid:
-  assumes "ufe_invar ufe"
+  assumes "ufe_valid_invar ufe"
     and "i < length (au ufe)"
   shows "au ufe ! i < Some (length (unions ufe))"
 \end{lstlisting}
@@ -431,7 +431,7 @@ It remains to show the correctness.
 
 \begin{lstlisting}
 theorem explain_correct:
-  assumes "ufe_invar ufe"
+  assumes "ufe_valid_invar ufe"
     and "rep_of (uf_list ufe) x = rep_of (uf_list ufe) y"
   shows "(x, y) ∈ (symcl (explain ufe x y))*"
 \end{lstlisting}
