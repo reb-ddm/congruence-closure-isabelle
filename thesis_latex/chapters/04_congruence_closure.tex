@@ -7,7 +7,7 @@
 
 We now consider not only equations between constants, but also equations containing function symbols. Each function symbol is associated with an arity, which is the number of parameters it accepts. Function symbols with arity 0 are constants.
 
-Arbitrary equations can be transformed to equations of depth at most 2, and with only one function of arity 2. This is done by currying and by introducing new constant symbols. See \cite{Nieuwenhuis2} for a detailed explanation of how this is done. In order to understand this thesis, it is irrelevant to know how the transformation is done, it is just important to know that the result is a set of equations between constant symbols and one specific function symbol $F$ of arity 2. The congruence closure of these transformed equations is equal to the congruence closure of the original equations, therefore from this point on, we will only consider the transformed equations, i.e. these two types of input equations: either $a = b$ or $F(a,b) = c$ where $a$, $b$ and $c$ are constant symbols.
+Arbitrary equations can be transformed to equations of depth at most 2, and with only one function of arity 2. This is done by currying and by introducing new constant symbols. See \cite{Nieuwenhuis2} for a detailed explanation of how this is done. In order to understand this thesis, it is irrelevant to know how the transformation is done, it is just important to know that the result is a set of equations between constant symbols and one specific function symbol $F$ of arity 2. The congruence closure of these transformed equations is equal to the congruence closure of the original equations, therefore from this point on, we will only consider the transformed equations, i.e., these two types of input equations: either $a = b$ or $F(a,b) = c$ where $a$, $b$ and $c$ are constant symbols.
 
 The datatype we use for these equations is the one described in Subsection \ref{subsubsection:datatypes}.
 
@@ -19,7 +19,7 @@ The algorithm uses a modified version of the union find algorithm for maintainin
 
 \subsection{Modified Union Find Algorithm}
 
-In order to implement an explain operation with a reasonable runtime for the congruence closure data structure, the paper \cite{Nieuwenhuis} introduces an alternative union-find algorithm. Additionally to the union-find forest, there is a new data structure, the \emph{proof forest}, i.e. a forest which has as nodes the variables, and as edges the unions that were made. Each time \lstinline{ufa_union} is called on the union-find forest, the proof forest is modified with \lstinline{add_edge}. In order to avoid the creation of cycles, redundant unions are ignored.
+In order to implement an explain operation with a reasonable runtime for the congruence closure data structure, the paper \cite{Nieuwenhuis} introduces an alternative union-find algorithm. Additionally to the union-find forest, there is a new data structure, the \emph{proof forest}, i.e., a forest which has as nodes the variables, and as edges the unions that were made. Each time \lstinline{ufa_union} is called on the union-find forest, the proof forest is modified with \lstinline{add_edge}. In order to avoid the creation of cycles, redundant unions are ignored.
 
 \subsubsection{add\_edge}
 \label{subsubsection:addedge}
@@ -87,7 +87,7 @@ We already showed that the function terminates, therefore we can prove it by com
 The proof uses various lemmas about the behaviour of \lstinline{rep_of} after a function update, which depends on where the function update was, and which element we want to find the representative of. These lemmas are proven by analysing how the paths in the forest change after a function update, which corresponds to adding a path in the forest. With these lemmas the induction is easily proven.
 \end{proof}
 
-We also show that \lstinline|add_edge| has the expected behaviour, which is that it reverses all the edges from the root of $e$ to $e$, and it adds an edge from $e$ to $e'$, i.e. after \lstinline|add_edge| the forest contains a path from $e'$ to the representative of $e$, which is the path which was there before \lstinline|add_edge|, but reversed and with one added edge between $e$ and $e'$. \lstinline|rev| is a function which reverses a list, and \lstinline|path_to_root| is the function described in Subsection \ref{subsubsection:path-to-root}. The proof can be shown by computation induction on \lstinline|add_edge|.
+We also show that \lstinline|add_edge| has the expected behaviour, which is that it reverses all the edges from the root of $e$ to $e$, and it adds an edge from $e$ to $e'$, i.e., after \lstinline|add_edge| the forest contains a path from $e'$ to the representative of $e$, which is the path which was there before \lstinline|add_edge|, but reversed and with one added edge between $e$ and $e'$. \lstinline|rev| is a function which reverses a list, and \lstinline|path_to_root| is the function described in Subsection \ref{subsubsection:path-to-root}. The proof can be shown by computation induction on \lstinline|add_edge|.
 
 \begin{lstlisting}
 lemma add_edge_correctness:
@@ -345,7 +345,7 @@ We need to show that in the \lstinline{propagate_loop} the equation $u1$ we add 
 The same holds for the equations added to pending in \lstinline{merge}.
 \end{proof}
 
-The same invariant holds for the labels in \lstinline|pf_labels|. This is easy to prove,  because thy are only modified in \lstinline|propagate_step|, where the added label comes from \lstinline|pending|, therefore the invariant follows from \lstinline|pending_invar|.
+The same invariant holds for the labels in \lstinline|pf_labels|. This is easy to prove,  because thy are only modified in \lstinline|propagate_step|, where the added label comes from \lstinline|pending|, therefore the invariant follows from \lstinline|pending_invar|. This invariant is called \lstinline|pf_labels_invar|.
 
 There is also an invariant which states that the \lstinline{cc_list}, the first dimension of the use list, both dimensions of lookup, the proof forest and the \lstinline{pf_labels} have the same length. This was trivial to prove, given that the algorithm never changes the length of the lists, and initially the lists have the same length.
 
@@ -668,7 +668,7 @@ else cc_explain_aux cc l xs)"
 
 The additional union-find does not use \lstinline{ufa_union} for the union, instead it simply adds the same edge which is in the proof forest for each union. This is not the most efficient strategy, but the union-find can easily be replaced by a classical union-find data structure, by showing that it has the same equivalence classes as this version. However, it is more convenient for the proofs to use this version of union-find. Nieuwenhuis \cite{Nieuwenhuis} also implements a $Highest\_node$ function, in order to find the element of a representative class of the additional union-find which is highest in the proof forest. In our version of union-find, this corresponds to the \lstinline{rep_of} operation, because we do not use the optimization of checking which equivalence class is bigger, we just make the union in the given order. When adding this optimization, a $Highest\_node$ function must be also implemented (which is not difficult, see \cite{Nieuwenhuis}).
 
-\lstinline{explain_along_path} starts at the node $a$ in the proof forest, and recursively traverses all the edges from $a$ to $c$, skipping those edges which have already been traversed sometime before in the algorithm, i.e. the edges which are present in the additional union-find $l$. Therefore it starts at the element $rep\_of(l, a)$, and considers the edge to its parent, it adds the label of the edge to the output, adding the edge to $l$ and if necessary, and updates the pending list. It terminates when it reaches the equivalence class of $c$.
+\lstinline{explain_along_path} starts at the node $a$ in the proof forest, and recursively traverses all the edges from $a$ to $c$, skipping those edges which have already been traversed sometime before in the algorithm, i.e., the edges which are present in the additional union-find $l$. Therefore it starts at the element $rep\_of(l, a)$, and considers the edge to its parent, it adds the label of the edge to the output, adding the edge to $l$ and if necessary, and updates the pending list. It terminates when it reaches the equivalence class of $c$.
 
 \begin{lstlisting}
 function (domintros) explain_along_path :: "congruence_closure ⇒ nat list ⇒ nat ⇒ nat ⇒
@@ -841,4 +841,44 @@ From this lemma we can easily show the theorem \lstinline{cc_explain_valid} by c
 
 \subsection{Correctness}
 
-TODO
+Proving the correctness of \lstinline{cc_explain} is more complicated than expected. We would like to use the induction rule of \lstinline{cc_explain}, but it is not strong enough to prove it. Our goal is to show that the two variables are congruent under the congruence closure of the output.
+
+\begin{lstlisting}
+theorem cc_explain_correct:
+  assumes "are_congruent cc (a ≈ b)" "cc_invar cc"
+  shows "(a ≈ b) ∈ Congruence_Closure (cc_explain cc a b)"
+\end{lstlisting}
+
+It was possible to show for \lstinline{explain_along_path} that $a = b$ is in the congruence closure of the output, pending and the \lstinline{representative_set l}. Intuitively, the function adds the necessary equations to output and pending, except if the elements of the equations are already in the same equivalence class in the additional union-find.
+
+\begin{lstlisting}
+lemma explain_along_path_correctness:
+  assumes "explain_along_path_dom (cc, l, a, c)"
+    "explain_along_path cc l a c = (output, new_l, pend)"
+    "path pf c pAC a"
+    "cc_invar cc"
+    "explain_list_invar l (proof_forest cc)"
+  shows "(a ≈ c) ∈ Congruence_Closure (representatives_set l ∪ output
+∪ pending_set_explain pend)"
+\end{lstlisting}
+
+Given that at the end of the algorithm \lstinline{pending} is empty, and the initial union-find $l$ is empty, this should imply that $a = b$ is in the congruence closure of \lstinline{cc_explain}.
+However, this argument is not applicable. I will illustrate this with an example.
+
+\begin{exmp}
+We consider the following proof forest:
+
+a $\xrightarrow[F(b,c) = b]{F(a,c) = a}$ b $\xleftarrow{\text{b = c}}$ c \ \ \ \ d
+
+The \lstinline{cc_invar} holds, in particular \lstinline{pf_labels_invar} holds, which states that for the labels in the proof forest of the type $F(a_1, a_2) = a_3$ and $F(b_1, b_2) = b_3$ it holds that $rep\_of(l, a_1) = rep\_of(l, b_1)$ and $rep\_of(l, a_2) = rep\_of(l, b_2)$.
+
+If we call \lstinline{cc_explain cc a b} it terminates and returns the two equations $F(a,c) = a$ and $F(b,c) = b$.
+However, $a = b$ is not in the congruence closure of these two equations.
+The problem in this case is that when \lstinline{explain_along_path cc l a b} is called, it simply adds $(a, b)$ to pending, adds the two equations to output and adds the edge between $a$ and $b$ to the additional union-find. Then when \lstinline{explain_along_path cc l a b} is called again, because $(a,b)$ is in pending again, the algorithm sees that it has already considered this edge, and returns an empty output.
+\end{exmp}
+
+This example shows that our invariant together with the lemma \lstinline{explain_along_path_correctness} are not enough to prove that \lstinline{cc_explain} is correct, but it does not show that \lstinline{cc_explain} is incorrect, because the proof forest in the example cannot be produced by subsequent merges. For the labels in the proof forest of the type $F(a_1, a_2) = a_3$ and $F(b_1, b_2) = b_3$, it not only holds that $rep\_of(l, a_1) = rep\_of(l, b_1)$ and $rep\_of(l, a_2) = rep\_of(l, b_2)$, but also that those representatives have been equal before the addition of the edge. Therefore, \lstinline{explain_along_path} will never add equations to pending which are only congruent if the output equations are congruent.
+
+A new idea for the proof would be to define an invariant that expresses what was explained in the previous paragraph. Alternatively, we could define the correctness of \lstinline{cc_explain} as an invariant, and prove that it is an invariant of merge.
+
+In order to prove that it is an invariant, we need to show that after a \lstinline{merge} operation, the path between two elements remains the same in the proof forest, therefore \lstinline{cc_explain} considers the same edges. The difficulty with this approach is that the edges could be inverted by \lstinline{add_edge}, which means that the lowest common ancestor of two elements could also change, consequently the \lstinline{cc_explain} algorithm considers the same edges but in a completely different order. As a result, we also need to show that the order of the edges which \lstinline{cc_explain} considers does not matter.

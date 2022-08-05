@@ -385,7 +385,6 @@ theorem explain_along_path_domain:
   qed
 qed
 
-
 subsection \<open>Termination of \<open>cc_explain\<close>\<close>
 
 text \<open>The number of equivalence classes does not increase with \<open>explain_along_path\<close>\<close>
@@ -1356,7 +1355,6 @@ proof-
   qed
 qed
 
-
 lemma cc_explain_aux_valid:
   assumes "cc_explain_aux_dom (cc, l, xs)" "cc_invar cc" "validity_invar cc"
     "explain_list_invar l (proof_forest cc)" 
@@ -1443,6 +1441,5 @@ proof-
   with cc_explain_aux_valid show ?thesis 
     using ** assms * by presburger
 qed
-
 
 end

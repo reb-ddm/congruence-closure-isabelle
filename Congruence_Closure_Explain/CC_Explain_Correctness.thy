@@ -15,7 +15,7 @@ lemma pending_set_explain_Cons:
   "pending_set_explain ((a, b) # pend) = {(a \<approx> b)} \<union> pending_set_explain pend"
   by auto
 
-theorem explain_along_path_correctness:
+lemma explain_along_path_correctness:
   assumes "explain_along_path_dom (\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, 
 proof_forest = pf, pf_labels = pfl, input = ip\<rparr>, l, a, c)"
     (is "explain_along_path_dom (?cc, l, a, c)")
@@ -539,6 +539,7 @@ x \<in> set ?pRA" using prems
   qed
 qed
 
+subsection \<open>Correctness invar of \<open>cc_explain\<close>\<close>
 
 text \<open>This invar shows the correctness of the explain function.
       We can't directly show that it's correct, because the correctness of it
@@ -565,9 +566,6 @@ lemma cc_explain_correctness_invar':
     "are_congruent cc (a \<approx> b)"
   shows "(a \<approx> b) \<in> Congruence_Closure (cc_explain_aux cc l eqs \<union> representatives_set l)"
   using assms unfolding cc_explain_correctness_invar_def by blast
-
-
-subsection \<open>Correctness invar of \<open>cc_explain\<close>\<close>
 
 lemma path_invariant_after_add_edge:
   assumes "c = lowest_common_ancestor pf a b"

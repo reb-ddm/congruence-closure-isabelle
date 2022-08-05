@@ -26,6 +26,7 @@ value "lookup ex9_2"
 abbreviation "ex9_3 \<equiv> merge ex9_2 (F 1 3 \<approx> 3)"
 value "rep_of (cc_list ex9_3) 2"
 value "proof_forest ex9_3"
+value "pf_labels ex9_3"
 value "use_list ex9_3"
 value "lookup ex9_3"
 
@@ -36,5 +37,14 @@ value ex10
 
 abbreviation "ex10_1 \<equiv> explain_along_path ex9_3 [0..<4] 3 1"
 value ex10_1
+
+text \<open>Example 11\<close>
+text \<open>a is 0, b is 1, c is 2 d is 3\<close>
+
+abbreviation "ex11 \<equiv> \<lparr>cc_list = [1, 1, 1, 3], use_list = [[], [], [], []],
+    lookup = [[None, None, None, None], [None, None, None, None], [None, None, None, None], [None, None, None, None]], pending = [],
+    proof_forest = [1, 1, 1, 3], pf_labels = [Some(Two (F 0 3 \<approx> 0) (F 1 3 \<approx> 1)), None, Some (One (2 \<approx> 1)), None], 
+    input = {F 0 3 \<approx> 0, F 1 3 \<approx> 1, 2 \<approx> 1}\<rparr>"
+value "cc_explain ex11 0 1"
 
 end

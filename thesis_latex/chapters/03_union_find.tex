@@ -10,7 +10,7 @@ The union-find data structure is used to keep track of the equivalence closure o
 
 The equivalence classes are modeled with a forest, which is a graph where each connected component is a tree. Initially, the graph contains $n$ vertices and no edges, then each \lstinline{union} adds a directed edge. The connected components of the graph represent the equivalence classes. Each tree in the forest has a root, which is also the representative of the equivalence class, and each edge in the tree is directed towards the root. In order to keep this invariant, at each \lstinline{union a b}, the new edge is added between the representative of $a$ (which will be denoted as $rep\_of(l, a)$, where $l$ is the union-find forest) and $rep\_of(l, b)$.
 
-The union-find forest is modeled by a list $l$ of length $n$, where at each index $i$ the list contains the parent of the element $i$ in the forest. If $i$ does not have a parent, i.e. it is a root, then the list contains the element $i$ itself at the index $i$, e.g. $l!i = i$.
+The union-find forest is modeled by a list $l$ of length $n$, where at each index $i$ the list contains the parent of the element $i$ in the forest. If $i$ does not have a parent, i.e., it is a root, then the list contains the element $i$ itself at the index $i$, e.g. $l!i = i$.
 
 The original union-find algorithm \cite{Tarjan} contains two tions: path compression in the \lstinline{find} method, and choosing the representative of the bigger class to be the new representative of the merged class in \lstinline{union}. These optimizations are irrelevant for the correctness of the algorithm, therefore we leave them out of this implementation in order to simplify the proofs.
 
@@ -320,7 +320,7 @@ This section introduces an invariant for the union find data structure and prove
 \subsection{Invariant and Induction Rule}
 
 The validity invariant of the data structure expresses that the data structure derived from subsequent unions with \lstinline{ufe_union}, starting from the initial empty data structure.
-It also states that the unions were made with valid variables, i.e. variables which are in bounds.
+It also states that the unions were made with valid variables, i.e., variables which are in bounds.
 
 \begin{lstlisting}
 abbreviation "ufe_invar ufe ≡
