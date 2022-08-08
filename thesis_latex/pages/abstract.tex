@@ -1,5 +1,10 @@
 \chapter{\abstractname}
 
-Interactive theorem provers are useful for the formalization and proving of formulas. Congruence closure is already used by most theorem provers for solving decision procedures. However, the implementations of congruence closure are usually not formally proven for completeness.
+This thesis describes a formal implementation and verification of a congruence closure algorithm in the interactive theorem prover Isabelle/HOL. Congruence closure is used by theorem provers for solving decision procedures.
+In these settings, an \emph{explain} operation is useful
 
-This thesis describes the implementation and the termination and correctness proofs  of an \emph{explain} operation for union-find and of a congruence closure algorithm, whose implementation is partly based on the union-find algorithm. It also contains an implementation of the \emph{explain} operation for congruence closure with a termination proof. The proofs are formalized in the interactive theorem prover Isabelle/HOL. The implementation is based on the paper by Nieuwenhuis and Oliveras \cite{Nieuwenhuis} and on the formalization of the union-find data structure in Isabelle/HOL by Lammich \cite{unionfind-isabelle}. The implementation can be used in the future in order to develop an automated proof strategy in Isabelle.
+The algorithm in this thesis is based on the union-find algorithm, as described by Nieuwenhuis and Oliveras in \cite{Nieuwenhuis}.
+First, an \emph{explain} operation for union-find is implemented with proofs for correctness and termination. It extends the formalization of the union-find data structure in Isabelle/HOL by Lammich \cite{unionfind-isabelle}.
+Then, the congruence closure algorithm is implemented and verified for correctness and termination.
+Lastly, an implementation of the \emph{explain} operation for congruence closure with a termination proof is presented.
+The implementation can be used in the future in order to develop an automated proof strategy in Isabelle/HOL which can solve congruence closure problems.
