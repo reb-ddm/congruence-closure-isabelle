@@ -1,9 +1,9 @@
 % !TeX root = ../main.tex
 % Add the above to each chapter to make compiling the PDF easier in some editors.
 
-\chapter{Congruence Closure with Explain Operation}\label{chapter:congruence_closure}
+\chapter{Congruence Closure with CC\_Explain Operation}\label{chapter:congruence_closure}
 
-\section{Input equations}
+\section{Input equations}\label{section:inputequations}
 
 We now consider not only equations between constants, but also equations containing function symbols. Each function symbol is associated with an arity, which is the number of parameters it accepts. Function symbols with arity 0 are constants.
 
@@ -13,13 +13,13 @@ The datatype we use for these equations is the one described in Subsection \ref{
 
 \section{Implementation}
 
-For the implementation of the congruence closure algorithm, we follow the description in the paper \cite{Nieuwenhuis}. As before, the optimizations of path compression and considering the sizes of the representative classes are left out. These optimizations are not relevant for the correctness of the algorithm, and they could later be added to a refinement of the algorithm.
+For the implementation of the congruence closure algorithm, we follow the description in the paper by Nieuwenhuis et al. \cite{Nieuwenhuis} As before, the optimizations of path compression and considering the sizes of the representative classes are left out. These optimizations are not relevant for the correctness of the algorithm, and they could later be added to a refinement of the algorithm.
 
 The algorithm uses a modified version of the union find algorithm for maintaining the equivalence classes between the constant elements, and it has a few additional data structures for storing equations containing the function symbol $F$. The following sections describe the modified union-find algorithm and then the congruence closure algorithm, as well as their correctness proofs.
 
 \subsection{Modified Union Find Algorithm}
 
-In order to implement an \emph{explain} operation with a reasonable runtime for the congruence closure data structure, the paper \cite{Nieuwenhuis} introduces an alternative union-find algorithm. Additionally to the union-find forest, there is a new data structure, the \emph{proof forest}, i.e., a forest which has as nodes the variables, and as edges the unions that were made. Each time \lstinline{ufa_union} is called on the union-find forest, the proof forest is modified with \lstinline{add_edge}. In order to avoid the creation of cycles, redundant unions are ignored.
+In order to implement a \emph{cc\_explain} operation with a reasonable runtime for the congruence closure data structure, the paper by Nieuwenhuis et al. \cite{Nieuwenhuis} introduces an alternative union-find algorithm. Additionally to the union-find forest, there is a new data structure, the \emph{proof forest}, i.e., a forest which has as nodes the variables, and as edges the unions that were made. Each time \lstinline{ufa_union} is called on the union-find forest, the proof forest is modified with \lstinline{add_edge}. In order to avoid the creation of cycles, redundant unions are ignored.
 
 \subsubsection{add\_edge}
 \label{subsubsection:addedge}
@@ -111,7 +111,7 @@ In order to prove this lemma, we show another lemma which states that the invari
 
 \subsubsection{add\_label}
 
-Additionally, each edge is labeled with the input equation or the input equations which caused the adding of this edge. This is not necessary for the union-find algorithm by itself, but it will be needed by the \lstinline{explain} operation for congruence closure. There are two possible types of labels: either an equation $a = b$ was input, or two equations of the type $F(a_1, a_2) = a$ and $F(b_1, b_2) = b$, where $a_1$ and $b_1$ were already in the same equivalence class before this union, as well as $a_2$ and $b_2$. In both theses cases a union between the equivalence classes of $a$ and $b$ must be made. The labeling is implemented by using an additional list, which at each index contains the label of the outgoing edge, or \lstinline{None} if there is no outgoing edge. It is similar to the associated unions list of union-find, but it contains directly the labels instead of an index to another list.
+Additionally, each edge is labeled with the input equation or the input equations which caused the adding of this edge. This is not necessary for the union-find algorithm by itself, but it will be needed by the \lstinline{cc_explain} operation. There are two possible types of labels: either an equation $a = b$ was input, or two equations of the type $F(a_1, a_2) = a$ and $F(b_1, b_2) = b$, where $a_1$ and $b_1$ were already in the same equivalence class before this union, as well as $a_2$ and $b_2$. In both theses cases a union between the equivalence classes of $a$ and $b$ must be made. The labeling is implemented by using an additional list, which at each index contains the label of the outgoing edge, or \lstinline{None} if there is no outgoing edge. It is similar to the associated unions list of union-find, but it contains directly the labels instead of an index to another list.
 
 The labels have the type \lstinline{pending_equation}, which can be either one or two equations.
 
@@ -395,7 +395,7 @@ theorem are_congruent_correct:
   shows "eq ∈ Congruence_Closure ((input cc)) ⟷ are_congruent cc eq"
 \end{lstlisting}
 
-The paper \cite{Nieuwenhuis} proves this by stating the folllowing invariant which holds throughout the algorithm,
+The paper by Nieuwenhuis et al. \cite{Nieuwenhuis} proves this by stating the folllowing invariant which holds throughout the algorithm,
 
 \begin{lstlisting}
 Congruence_Closure(representativeE ∪ pending) = Congruence_Closure (input)
@@ -631,9 +631,9 @@ If $a$ and $b$ are already in the same equivalence class, then the union-find li
 If $a$ and $b$ are not in the same equivalence class, they are merged by the \lstinline{propagate_step}, therefore the number of equivalence classes descreases by one according to the lemma \lstinline{ufa_union_decreases_nr_eq_classes} and we can prove the goal by using the induction hypothesis.
 \end{proof}
 
-\section{The Explain Operation}
+\section{The CC\_Explain Operation}
 
-We will implement the \emph{explain} operation for congruence closure, leaving the proof of termination and correctness open for future work.  This section describes the implementation, a validity proof and a proposal of how the correctness could be proven.
+We will implement the \emph{cc\_explain} operation for congruence closure, leaving the formal proof of correctness open for future work.  This section describes the implementation, a validity and termination proof and a proposal of how the correctness could be proven.
 
 
 \subsection{Implementation}
@@ -744,7 +744,7 @@ $a \longrightarrow rep\_of(l,a)$
 
 and the proof forest contains the same path, which continues until it reaches $c$:
 
-$a \longrightarrow rep\_of(l,a) \rightarrow pf ! rep\_of(l,a) \longrightarrow c$
+$a \longrightarrow rep\_of(l,a) \rightarrow pf ! rep\_of(l,a) \longrightarrow c$.
 
 The long arrows reperesent paths of arbitrary length, including paths with no edges, and the short arrow represents exactly one edge.
 
@@ -834,7 +834,9 @@ We assumed that \lstinline{explain_along_path} terminates, therefore we can use 
 
 If \lstinline{"rep_of l a = rep_of l c"}, then the output of \lstinline{explain_along_path} is the empty set, therefore the proof is trivial.
 
-Else, the new equations added to the output derive from the proof forest, more specifically from \lstinline{((pf_labels cc) ! rep_of l a)}. The \lstinline{validity_invar} states that all edge labels are valid, therefore we only need to prove that $rep_of(l, a)$ is not a root in the proof forest, otherwise the \lstinline{validity_invar} would not be applicable for this index, because there is no outgoing edge from a root. Given that we assumed that there is a path from $c$ to $a$ in the proof forest, we know that $c$ is nearer to the root than $a$ and we can show that if $rep_of(l,a)$ was a root in the proof forest, then $c$ can only be equal to the root, therefore \lstinline{"rep_of l a = rep_of l c"}, which is a contradiction.
+Else, the new equations added to the output derive from the proof forest, more specifically from \lstinline{((pf_labels cc) ! rep_of l a)}.
+The \lstinline{validity_invar} states that all edge labels are valid, therefore we only need to prove that $rep\_of(l, a)$ is not a root in the proof forest, otherwise the \lstinline{validity_invar} would not be applicable for this index, because there is no outgoing edge from a root.
+Given that we assumed that there is a path from $c$ to $a$ in the proof forest, we know that $c$ is nearer to the root than $a$ and we can show that if $rep\_of(l,a)$ was a root in the proof forest, then $c$ can only be equal to the root, therefore \lstinline{"rep_of l a = rep_of l c"}, which is a contradiction.
 \end{proof}
 
 From this lemma we can easily show the theorem \lstinline{cc_explain_valid} by computation induction on \lstinline{cc_explain_aux}.
