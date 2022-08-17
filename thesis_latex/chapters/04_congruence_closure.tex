@@ -1,31 +1,49 @@
 % !TeX root = ../main.tex
 % Add the above to each chapter to make compiling the PDF easier in some editors.
 
-\chapter{Congruence Closure with CC\_Explain Operation}\label{chapter:congruence_closure}
+\chapter{Congruence Closure} \label{chapter:congruence_closure}
+
+Congruence closure considers equations containing constants and function symbols. Each function symbol is associated with an arity, which is the number of parameters it accepts. The congruence closure $CC(S)$ of a set of equations $S$ is the smallest reflexive, symmetric, transitive and monotonic superset of the equations. It is inductively defined as follows \cite{congruenceclosure-ac}:
+
+\begin{enumerate}[label=(\roman*)]
+\itemsep0em
+    \item $S \subseteq CC(S)$.
+    \item $\forall a: a = a \in CC(S)$ (reflexivity).
+    \item if $a = b \in CC(S)$, then $b = a \in CC(S)$ (symmetry).
+    \item if $a = b \in CC(S)$ and $b = c \in CC(S)$, then $a = c \in CC(S)$ (transitivity).
+    \item $\forall f$ of arity $k :$ if $\forall i \in [1..k]: a_i = b_i \in CC(S)$, then $f(a_1, ..., a_k) = f(b_1,..., b_k)$ (monotonicity).
+\end{enumerate}
+
+This chapter describes the implementation of an algorithm which maintains the congruence closure of a set of equations.
+The algorithm was presented by Nieuwenhuis and Oliveras \cite{Nieuwenhuis}.
+
+Similarly to the union-find algorithm, the congruence closure algorithm starts with an empty data structure and equations are added to it incrementally with the \lstinline|merge| function. The function \lstinline|are_congruent| returns \emph{True} if a given equation is contained in the congruence closure.
+
+The data structure contains a union-find forest, in order to maintain the equivalence classes of the variables. Additionally, there is another forest, called the \emph{proof forest}. It is similar to the union-find forest as it maintains the same equivalence classes, but it differs in the positioning of the edges.
+
+Moreover, it contains two data structures for storing equations containing function symbols. The following sections describe the \emph{proof forest} and then the congruence closure algorithm, as well as their correctness proofs.
+
+As before, the optimizations of path compression and considering the sizes of the representative classes are left out. These optimizations are not relevant for the correctness of the algorithm, and they could later be added to a refinement of the algorithm.
 
 \section{Input equations}\label{section:inputequations}
 
-We now consider not only equations between constants, but also equations containing function symbols. Each function symbol is associated with an arity, which is the number of parameters it accepts. Function symbols with arity 0 are constants.
+Arbitrary equations can be transformed to equations which have one of the following two forms: either constant equations of the form $a = b$ or equations of the form $F(a,b) = c$, where $a$, $b$ and $c$ are constants from a set of $n$ constants, which are indexed from $0$ to $n-1$. $F$ is a specific function of arity 2.
 
-Arbitrary equations can be transformed to equations of depth at most 2, and with only one function of arity 2. This is done by currying and by introducing new constant symbols. See \cite{Nieuwenhuis2} for a detailed explanation of how this is done. In order to understand this thesis, it is irrelevant to know how the transformation is done, it is just important to know that the result is a set of equations between constant symbols and one specific function symbol $F$ of arity 2. The congruence closure of these transformed equations is equal to the congruence closure of the original equations, therefore from this point on, we will only consider the transformed equations, i.e., these two types of input equations: either $a = b$ or $F(a,b) = c$ where $a$, $b$ and $c$ are constant symbols.
-
+The transformation is done by currying and by introducing new constant symbols. For a detailed explanation of how this is done, refer to \cite{Nieuwenhuis2}. In order to understand this thesis, it is irrelevant to know how the transformation is done.
+The congruence closure of the transformed equations is equal to the congruence closure of the original equations, therefore in the following, we will only consider the transformed equations.
 The datatype we use for these equations is the one described in Subsection \ref{subsubsection:datatypes}.
 
-\section{Implementation}
+\section{Congruence Closure Implementation}
 
-For the implementation of the congruence closure algorithm, we follow the description in the paper by Nieuwenhuis et al. \cite{Nieuwenhuis} As before, the optimizations of path compression and considering the sizes of the representative classes are left out. These optimizations are not relevant for the correctness of the algorithm, and they could later be added to a refinement of the algorithm.
+\subsection{The proof forest}
 
-The algorithm uses a modified version of the union find algorithm for maintaining the equivalence classes between the constant elements, and it has a few additional data structures for storing equations containing the function symbol $F$. The following sections describe the modified union-find algorithm and then the congruence closure algorithm, as well as their correctness proofs.
-
-\subsection{Modified Union Find Algorithm}
-
-In order to implement a \emph{cc\_explain} operation with a reasonable runtime for the congruence closure data structure, the paper by Nieuwenhuis et al. \cite{Nieuwenhuis} introduces an alternative union-find algorithm. Additionally to the union-find forest, there is a new data structure, the \emph{proof forest}, i.e., a forest which has as nodes the variables, and as edges the unions that were made. Each time \lstinline{ufa_union} is called on the union-find forest, the proof forest is modified with \lstinline{add_edge}. In order to avoid the creation of cycles, redundant unions are ignored.
+In order to implement a \emph{cc\_explain} operation with a reasonable runtime, the paper by Nieuwenhuis et al. \cite{Nieuwenhuis} introduces an additional data structure, the \emph{proof forest}. It is a forest which has as nodes the variables and as edges the unions that were made. Each time \lstinline|ufa_union| is called on the union-find forest, the proof forest is modified with \lstinline|add_edge|. In order to avoid the creation of cycles, redundant unions are ignored.
 
 \subsubsection{add\_edge}
 \label{subsubsection:addedge}
 
-The proof forest has directed edges, and for each equivalence class there is a representative node, where all the edges are directed towards. To keep this invariant, each time and edge from $x$ to $y$ is added, all the edges on the path from the root of $x$ to $x$ are reversed.
-In the implementation, the proof forest is represented by a list which stores the parent of each node, exactly as in the union-find list. The implementation for adding an edge, which corresponds to the \lstinline{union} operation, is the following:
+Analogously to the union-find forest, the proof forest has directed edges and for each equivalence class there is a representative element, or root. We denote the root of an element $x$ in the proof forest $pf$ as $rep\_of(pf, x)$. All edges are directed towards the root. To keep this invariant, each time and edge from $x$ to $y$ is added, all the edges on the path from $rep\_of(pf, x)$ to $x$ are reversed.
+In the implementation, the proof forest is represented by a list which stores the parent of each node, exactly as in the union-find list. As before, the parent of an element $x$ in the proof forest $pf$ is denoted as $pf ! x$. The implementation for adding an edge, which corresponds to the \lstinline{union} operation, is the following:
 
 \begin{lstlisting}
 function (domintros) add_edge :: "nat list ⇒ nat ⇒ nat ⇒ nat list"
@@ -41,28 +59,30 @@ Assuming the proof forest looks like this
 
 2 $\longleftarrow$ 3 \ \ \ 1 $\longrightarrow$ 0 \
 
-After adding an edge between 3 and 1, the edges from 3 to its root are inverted.
+After adding an edge between 3 and 1, the edges from 3 to its root 2 are inverted.
 
 2 $\longrightarrow$ 3 $\longrightarrow$ 1 $\longrightarrow$ 0 \
 \end{exmp}
 
-We can show that \lstinline{add_edge x y} terminates, if the invariant \lstinline{ufa_invar} holds for the proof forest and $x$ and $y$ do not belong to the same equivalence class.
+We can show that \lstinline{add_edge pf x y} terminates, if the invariant \lstinline{ufa_invar} holds for the proof forest and $x$ and $y$ do not belong to the same equivalence class.
 
 \begin{lstlisting}
 lemma add_edge_domain:
-  assumes "ufa_invar l" "rep_of l x ≠ rep_of l y"
-  shows "add_edge_dom (l, x, y)"
+  assumes "ufa_invar pf" "rep_of pf x ≠ rep_of pf y"
+  shows "add_edge_dom (pf, x, y)"
 \end{lstlisting}
 
 \begin{proof}
-It can be proven by induction on the length of the path $p$ from the root of $x$ to $x$.
+It can be proven by induction on the length of the path $p$ from $rep\_of(pf, x)$ to $x$.
 
-In the base case there is only one node in the path, therefore $x$ must be equal to its root, therefore $pf ! x = x$, and the algorithm terminates immediately.
+In the base case there is only one node in the path, hence $x$ must be equal to its root, therefore $pf ! x = x$ and the algorithm terminates immediately.
 
-In the other case $x$ is not a root, then there is a path $p'$ from the root to the parent of $x$ which is shorter than the path from the root to $x$. The path $p'$ is also present in the $pf[x := y]$, because the path does not contain $x$. Also, the representative of $x$ in $pf[x := y]$ is equal to the representative of $y$, and the representative of the parent of $x$ is still the old representative of $x$, therefore they are not in the same representative class, and we can apply the induction hypothesis and conclude that the recursive call terminates, therefore the function terminates.
+In the other case $x$ is not a root. This implies that there is a path $p'$ from $rep\_of(pf,x)$ to $pf!x$ which is shorter than the path from $rep\_of(pf,x)$ to $x$. The path $p'$ is also present in the $pf[x := y]$, because the path does not contain $x$. Also, the representative of $x$ in $pf[x := y]$ is equal to the representative of $y$, and $rep\_of(pf[x := y],pf!x)$ is still equal to the old representative $rep\_of(pf,pf!x)$, therefore they are not in the same representative class, and we can apply the induction hypothesis and conclude that the recursive call terminates, therefore the function terminates.
 \end{proof}
 
-In order to prove the correctness of \lstinline|add_edge|, we show that \lstinline{ufa_union l x y} and \lstinline{add_edge l x y} have the same behaviour, from which we can conclude that the equivalence classes of the union-find forest are the same as those of the proof forest. The theory \lstinline{Union_Find} from the AFP \cite{Sep} already provides the following lemma for \lstinline{ufa_union}:
+In order to prove the correctness of \lstinline|add_edge|, we show that \lstinline{ufa_union l x y} and \lstinline{add_edge l x y} have the same behaviour.
+We can conclude from this that the equivalence classes of the union-find forest are the same as those of the proof forest.
+The theory \lstinline{Union_Find} from the AFP \cite{Sep} already provides the following lemma for \lstinline{ufa_union}:
 
 \begin{lstlisting}
 lemma ufa_union_aux:
@@ -70,24 +90,26 @@ lemma ufa_union_aux:
     (if rep_of l i = rep_of l x then rep_of l y else rep_of l i)"
 \end{lstlisting}
 
-We can show a similar lemma for \lstinline{add_edge}:
+We can show a similar lemma for \lstinline{add_edge}.
+The additional assumption \lstinline{rep_of pf x ≠ rep_of pf y} does not cause problems, because \lstinline{add_edge} is only executed by the congruence closure algorithm when \lstinline{rep_of pf x ≠ rep_of pf y}.
 
 \begin{lstlisting}
 lemma rep_of_add_edge_aux:
-   assumes "rep_of l x ≠ rep_of l y"
-   shows "rep_of (add_edge l x y) i =
-     (if rep_of l i = rep_of l x then rep_of l y else rep_of l i)"
+   assumes "rep_of pf x ≠ rep_of pf y"
+   shows "rep_of (add_edge pf x y) i =
+     (if rep_of pf i = rep_of pf x then rep_of pf y else rep_of pf i)"
 \end{lstlisting}
-
-The additional assumption \lstinline{rep_of l x ≠ rep_of l y} does not cause problems, because \lstinline{add_edge} is only executed by the congruence closure algorithm when \lstinline{rep_of l x ≠ rep_of l y}.
 
 \begin{proof}
 We already showed that the function terminates, therefore we can prove it by computation induction on \lstinline{add_edge}.
 
-The proof uses various lemmas about the behaviour of \lstinline{rep_of} after a function update, which depends on where the function update was, and which element we want to find the representative of. These lemmas are proven by analysing how the paths in the forest change after a function update, which corresponds to adding a path in the forest. With these lemmas the induction is easily proven.
+The proof uses various lemmas about the behaviour of \lstinline{rep_of} after a function update, which depends on where the function update was, and which element we want to find the representative of.
+The function update corresponds to adding an edge in the forest.
+These lemmas are proven by analysing how the paths in the forest change after a function update.
+With these lemmas the induction is easily proven.
 \end{proof}
 
-We also show that \lstinline|add_edge| has the expected behaviour, which is that it reverses all the edges from the root of $x$ to $x$, and it adds an edge from $x$ to $y$, i.e., after \lstinline|add_edge| the forest contains a path from $y$ to the representative of $x$, which is the path which was there before \lstinline|add_edge|, but reversed and with one added edge between $x$ and $y$. \lstinline|rev| is a function which reverses a list, and \lstinline|path_to_root| is the function described in Subsection \ref{subsubsection:path-to-root}. The proof can be shown by computation induction on \lstinline|add_edge|.
+We also show that \lstinline|add_edge| reverses all the edges from $rep\_of(pf,x)$ to $x$, and it adds an edge from $x$ to $y$, i.e., after \lstinline|add_edge| the forest contains a path from $y$ to $rep\_of(pf,x)$. This path is the original path from $rep\_of(pf,x)$ to $x$ reversed and with one edge added between $x$ and $y$. \lstinline|rev| is a function which reverses a list, and \lstinline|path_to_root| is the function described in Subsection \ref{subsubsection:path-to-root}. The proof can be shown by computation induction on \lstinline|add_edge|.
 
 \begin{lstlisting}
 lemma add_edge_correctness:
@@ -100,29 +122,35 @@ The proof forest has a similar structure as the union-find forest, therefore we 
 
 \begin{lstlisting}
 lemma add_edge_ufa_invar_invar:
-  assumes "ufa_invar l"
-    "rep_of l x ≠ rep_of l y"
-  shows "ufa_invar (add_edge l x y)"
+  assumes "ufa_invar pf"
+    "rep_of pf x ≠ rep_of pf y"
+  shows "ufa_invar (add_edge pf x y)"
 \end{lstlisting}
 
 \begin{proof}
-In order to prove this lemma, we show another lemma which states that the invariant holds after a function update if the update does not cause the formation of a cycle. Then we show that each function update of \lstinline{add_edge} does not form a cycle.
+In order to prove this lemma, we show another lemma which states that the invariant holds after a function update, if the update does not cause the formation of a cycle. Then we show that each function update of \lstinline|add_edge| does not form a cycle.
 \end{proof}
 
 \subsubsection{add\_label}
+\label{subsubsection:addlabel}
 
-Additionally, each edge is labeled with the input equation or the input equations which caused the adding of this edge. This is not necessary for the union-find algorithm by itself, but it will be needed by the \lstinline{cc_explain} operation. There are two possible types of labels: either an equation $a = b$ was input, or two equations of the type $F(a_1, a_2) = a$ and $F(b_1, b_2) = b$, where $a_1$ and $b_1$ were already in the same equivalence class before this union, as well as $a_2$ and $b_2$. In both theses cases a union between the equivalence classes of $a$ and $b$ must be made. The labeling is implemented by using an additional list, which at each index contains the label of the outgoing edge, or \lstinline{None} if there is no outgoing edge. It is similar to the associated unions list of union-find, but it contains directly the labels instead of an index to another list.
+Additionally, each edge is labeled with the input equation, or the input equations, which caused the adding of this edge. This is not necessary for the union-find algorithm by itself, but it will be needed by the \lstinline|cc_explain| operation.
+There are two possible types of labels: either one equation $a = b$, or two equations of the type $F(a_1, a_2) = a$ and $F(b_1, b_2) = b$, where $a_1$ and $b_1$ were already in the same equivalence class before this union, as well as $a_2$ and $b_2$.
+Both these cases can cause the union between the equivalence classes of $a$ and $b$.
+The labeling is implemented by using an additional list, called \lstinline|pf_labels|.
+It contains at each index the label of the outgoing edge, or \lstinline|None| if there is no outgoing edge.
+It is similar to the \emph{associated unions} list of union-find, but it contains directly the labels instead of an index to another list.
 
-The labels have the type \lstinline{pending_equation}, which can be either one or two equations.
+The labels have the type \lstinline|pending_equation|, which can be either one or two equations. The name \lstinline|pending_equation| derives from the fact that it is also the type of the elements of the \lstinline|pending| list, which will be described in the next section. The datatype is defined as follows:
 
 \begin{lstlisting}
 datatype pending_equation = One equation
   | Two equation equation
 \end{lstlisting}
 
-The name \lstinline{pending_equation} derives from the fact that it is also the type of the elements of the pending list, which will be described in the next section. Theoretically this allows also for invalid equations, for example, two equations of the type $a = b$ and $c = d$, but we will prove in the next sections that the equations in the labels list are always either \lstinline{One} ($a = b$) or \lstinline{Two} ($F(a_1, a_2) = a$) ($F(b_1, b_2) = b$).
+Theoretically this allows also for invalid equations, for example, two equations of the type $a = b$ and $c = d$, but we will prove in the next sections that the equations in the \lstinline|pf_labels| list are always either \lstinline{One} ($a = b$) or \lstinline{Two} ($F(a_1, a_2) = a$) ($F(b_1, b_2) = b$).
 
-Each time an edge gets added to the proof forest, the labels need to be updated as well. The function \lstinline{add_label} adds a label to the new edge, and modifies the labels for the edges which are modified by \lstinline{add_edge}:
+Each time an edge gets added to the \emph{proof forest}, the labels need to be updated as well. The function \lstinline{add_label} adds a label to the new edge, and modifies the labels for the edges which are revered by \lstinline{add_edge}. \lstinline|pfl| represents the \lstinline|pf_labels| list.
 
 \begin{lstlisting}
 function (domintros) add_label :: "pending_equation option list ⇒ nat list ⇒ nat ⇒ pending_equation ⇒ pending_equation option list"
@@ -149,17 +177,18 @@ For the congruence closure algorithm there are five important data structures, w
 \begin{itemize}
 	\item \lstinline{cc_list}: the union-find list, corresponds to the \lstinline{uf_list}.
 
-	\item \lstinline{use_list}: a two-dimensional list which contains for each representative $a$ a list of input equations $F(b_1, b_2) = b$ where the representative of $b_1$ or $b_2$ is $a$.
+	\item \lstinline{use_list}: a two-dimensional list which contains for each index $a$ a list of input equations $F(b_1, b_2) = b$ where the representative of $b_1$ or $b_2$ is $a$.
+    Only indexes which symbolize representative elements contain equations.
 
-	\item \lstinline{lookup}: a lookup table indexed by pairs of representatives $b$ and $c$, which stores an input equation $F(a_1, a_2) = a$ such that $b$ is the representative of $a_1$ and $c$ is the representative of $a_2$, or \lstinline{None} if no such equation exists.
+	\item \lstinline{lookup}: a lookup table indexed by pairs of representatives $b$ and $c$. At index $(b,c)$ it stores an input equation $F(a_1, a_2) = a$, such that $b$ is the representative of $a_1$ and $c$ is the representative of $a_2$, or \lstinline{None} if no such equation exists.
 
     \item \lstinline{pending}: equations of the type \lstinline{One} ($a = b$) or \lstinline{Two} ($F(a_1, a_2) = a$) ($F(b_1, b_2) = b$) where $a$ and $b$ need to be merged, and $a_1$ and $b_1$ are already in the same congruence class, as well as $a_2$ and $b_2$.
 
-    \item \lstinline{proof_forest}: the proof forest as described in the previous subsection.
+    \item \lstinline{proof_forest}: the proof forest as described in Subsection \ref{subsubsection:addedge}.
 
-    \item \lstinline{pf_labels}: the labels of the proof forest as described in the previous subsection.
+    \item \lstinline{pf_labels}: the labels of the proof forest as described in Subsection \ref{subsubsection:addlabel}.
 
-    \item \lstinline{input}: a set of the input equation, which will be useful for some proofs in the next sections.
+    \item \lstinline{input}: a set of the input equations, which will be useful for some proofs in the next sections.
 \end{itemize}
 
 In the following, we shall refer to \lstinline{cc_list} as $l$, the use list as $u$, the lookup table as $t$, the pending list as $pe$, the proof forest as $pf$, the labels list for the proof forest as $pfl$ and the input as $ip$, unless otherwise stated.
@@ -167,12 +196,13 @@ In the following, we shall refer to \lstinline{cc_list} as $l$, the use list as 
 \subsection{Congruence Closure Algorithm}
 
 With this data structure we can implement the \lstinline{merge} function as described in \cite{Nieuwenhuis}.
-It takes as parameter the current congruence closure data structure and an equation which it adds to the data structure. It uses the \lstinline{propagate} function, which will be described later, which performs unions between the constant symbols in the pending list.
+It takes as parameter the current congruence closure data structure and an equation which it adds to the data structure. The \lstinline{propagate} function used by \lstinline{merge} will be described later. It performs unions between the constant symbols in the pending list.
 
-If the input equation is of the type $F(a_1, a_2) = a$, then there are two possibilities: if there is already an equation $F(b_1, b_2) = b$ in the lookup table at the index $(rep\_of(l,a_1), rep\_of(l,a_2))$, then we know that $a_1 = b_1$ and $a_2 = b_2$, and we add $F(b_1, b_2) = b$ and $F(a_1, a_2) = a$ to pending, so that the equivalence classes of $a$ and $b$ will be merged.
-On the other hand, if the respective lookup entry is \lstinline{None}, then the equation is added to the lookup table, at the index $(rep\_of(l,a_1), rep\_of(l,a_2))$ so that the next time an equation with congruent parameters is input, they will be added together to pending.
+If the input equation is of the type $F(a_1, a_2) = a$, then there are two possibilities: if there is already an equation $F(b_1, b_2) = b$ in the lookup table at the index $(rep\_of(l,a_1), rep\_of(l,a_2))$, then we know that $a_1 = b_1$ and $a_2 = b_2$. Therefore, we add $F(b_1, b_2) = b$ and $F(a_1, a_2) = a$ to pending, so that the equivalence classes of $a$ and $b$ will be merged.
+On the other hand, if the respective lookup entry is \lstinline{None}, then the equation is added to the lookup table at the index $(rep\_of(l,a_1), rep\_of(l,a_2))$, so that the next time an equation with congruent parameters is input, they will be added together to pending.
 
-For this case distinction there is a function \lstinline{lookup_Some}, which returns \lstinline{True} if there is an entry in lookup at the index $(rep\_of(l,a_1), rep\_of(l,a_2))$ and False otherwise, and a function \lstinline{update_lookup}, which adds the equation to lookup at the index $(rep\_of(l,a_1), rep\_of(l,a_2))$.
+For this case distinction there are two auxiliary functions.
+The function \lstinline{lookup_Some} returns \emph{True} if there is an entry in lookup at the index $(rep\_of(l,a_1), rep\_of(l,a_2))$ and \emph{False} otherwise. The function \lstinline{update_lookup} adds the equation to lookup at the index $(rep\_of(l,a_1), rep\_of(l,a_2))$.
 
 \begin{lstlisting}
 fun merge :: "congruence_closure ⇒ equation ⇒ congruence_closure"
@@ -194,7 +224,7 @@ fun merge :: "congruence_closure ⇒ equation ⇒ congruence_closure"
 )"
 \end{lstlisting}
 
-The main part of the algorithm is executed in \lstinline{propagate}, which recursively takes one item from pending and performs the union of the representative classes. As previously mentioned, the pending item could be either an equation of the type $a = b$, or two equations of the type $F(a_1, a_2) = a$ and $F(b_1, b_2) = b$, where $a_1$ and $a_2$ are already in the same representative class as $b_1$ and $b_2$ respectively. In both cases the representative classes of $a$ and $b$ need to be merged. The functions \lstinline{left} and \lstinline{right} simply retrieve $a$ and $b$ from either of the two types of pending equations. If $a$ and $b$ are already in the same representative class, nothing needs to be done, otherwise the union is performed. For more clarity, the union is defined separately as \lstinline{propagate_step}.
+The main part of the algorithm is executed in \lstinline{propagate}. It recursively takes one item from pending and performs the union of the representative classes. As previously mentioned, the pending item could be either an equation of the type $a = b$, or two equations of the type $F(a_1, a_2) = a$ and $F(b_1, b_2) = b$, where $a_1$ and $a_2$ are already in the same representative class as $b_1$ and $b_2$ respectively. In both cases the representative classes of $a$ and $b$ need to be merged. The functions \lstinline{left} and \lstinline{right} simply retrieve $a$ and $b$ from either of the two types of pending equations. If $a$ and $b$ are already in the same representative class, nothing needs to be done, otherwise the union is performed. For more clarity, the union is defined separately as \lstinline{propagate_step}.
 
 \begin{lstlisting}
 function propagate :: "congruence_closure ⇒ congruence_closure"
@@ -212,7 +242,7 @@ function propagate :: "congruence_closure ⇒ congruence_closure"
   by pat_completeness auto
 \end{lstlisting}
 
-The union consists of the previously discussed \lstinline{ufa_union}, \lstinline{add_edge} and \lstinline{add_label}, as well as a loop which moves all elements from the use list of $rep\_of(l,a)$ to either $rep\_of(l, b)$, or to pending. This is necessary, because the old representative of $a$ is not a representative any more, and its new representative is  $rep\_of(l, b)$.
+The union consists of the previously discussed \lstinline{ufa_union}, \lstinline{add_edge} and \lstinline{add_label}, as well as the function \lstinline|propagate_loop| which moves all elements from the use list of $rep\_of(l,a)$ to either $rep\_of(l, b)$, or to pending. This is necessary, because the old representative of $a$ is not a representative any more, and its new representative is  $rep\_of(l, b)$.
 
 \begin{lstlisting}
 abbreviation propagate_step
@@ -228,7 +258,7 @@ abbreviation propagate_step
     input = ip⦈"
 \end{lstlisting}
 
-The loop is defined as a recursive function, which considers each element of the use list of $rep\_of(l, a)$, and either adds it to the use list and the lookup table, or if there is already an entry in lookup, then that entry together with the current equation are added to pending.
+\lstinline|propagate_loop| is defined as a recursive function. It considers each element of the use list of $rep\_of(l, a)$, and either adds it to the use list of $rep\_of(l, b)$ and the lookup table, or, if there is already an entry in lookup, then that entry together with the current equation are added to pending.
 
 \begin{lstlisting}
 fun propagate_loop
@@ -256,7 +286,7 @@ Let $cc$ be a congruence closure data structure with an empty use list and looku
 
 2 $\xleftarrow{3 = 2}$ 3 \ \ \ 1 $\xrightarrow{\text{1 = 0}}$ 0 \
 
-Therefore 2 and 3 are in one equivalence class and 1 and 0 are in the other.
+This shows that 2 and 3 are in one equivalence class and 1 and 0 are in the other.
 
 If we apply \lstinline{merge} with the equation $F(0,2) = 1$, then the algorithm considers the lookup entry at the index $(rep\_of(l, 0), rep\_of(l, 2))$, which is empty, therefore the equation is added to the use list and to lookup.
 
@@ -269,7 +299,7 @@ Then, \lstinline|propagate| is executed, which first performs the union of $3$ a
 After the union, the representative of 3 and 2 has changed, therefore the equations $F(1,3) = 3$ in the use list of the old representative of 2 is moved to the use list of the new representative by \lstinline|propagate_loop|, and it is also added to the lookup table with the new representative as index.
 \end{exmp}
 
-The function \lstinline{are_congruent} returns \lstinline{True} if an equation is in the congruence closure of all the input equations so far. It simply checks if the elements have the same representative or if they have the same representative as the corresponding entry in lookup.
+The function \lstinline{are_congruent} returns \emph{True} if an equation is in the congruence closure of all the input equations so far. It simply checks if the elements have the same representative. In the case of equations containing $F$, it verifies if they have the same representative as the corresponding entry in lookup.
 
 \begin{lstlisting}
 fun are_congruent :: "congruence_closure ⇒ equation ⇒ bool"
@@ -283,29 +313,29 @@ fun are_congruent :: "congruence_closure ⇒ equation ⇒ bool"
 )"
 \end{lstlisting}
 
-\section{Correctness Proof}
+\section{Proofs}
 
 \subsection{Invariants}
 
-At this point we can already prove some properties of the congruence closure data structure. Our approach this time is different than the one for the union-find algorithm. Instead of defining an induction rule like in the union-find section and then prove the properties through the induction rule, we define the properties as invariants and then prove that they remain invariant after applying \lstinline|merge|. For each invariant, we need to follow the same steps. They are listed here in order to introduce a name for each step:
+At this point we can already prove some properties of the congruence closure data structure. Our approach this time is different than the one for the union-find algorithm. Instead of defining an induction rule as for the union-find proofs and prove the properties through the induction rule, we define the properties as invariants and then prove that they remain invariant after applying \lstinline|merge|. For each invariant, we need to follow the same steps. They are listed here in order to introduce a name for each step:
 
 \begin{enumerate}
 	\item Prove that the invariant holds for the initial empty congruence closure.
 
-	\item Prove that if the invariant holds before the merge operation, it also holds after the merge operation. Below is a list of what needs to be proven:
+	\item Prove that if the invariant holds before the merge operation, it also holds after the merge operation. It includes the following intermediate steps:
     \begin{enumerate}
         \item The invariant holds after one step in the \lstinline{propagate_loop}. We shall refer to the two cases of the function as \lstinline{loop1} and \lstinline{loop2}.
     	\item The invariant holds after the entire \lstinline{propagate_loop}.
-    	\item The invariant holds for the parameters of \lstinline{propagate_loop} in \lstinline{propagate_step}. We shall refer to the this case as \lstinline{mini_step}.
+    	\item The invariant holds for the parameters of \lstinline{propagate_loop} in \lstinline{propagate_step}. We shall refer to this case as \lstinline{mini_step}.
     	\item It holds after \lstinline{propagate_step}.
     	\item It holds after \lstinline{propagate}.
     	\item And finally, it holds after \lstinline{merge}.
     \end{enumerate}
 \end{enumerate}
 
-Let us now look at the concrete invariants. Each list in the data structure has an invariant which states that all the elements which are in the list are in bounds. The corresponding proofs are easy to prove if we assume that all the input equations contain only valid elements.
+Let us now look at the concrete invariants. Each list in the data structure has an invariant which states that all the elements which are in the list are in bounds. The corresponding proofs are easy to show if we assume that all the input equations contain only valid elements.
 
-One of the invariants is the usual \lstinline{ufa_invar} that we know from the union-find algorithm. The \lstinline{ufa_invar} holds for the \lstinline{cc_list} and the \lstinline{proof_forest}. These two are only modified before entering the in the \lstinline{mini_step}, and we already proved previously that the \lstinline{ufa_invar} holds after \lstinline{ufa_union} (in Section \ref{section:uf-isabelle}) and after \lstinline{add_edge} (Subsection \ref{subsubsection:addedge}). Therefore it also holds after \lstinline{merge}.
+One of the invariants is the usual \lstinline{ufa_invar} that we know from the union-find algorithm. The \lstinline{ufa_invar} holds for the \lstinline{cc_list} and the \lstinline{proof_forest}. These two are only modified before entering the \lstinline{mini_step}, and we already proved previously that the \lstinline{ufa_invar} holds after \lstinline{ufa_union} (in Section \ref{section:uf-isabelle}) and after \lstinline{add_edge} (Subsection \ref{subsubsection:addedge}). Therefore it also holds after \lstinline{merge}.
 
 We define a new invariant \lstinline{same_eq_classes_invar}, which states, as the name suggests, that the union-find forest and the proof forest represent the same equivalence classes:
 
@@ -314,19 +344,18 @@ rep_of l i = rep_of l j ⟷ rep_of pf i = rep_of pf j
 \end{lstlisting}
 
 This invariant is important for the proofs that consider \lstinline{add_edge}. That is because we only showed that \lstinline{add_edge pf x y} terminates if \lstinline{rep_of pf x ≠ rep_of pf y}. \lstinline{propagate} only executes \lstinline{add_edge} when \lstinline{rep_of l x ≠ rep_of l y}. The invariant shows that these two statements are equivalent, therefore \lstinline{add_edge} always terminates when used inside of the algorithm.
-
 In order to prove the invariant, given that the two lists $l$ and $pf$ are only modified during the \lstinline{mini_step}, it is sufficient to show that \lstinline{ufa_union l x y} and \lstinline{add_edge pf x y} have the same behaviour, which is what we showed in Subsection \ref{subsubsection:addedge}.
 
-Furthermore, for each data structure there is an invariant which states the properties which were informally described in Subsection \ref{subsection:datastructure}. They are described in the following.
+Furthermore, for each data structure there is an invariant which states the properties which were informally described in Subsection \ref{subsection:datastructure}. The nvariants are presented in the following.
 
 For the use list, the invariant \lstinline|use_list_invar| states that for each representative $a$, its use list only contains equations of the type $F(b_1, b_2) = b$, where $a$ is the representative of either $b_1$ or $b_2$.
 
 \begin{proof}
-For the correctness proof after the \lstinline{propagate_loop}, we need to add an additional assumption that the second parameter only contains equations of the type $F(a_1, a_2) = a$ and the representative of either $a_1$ or $a_2$ is $rep\_of(l, b)$ (where $b$ is the right side of the equation which is being propagated). This follows from the facts that the second parameter of \lstinline{propagate_loop} is $(u ! rep\_of(l, a))$, the invariant holds before the \lstinline{propagate_loop}, and the new representative of $a$ after the union is $b$.
+For the correctness proof after the \lstinline{propagate_loop}, we need to add an additional assumption that the second parameter only contains equations of the type $F(a_1, a_2) = a$ and the representative of either $a_1$ or $a_2$ is $rep\_of(l, b)$ (where $b$ is the right side of the equation which is being propagated). This follows from the facts that the second parameter of \lstinline{propagate_loop} is $u ! rep\_of(l, a)$, the invariant holds before the \lstinline{propagate_loop}, and the new representative of $a$ after the union is $rep\_of(l, b)$.
 
 With this assumption we can show that each time an equation gets added to the use list in the \lstinline{propagate_loop}, it is a valid equation.
 
-In the proof after the \lstinline{merge} operation, the use list is only modified in the third case, and only equations of the form $F(a_1, a_2) = a$ are added to $rep\_of(l, a_1)$  and $rep\_of(l, a_2)$. Therefore all the necessary properties hold for these new equations.
+In the proof after the \lstinline{merge} operation, the use list is only modified in the third case of the function and only equations of the form $F(a_1, a_2) = a$ are added to $rep\_of(l, a_1)$  and $rep\_of(l, a_2)$. Therefore all the necessary properties hold for these new equations.
 
 For the remaining cases, use list is either unchanged, or something is removed from it, therefore the invariant trivially holds.
 \end{proof}
@@ -340,16 +369,17 @@ Each time an equation is added to lookup, it has the desired form and it is adde
 For pending, the invariant \lstinline|pending_invar| states that the equations are either of the form \lstinline{One} ($a = b$) or \lstinline{Two} ($F(a_1, a_2) = a$) ($F(b_1, b_2) = b$) where $rep\_of(l, a_1) = rep\_of(l, b_1)$ and $rep\_of(l, a_2) = rep\_of(l, b_2)$:
 
 \begin{proof}
-We need to show that in the \lstinline{propagate_loop} the equation $u1$ we add to pending has a valid form. We know that $u1$ derives from the use list, therefore it is of the form $F(a_1, a_2) = a$. Then we link to it the lookup entry at the index $(rep\_of(l, a_1), rep\_of(l, a_2))$. From the lookup invariant we know that there is an entry of the form $F(b_1, b_2) = b$ at this index where $rep\_of(l, a_1) = rep\_of(l, b_1)$ and $rep\_of(l, a_2) = rep\_of(l, b_2)$. This shows that they are valid equations for pending.
+We need to show that in the \lstinline{propagate_loop} the equation $u1$ that we add to pending has a valid form. We know that $u1$ derives from the use list, therefore it is of the form $F(a_1, a_2) = a$. Then we link to it the lookup entry at the index $(rep\_of(l, a_1), rep\_of(l, a_2))$. From the lookup invariant we know that there is an entry of the form $F(b_1, b_2) = b$ at this index where $rep\_of(l, a_1) = rep\_of(l, b_1)$ and $rep\_of(l, a_2) = rep\_of(l, b_2)$. This shows that they are valid equations for pending.
 
-The same holds for the equations added to pending in \lstinline{merge}.
+The proof is analogous for the equations added to pending in \lstinline{merge}.
 \end{proof}
 
-The same invariant holds for the labels in \lstinline|pf_labels|. This is easy to prove,  because thy are only modified in \lstinline|propagate_step|, where the added label comes from \lstinline|pending|, therefore the invariant follows from \lstinline|pending_invar|. This invariant is called \lstinline|pf_labels_invar|.
+An equivalent invariant holds for the labels in \lstinline|pf_labels|. They are only modified in \lstinline|propagate_step|, where the added label comes from \lstinline|pending|.
+Therefore, the invariant follows from \lstinline|pending_invar|. This invariant is called \lstinline|pf_labels_invar|.
 
 There is also an invariant which states that the \lstinline{cc_list}, the first dimension of the use list, both dimensions of lookup, the proof forest and the \lstinline{pf_labels} have the same length. This was trivial to prove, given that the algorithm never changes the length of the lists, and initially the lists have the same length.
 
-The remaining invariants will be described later on, when they become relevant.
+The remaining invariants will be described at a later point, when they become relevant.
 
 \subsection{Abstract Formalization of Congruence Closure}
 \label{subsection:abstraction}
@@ -373,21 +403,20 @@ inductive_set Congruence_Closure :: "equation set ⇒ equation set" for S
 ⟹ (a ≈ b) ∈ Congruence_Closure S"
 \end{lstlisting}
 
-The following proof rule follows directly from the definition of congruence closure, and proved to be very useful for multiple proofs:
+The following proof rule follows directly from the definition of congruence closure. It is used to prove equality between congruence closures of the two sets $A$ and $B$. It states that it is sufficient to prove that all elements of set $A$ are in the congruence closure of $B$ and vice versa, instead of having to prove that all elements of the congruence closure of $A$ are in the congruence closure of $B$.
 
 \begin{lstlisting}
-lemma Congruence_Closure_eq[case_names left right]:
+lemma Congruence_Closure_eq:
   assumes "⋀ a. a ∈ A ⟹ a ∈ Congruence_Closure B"
     "⋀ b. b ∈ B ⟹ b ∈ Congruence_Closure A"
   shows "Congruence_Closure A = Congruence_Closure B"
 \end{lstlisting}
 
-It is used to prove equality between congruence closures of $A$ and $B$. It states that it is sufficient to prove that all elements of set $A$ are in the congruence closure of $B$ and vice versa, instead of having to prove that all elements of the congruence closure of $A$ are in the congruence closure of $B$.
-
 \subsection{Correctness}
 \label{subsection:uf-correctness}
 
-To prove that the congruence closure implementation is sound and complete, we need to show that the invariants imply that \lstinline{are_congruent cc eq} returns \lstinline{True} if and only if the equation $eq$ lies in the congruence closure of the input equations.
+To prove that the congruence closure implementation is correct, we show that it is sound and complete,
+that is, \lstinline{are_congruent cc eq} returns \emph{True} if and only if the equation $eq$ lies in the congruence closure of the input equations.
 
 \begin{lstlisting}
 theorem are_congruent_correct:
@@ -395,7 +424,7 @@ theorem are_congruent_correct:
   shows "eq ∈ Congruence_Closure ((input cc)) ⟷ are_congruent cc eq"
 \end{lstlisting}
 
-The paper by Nieuwenhuis et al. \cite{Nieuwenhuis} proves this by stating the folllowing invariant which holds throughout the algorithm,
+The paper by Nieuwenhuis et al. \cite{Nieuwenhuis} proves this by stating the folllowing invariant which holds throughout the algorithm. We will call it the \lstinline|correctness_invar|:
 
 \begin{lstlisting}
 Congruence_Closure(representativeE ∪ pending) = Congruence_Closure (input)
@@ -404,7 +433,7 @@ Congruence_Closure(representativeE ∪ pending) = Congruence_Closure (input)
 where \lstinline{representativeE} can be seen as the set of equations derived from our union-find list and the equations in lookup. It is the union of the following two sets:
 
 \begin{itemize}
-    \item\lstinline{representative_set} is defined such that its congruence closure contains all the equations between two elements which have the same representative.
+    \item\lstinline{cc_list_set}, which is defined such that its congruence closure contains all the equations between two elements which have the same representative.
     \item\lstinline{lookup_entries_set} is the set of all the entries in lookup at indexes which are representatives.
 \end{itemize}
 
@@ -428,7 +457,7 @@ definition representativeE :: "congruence_closure ⇒ equation set"
     "representativeE cc = cc_list_set (cc_list cc) ∪ lookup_entries_set cc"
 \end{lstlisting}
 
-The formal definition of the aforementioned invariant is the following, where \lstinline{pending_set} converts the pending list to a set of equations of the type $a = b$:
+The formal definition of the \lstinline|correctness_invar| is the following, where \lstinline{pending_set} converts the pending list to a set of equations of the type $a = b$:
 
 \begin{lstlisting}
 definition correctness_invar :: "congruence_closure ⇒ bool"
@@ -439,17 +468,17 @@ Congruence_Closure (representativeE cc ∪ pending_set (pending cc)) = Congruenc
 
 The set of input equations is only modified by the \lstinline{merge} function, but remains constant throughout the \lstinline{propagate} function, therefore for the proof we just need to show that the congruence closure of the \lstinline{representativeE} set and pending remain unchanged after the \lstinline{propagate} function.
 
-The main challenge is to prove that the invariant holds after the \lstinline{mini_step}. We will show that \lstinline{Congruence Closure (representativeE ∪ pending)} before the \lstinline{propagate_step} is equal to \lstinline{Congruence Closure (representativeE ∪ pending ∪ (u ! rep_of l a))} after the \lstinline{mini_step}.
+The main challenge is to prove that the invariant holds after the \lstinline{mini_step}. We will show that the set \lstinline{Congruence Closure (representativeE ∪ pending)} before the \lstinline{propagate_step} is equal to \lstinline{Congruence Closure (representativeE ∪ pending ∪ (u ! rep_of l a))} after the \lstinline{mini_step}.
 Then we prove that the latter is equal to \lstinline{Congruence Closure (representativeE ∪ pending)}  after the \lstinline{propagate_loop}.
 These two lemmas imply that the congruence closure of the \lstinline{representativeE} set and pending remain unchanged after the \lstinline{propagate} function.
 
 We will first prove the second statement, given that it is much easer to show.
 
 \begin{proof}
-We need to show that \lstinline{Congruence Closure (representativeE ∪ pending ∪ (u ! rep_of l a))} before the \lstinline{propagate_loop} is equal to \lstinline{Congruence Closure (representativeE ∪ pending)}  after the \lstinline{propagate_loop}. In each step of the loop, one element from $(u ! rep\_of(l, a))$ is moved either to pending or to lookup. Therefore after the loop each element of $(u ! rep\_of(l, a))$ is either in pending or in representativeE. The elements of pending and representativeE are never removed from the set, therefore they are present also after the loop.
+We need to show that \lstinline{Congruence Closure (representativeE ∪ pending ∪ (u ! rep_of l a))} before the \lstinline{propagate_loop} is equal to \lstinline{Congruence Closure (representativeE ∪ pending)}  after the \lstinline{propagate_loop}. In each step of the loop, one element from $u ! rep\_of(l, a)$ is moved either to pending or to lookup. Therefore after the loop each element of $u ! rep\_of(l, a)$ is either in pending or in representativeE. The elements of pending and representativeE are never removed from the set, therefore they are present also after the loop.
 \end{proof}
 
-The first lemma is more difficult to prove. The following is the statement of the lemma:
+The first lemma is more difficult to prove. The following is the statement of the lemma. It states that the set \lstinline{Congruence Closure (representativeE ∪ pending)} before the \lstinline{propagate_step} is equal to \lstinline{Congruence Closure (representativeE ∪ pending ∪ (u ! rep_of l a))} after the \lstinline{mini_step}.
 
 \begin{lstlisting}[label=lst:correctness_invar_mini_step]
 lemma correctness_invar_mini_step:
@@ -475,69 +504,83 @@ Congruence_Closure (representativeE
 \end{lstlisting}
 
 \begin{proof}
-There are two inclusions which need to be shown. We can use the rule \lstinline{Congruence_Closure_eq} from Subsection \ref{subsection:abstraction}, which means that it is sufficient to show that each equation in the set on the left-hand side is in the congruence closure of the right-hand side and vice versa.
+There are two inclusions which need to be shown. We can use the rule \lstinline{Congruence_Closure_eq} from Subsection \ref{subsection:abstraction}, therefore it is sufficient to show that each equation in the set on the left-hand side is in the congruence closure of the right-hand side and vice versa. Note that the equation $eq$ of the left hand side is equal to $a = b$, because of the first two assumptions.
 
-"$\subseteq$" It needs to be shown that the equations of the \lstinline{cc_list_set}, in lookup and in pending are in the Congruence Closure of the right-hand side.
+"$\subseteq$" It needs to be shown that the equations in the \lstinline{cc_list_set}, in lookup and in pending are in the Congruence Closure of the right-hand side.
 
-Regarding the \lstinline{cc_list_set}, all the elements which had the same representative before a union also have the same representative after a union.
+Regarding the \lstinline{cc_list_set}, all the elements which had the same representative before a union also have the same representative after a union, therefore the equations are also present in the right hand side.
 
-For the pending set, we need to prove that the equation that is removed from pending is still in the congruence closure after the \lstinline{mini_step}. This holds, because the equation which is removed is $a = b$, and $a$ and $b$ are in the same equivalence class after the \lstinline{ufe_union}.
+For the pending set, we need to prove that the equation that is removed from pending is still in the congruence closure after the \lstinline{mini_step}. This holds, because the equation which is removed is $a = b$, and $a$ and $b$ are in the same equivalence class after the \lstinline{ufa_union}.
 
-The problematic cases are the equations in lookup. Given that after the union $rep\_of(l, a)$ is not a root any more, the entries in lookup which have as first or second index $rep\_of(l, a)$ are not in the \lstinline{lookup_set} anymore after the union. The goal is to prove that these equations are exactly the equations which are present in $(u ! rep\_of(l, a))$, but until now it was only proven that the equations in the use list are valid, not that they are exhaustive. A new invariant \lstinline{use_list_correctness_invar} is needed which states that all elements which are present in the lookup table at index $(i, j)$ are also in the corresponding use lists of $i$ and $j$. We will introduce this invariant later.
+The more problematic cases are the equations in lookup. Given that after the \lstinline{ufa_union} $rep\_of(l, a)$ is not a root anymore, the entries in lookup which have as first or second index $rep\_of(l, a)$ are not in the \lstinline{lookup_set} after the union.
+The goal is to prove that these entries are exactly the equations which are present in $u ! rep\_of(l, a)$. Until now it was only proven that the equations in the use list are valid, not that they are exhaustive.
+For this, we introduce a new invariant \lstinline{use_list_invar2}.
+It states that all elements that are present in the lookup table at index $(i, j)$ are also in the corresponding use lists of $i$ and $j$. We will describe this invariant later on.
 
-"$\supseteq$" We need to show that the equations of the \lstinline{cc_list_set}, \lstinline{lookup_entries_set}, pending set and of $(u ! rep\_of(l, a))$ on the right-hand side are in the congruence closure of the left-hand side.
+"$\supseteq$" We need to show that the equations of the \lstinline{cc_list_set}, \lstinline{lookup_entries_set}, pending set and of $u ! rep\_of(l, a)$ on the right-hand side are in the congruence closure of the left-hand side.
 
-The \lstinline{cc_list_set} contains equations of the type $c = rep\_of (ufa\_union(l, a, b), c)$ for each element $c$ which is not a root. If the representative after the union is the same before the union, the same equation is in the \lstinline{cc_list_set} of the left-hand side. The only representative that is different than before the union is the representative of $a$, which has as new representative $rep\_of(l, b)$. The left-hand side contains the equations $b = rep\_of(l, b)$ and $a = b$ (which is in pending). By transitivity, the congruence closure also contains $a = rep\_of(l, b)$ and $rep\_of(l, b)$ is exactly the same as $rep\_of (ufa\_union(l, a, b), a)$.
+The \lstinline{cc_list_set} contains equations of the type $c = rep\_of (ufa\_union(l, a, b), c)$ for each element $c$ which is not a root.
+If the representative of $c$ after the union is the same as before the union, the same equation is in the \lstinline{cc_list_set} of the left-hand side.
+The only representative that is different than before the union is the representative of $a$, which has as new representative $rep\_of(l, b)$.
+The left-hand side contains the equations $b = rep\_of(l, b)$ and $a = b$ (which is in pending).
+By transitivity, the congruence closure also contains $a = rep\_of(l, b)$ and $rep\_of(l, b)$ is the same as $rep\_of (ufa\_union(l, a, b), a)$.
 
 Regarding lookup, all the elements which are roots after the union, are also roots before the union, therefore all elements in the \lstinline{lookup_entry_set} of the right-hand side are also in the left-hand side.
 
 It is evident that the equations in pending on the right-hand side are also in pending in the left-hand side.
 
-It is more difficult to show that the equations in $(u ! rep\_of(l, a))$ are also present in the lookup table of the left-hand side. As before, we need a new invariant \lstinline{lookup_invar2}, which states that all equations which are in the use list of a root $i$ are also present in the lookup table. Below is the description of the new invariants.
+It is more difficult to show that the equations in $u ! rep\_of(l, a)$ are also present in the lookup table of the left-hand side. As before, we introduce a new invariant \lstinline{lookup_invar2}. It states that all equations that are in the use list of a root are also present in the lookup table.
 \end{proof}
 
-We need two new invariants of this form:
+We introduce two new invariants of this form:
 \begin{itemize}
-    \item \lstinline{lookup_invar2}: The elements in the lookup table are also present in the use list.
-	\item \lstinline{use_list_invar2}: The elements in the use list are also present in the lookup table.
+    \item \lstinline{lookup_invar2} states that the elements in the lookup table are also present in the use list.
+	\item \lstinline{use_list_invar2}: states that the elements in the use list are also present in the lookup table.
 \end{itemize}
 
-Unfortunately, these two invariants are not exactly true, because if there are two different equations where the elements have the same representatives, then they cannot both be present in the lookup table, because it only stores one equation for each pair of representatives. In fact, the set of equations in lookup and in the use list are not exactly the same, but for each equation in one of them, there is a ``similar'' equation in the other one.
+Unfortunately, these two invariants do not hold in this exact form. If there are two different equations $F(a_1,a_2) = a$ and $F(b_1, b_2) = b$, with $rep\_of(l, a_1) = rep\_of(l, b_1)$ and $rep\_of(l, a_2) = rep\_of(l, b_2)$, then they cannot both be present in the lookup table, because it only stores one equation for each pair of representatives. In fact, the set of equations in lookup and in the use list are not exactly the same, but for each equation in one of them, there is a ``similar'' equation in the other one.
 
-The difficulty was to find a suitable definition of ``similar'' which is not too strong, otherwise it wouldn't be true, but also not too weak, otherwise it is not possible to prove the invariant \lstinline{correctness_invar}.
+The difficulty was to find a suitable definition of ``similar'' which is not too strong, otherwise it wouldn't be true, but also not too weak, otherwise it is not possible to finish the proof for the invariant \lstinline{correctness_invar}.
 
-The right definition of similar turned out to be the following:
+The right definition of ``similar'' turned out to be the following:
 
 \begin{definition}
-Two equations $F(a_1, a_2) = a$ and $F(b_1, b_2) = b$ are \emph{similar}, if $rep\_of(l, a_1) = rep\_of(l, b_1)$, $rep\_of(l, a_2) = rep\_of(l, b_2)$ and $(a=b) \in Congruence\_Closure (representatives\_set \cup pending)$.
+Two equations $F(a_1, a_2) = a$ and $F(b_1, b_2) = b$ are \emph{similar}, if
+\begin{enumerate}[label=(\roman*)]
+\itemsep0em
+    \item $rep\_of(l, a_1) = rep\_of(l, b_1)$,
+    \item $rep\_of(l, a_2) = rep\_of(l, b_2)$,
+    \item $(a=b) \in Congruence\_Closure (representatives\_set \cup pending)$.
+\end{enumerate}
 \end{definition}
 
-Simply stating that $a$ and $b$ have the same representative would be too strong, because during the propagate function, they are added to pending in order to be merged later, and are not merged yet. If we use \lstinline{representativeE} instead of \lstinline{cc_list_set}, the invariant is not strong enough in order to prove \lstinline{correctness_invar_mini_step}.
+Simply stating that $a$ and $b$ have the same representative would be too strong, because during the \lstinline|propagate| function, they are added to pending in order to be merged later, but they are not merged yet. If we use \lstinline{representativeE} instead of \lstinline{cc_list_set}, the invariant is not strong enough in order to prove \lstinline{correctness_invar_mini_step}.
 
 The final invariants are the following:
 \begin{itemize}
-    \item \lstinline{lookup_invar2}: For each equation in lookup at the index $(i, j)$ (where $i$ and $j$ are representatives) there is a similar equation in use list $i$ and one in use list $j$.
-	\item \lstinline{use_list_invar2}: For each equation $F(c_1, c_2) = c$ in use list at the index $i$ (where $i$ is a representative) there is a similar equation in lookup at the index $(rep\_of(l, c_1), rep\_of(l, c_2))$.
+    \item \lstinline{lookup_invar2}: For each equation in lookup at the index $(i, j)$ (where $i$ and $j$ are representatives) there is a \emph{similar} equation in use list $i$ and one in use list $j$.
+	\item \lstinline{use_list_invar2}: For each equation $F(c_1, c_2) = c$ in use list at the index $i$ (where $i$ is a representative) there is a \emph{similar} equation in lookup at the index $(rep\_of(l, c_1), rep\_of(l, c_2))$.
 \end{itemize}
 
 Here follows the proof for \lstinline{lookup_invar2}:
 
 \begin{proof}
-We need to show that if the invariant holds before \lstinline{merge}, then it also holds after the \lstinline{merge}.
+We need to show that if the invariant \lstinline{lookup_invar2} holds before \lstinline{merge}, then it also holds after the function.
 
-The main aim is to show that it holds after \lstinline{propagate}. We assume that before \lstinline{propagate} the invariants \lstinline{lookup_invar2} and \lstinline{use_list_invar2} hold. In particular, we observe that for each equation $F(c_1, c_2) = c$ in $(u ! rep\_of(l, a))$ (which we shall refer to with $u_a$) there is a similar equation in lookup at the index $(rep\_of(l, c_1), rep\_of(l, c_2))$ and therefore there are similar equations in $(u ! rep\_of(l, c_1))$ and in $(u ! rep\_of(l, c_2))$.
+The main aim is to show that it holds after \lstinline{propagate}.
+We assume that before \lstinline{propagate} the invariants \lstinline{lookup_invar2} and \lstinline{use_list_invar2} hold.
+In particular, we observe that for each equation $F(c_1, c_2) = c$ in $u ! rep\_of(l, a)$, which we shall refer to with $u_a$, there is a similar equation in lookup at the index $(rep\_of(l, c_1), rep\_of(l, c_2))$.
+Hence, there are similar equations in $u ! rep\_of(l, c_1)$ and in $u ! rep\_of(l, c_2)$.
 
-In the \lstinline{propagate_loop} $u_a$ is emptied, while the other use lists are not modified, and $u_a$ is handed over as a parameter to the \lstinline{propagate_loop}.
+In the \lstinline{propagate_loop}, $u_a$ is emptied, while the other use lists are not modified. Then, $u_a$ is handed over as a parameter to the \lstinline{propagate_loop}.
 
 From now on let $l$ be the \lstinline{cc_list} after the \lstinline{ufe_union}.
-
 In \lstinline{loop1} the lookup table and the use lists are not modified, thus there is nothing to show.
 
 In \lstinline{loop2} we take an equation $u1$ of the form $F(c_1, c_2) = c$ from $u_a$.
-
 $u1$ is then added to lookup at the index $(rep\_of(l, c_1), rep\_of(l, c_2))$. We need to show that after this step, an equation similar to $u1$ is present both in the use list of $rep\_of(l, c_1)$ and the use list of $rep\_of(l, c_2)$.
 
-This holds if none of those two use lists are $u_a$, because of the observation made earlier, and because no use list has not been modified apart from $u_a$.
+Earlier, we observed that this was true before \lstinline{loop2}. The only use list which was modified in this step is $u_a$. Therefore the claim holds if none of those two use lists are $u_a$.
 
 If one (or both) of the use lists are $u_a$, then the representative of the corresponding element was $rep\_of(l,a)$ before the union, therefore after the union it is $rep\_of(l,b)$. Given that $u1$ is also added to $u ! rep\_of(l, b)$ by the function, we can conclude that there is a similar equation also in this use list.
 \end{proof}
@@ -545,34 +588,39 @@ If one (or both) of the use lists are $u_a$, then the representative of the corr
 Here follows the proof for \lstinline{use_list_invar2}:
 
 \begin{proof}
-We need to show that if before the \lstinline{merge} the invariant holds, then it also holds after the \lstinline{merge}.
+We need to show that if the invariant \lstinline{use_list_invar2} holds before \lstinline{merge}, then it also holds after the function.
 
-The difficulty in this proof was when after the \lstinline{mini_step}, because of the union, $rep\_of(l, a)$ is not a root any more, therefore if there are some equations $F(c_1, c_2) = c$ in the use list where the representative of $c_1$ or $c_2$ is $rep\_of(l,a)$, they have a new representative after the union, which means that the corresponding similar equations in the lookup table are not at the right index anymore.
+The main challenge of this proof was to show that it holds after the \lstinline|mini_step|.
+The \lstinline|mini_step| performs a \lstinline|ufa_union| and afterwards $rep\_of(l, a)$ is not a root anymore.
+Therefore, if there are some equations $F(c_1, c_2) = c$ in the use list, where the representative of $c_1$ or $c_2$ is $rep\_of(l,a)$, they have a new representative after the union. Due to this, the corresponding \emph{similar} equations in the lookup table are not at the right index anymore.
 
-If $F(c_1, c_2) = c$ was in $u ! rep\_of (l, a)$ (which we shall again refer to with $u_a$), then it is removed from the use list after the \lstinline|mini_step|, and the previous remark does not cause any problems. However, there could be equations in use list at an index which is not $rep\_of(l, a)$, where $c_1$ or $c_2$ has the same representative of $a$. These equations do not have a similar equation in lookup after the \lstinline{mini_step}, but we know from \lstinline{lookup_invar2} that they have a similar equation in $u_a$.
+We shall again refer to $u ! rep\_of (l, a)$ with $u_a$.
+If $F(c_1, c_2) = c$ was in $u_a$, then it is removed from the use list after the \lstinline|mini_step|. In this case, the invariant holds trivially.
+If $c_1$ and $c_2$ are both not in the same equivalence class as $a$, then the corresponding lookup entry has not changed and the invariant holds.
+However, there could be equations in the use list at an index which is not $rep\_of(l, a)$, where $c_1$ or $c_2$ has the same representative as $a$. These equations do not have a \emph{similar} equation in lookup after the \lstinline{mini_step}, but we know from \lstinline{lookup_invar2} that they have a similar equation in $u_a$.
 Therefore, in order show that \lstinline{use_list_invar2} holds after the \lstinline{propagate_loop}, it is sufficient to show that for each equation in $u_a$ a similar equation is added (or already present) in the lookup table after the \lstinline{propagate_loop}.
 
 From now on let $l$ be the \lstinline{cc_list} after the \lstinline{ufe_union}.
+The \lstinline{propagate_loop} removes an equation $F(c_1, c_2) = c$ from $u_a$, and it enters \lstinline{loop1} when lookup contains an equation $F(d_1, d_2) = d$ at the index $(rep\_of(l, c_1), rep\_of(l, c_2))$.
+Then the equation $c = d$ is added to pending. Note that $F(c_1, c_2) = c$ and $F(d_1, d_2) = d$ are similar at this point, because $rep\_of(l, c_1) = rep\_of(l, d_1)$ and $rep\_of(l, c_2) = rep\_of(l, d_2)$ follows from the \lstinline{lookup_invar}, and $c = d$ is added to pending.
+This case is exactly the reason why we can only prove that there is a \emph{similar} equation in lookup, and not exactly the same.
 
-The \lstinline{propagate_loop} removes an equation $F(c_1, c_2) = c$ from $u_a$, and it enters \lstinline{loop1} when lookup contains an equation $F(d_1, d_2) = d$ at the index $(rep\_of(l, c_1), rep\_of(l, c_2))$. Then the equation $c = d$ is added to pending. Note that $F(c_1, c_2) = c$ and $F(d_1, d_2) = d$ are similar at this point, because $rep\_of(l, c_1) = rep\_of(l, d_1)$ and $rep\_of(l, c_2) = rep\_of(l, d_2)$ follows from the \lstinline{lookup_invar}, and $c = d$ is added to pending.
-
-This case is exactly the reason why we can only prove that there is a ``similar'' equation in lookup, and not exactly the same.
-
-Regarding \lstinline{loop2}, it is entered when lookup contains \lstinline{None} at the index $(rep\_of(l, c_1), rep\_of(l, c_2))$. Then $F(c_1, c_2) = c$ is added to $(u ! rep\_of(l, b))$ and to lookup. Obviously, an equation is similar to itself, therfore after this lookup contains a similar equation to $F(c_1, c_2) = c$.
-
-There is also a new element which is added to the use list, and it has a similar equation in lookup, which is $F(c_1, c_2) = c$ itself, therefore the invariant holds.
+Regarding \lstinline{loop2}, it is entered when lookup contains \lstinline{None} at the index
+$(rep\_of(l, c_1),$ $rep\_of(l, c_2))$. Then $F(c_1, c_2) = c$ is added to $u ! rep\_of(l, b)$ and to lookup. Obviously, an equation is \emph{similar} to itself, therefore after this lookup contains a similar equation to $F(c_1, c_2) = c$.
 \end{proof}
 
-With these two invariants the proof for \lstinline{correctness_invar} is completed. Given that the pending list is always empty after the termination of propagate, the correctness proof \lstinline{are_congruent_correct}, which was defined at the beginning of this section, follows directly from this invariant.
+With these two invariants the proof for \lstinline{correctness_invar} is completed.
+The proof for \lstinline{are_congruent_correct} follows from the \lstinline{correctness_invar} and the definition of \lstinline|are_congruent|, because
+the pending list is always empty after the termination of \lstinline|propagate|.
 
-All the invariants are put together in the invariant \lstinline{cc_invar}, and using all the previously described proofs about the invariant, we can prove that \lstinline{cc_invar} holds for the initial empty data structure, and that it holds after \lstinline{merge}.
+All the invariants are put together in the invariant \lstinline{cc_invar}, and using all the previously described proofs about the invariants, we can prove that \lstinline{cc_invar} holds for the initial empty data structure and that it holds after \lstinline{merge}.
 
 \begin{lstlisting}
 theorem cc_invar_initial_cc: "cc_invar (initial_cc n)"
 \end{lstlisting}
 
 \begin{proof}
-All the above-mentioned invariants hold trivially for the initial case, given that all the data structures are empty or contain only \lstinline{None} in the beginning.
+All the above-mentioned invariants hold trivially for the initial case, due to the fact that all the data structures are empty or contain only \lstinline{None} in the beginning.
 \end{proof}
 
 \begin{lstlisting}
@@ -582,17 +630,17 @@ theorem cc_invar_merge:
 \end{lstlisting}
 
 \begin{proof}
-We already proved for each individual invariant, that they hold after propagate.
+We already proved for each individual invariant that they hold after propagate.
 The proof for \lstinline|merge| uses the fact that \lstinline{propagate} terminates, which will be proven in the following section.
 \end{proof}
 
 \subsection{Termination}\label{section:termination-propagate}
 
-We already proved that the functions \lstinline|add_edge| and \lstinline|add_label| terminate, the only missing proof is the termination of \lstinline|propagate|. All the remaining functions are simple enough for Isabelle to prove their termination automatically.
+We already proved that the functions \lstinline|add_edge| and \lstinline|add_label| terminate and the only missing proof is the termination of \lstinline|propagate|. All the remaining functions are simple enough for Isabelle to prove their termination automatically.
 
 In order to prove the termination of \lstinline{propagate}, we show that the number of equivalence classes strictly decreases in each step of \lstinline{propagate}, therefore the function terminates at the latest when all the elements belong to the same equivalence class.
 
-The number of equivalence classes is defined as the number of roots in the union-find forest. The function \lstinline|card| returns the cardinality of a set.
+The number of equivalence classes is defined as the number of roots in the union-find forest. The \lstinline|root_set| is the set of all roots. The function \lstinline|card| returns the cardinality of a set.
 
 \begin{lstlisting}
 abbreviation root_set
@@ -624,23 +672,25 @@ lemma propagate_domain:
 \begin{proof}
 We prove it by induction on the amount of equivalence classes in the union-find forest.
 
-If the pending list is empty, the function terminates. Otherwise, the first element $eq$ is taken from the pending list. We define $a$ as \lstinline{left eq} and $b$ as \lstinline{right eq}, as in the function.
+If the pending list is empty, the function terminates. Otherwise, the first element $eq$ is taken from the pending list. We define $a$ as \lstinline{left eq} and $b$ as \lstinline{right eq}, as in the definition of the \lstinline|propagate| function.
 
-If $a$ and $b$ are already in the same equivalence class, then the union-find list is not modified, therefore we cannot use the induction hypothesis. Therefore we prove it by induction on the length of the pending list.
+If $a$ and $b$ are already in the same equivalence class, then the union-find list is not modified, therefore we cannot use the induction hypothesis. Therefore we apply an induction on the length of the pending list.
 
-If $a$ and $b$ are not in the same equivalence class, they are merged by the \lstinline{propagate_step}, therefore the number of equivalence classes descreases by one according to the lemma \lstinline{ufa_union_decreases_nr_eq_classes} and we can prove the goal by using the induction hypothesis.
+If $a$ and $b$ are not in the same equivalence class, they are merged by the \lstinline{propagate_step}, therefore the number of equivalence classes decreases by one according to the lemma \lstinline{ufa_union_decreases_nr_eq_classes} and we can prove the goal by using the induction hypothesis.
 \end{proof}
 
-\section{The CC\_Explain Operation}
+\chapter{The CC\_Explain Operation}
 
 We will implement the \emph{cc\_explain} operation for congruence closure, leaving the formal proof of correctness open for future work.  This section describes the implementation, a validity and termination proof and a proposal of how the correctness could be proven.
 
+The \emph{cc\_explain} operation is analogous to the \emph{explain} operation for union-find. For two constants $a$ and $b$ that are congruent, it returns the subset of input equations which explain why $a$ and $b$ are congruent.
 
-\subsection{Implementation}
+\section{Implementation}
 
-The \lstinline{cc_explain} function takes as an argument two constants, and it returns the set of input equations which caused these two constants to be in the same equivalence class. The algorithm finds the path between the two constants in the proof forest, and returns the labels of the edges on the path. For each edge labeled with two equations $F(a_1, a_2) = a$ and $F(b_1, b_2)$, we need to add to the output also the explanation for $a_1 = b_1$ and $a_2 = b_2$. Therefore the function recursively calls the explanation function with the parameters $(a_1, b_1)$ and $(a_2, b_2)$. In order to avoid adding redundant equations to the output, there is an additional union-find data structure, which is local to the \lstinline{cc_explain} operation and which keeps track of the equations that are already part of the output.
+The function \lstinline{cc_explain} has three parameters: two constants and the congruence closure data structure.
+It assumes that the two constants are congruent in the data structure and returns the set of input equations which caused these two constants to be congruent. The algorithm finds the path in the proof forest between the two constants and returns the labels of the edges on the path. For each edge labeled with two equations $F(a_1, a_2) = a$ and $F(b_1, b_2) = b$, we need to add to the output also the explanation for $a_1 = b_1$ and $a_2 = b_2$. Therefore the function recursively calls the \lstinline{cc_explain} function with the parameters $(a_1, b_1)$ and $(a_2, b_2)$. In order to avoid adding redundant equations to the output, there is an additional union-find data structure. The additional union-find is local to the \lstinline{cc_explain} operation and it keeps track of the equations that are already part of the output.
 
-In order to initialize the additional union-find, we define an auxiliary \lstinline{cc_explain_aux} which takes as first parameter the congruence closure data structure, as second parameter the union-find and as last parameter a list of pairs of constants. The output of \lstinline{cc_explain_aux} will contain the explanation for all the pairs of constants in the list, except those which are already equivalent in the additional union-find. The union-find is initialized with an empty data structure.
+In order to initialize the additional union-find, we define the auxiliary function \lstinline{cc_explain_aux}. It has three parameters: the congruence closure data structure, the additional union-find and a list of pairs of constants. The output of \lstinline{cc_explain_aux} contains the explanation for all the pairs of constants in the list, except those which are already equivalent in the additional union-find. The initial union-find is a forest without edges.
 
 \begin{lstlisting}
 abbreviation cc_explain :: "congruence_closure ⇒ nat ⇒ nat ⇒ equation set"
@@ -648,7 +698,10 @@ abbreviation cc_explain :: "congruence_closure ⇒ nat ⇒ nat ⇒ equation set"
     "cc_explain cc a b ≡ cc_explain_aux cc [0..<nr_vars cc] [(a, b)]"
 \end{lstlisting}
 
-The \lstinline{cc_explain_aux} function computes first the lowest common ancestor between the current pair of constants, then it calls the function \lstinline{explain_along_path}, which has three return values: the $output$ is simply the set of labels on the path from the constant to the lowest common ancestor. For each edge labeled with $F(a_1, a_2) = a$ and $F(b_1, b_2)$,  $(a_1, b_1)$ and $(a_2, b_2)$ are added to the $pending$ list. The $new\_l$ is the additional union-find data structure, modified in order to keep track of the equations that are already in the output.
+The \lstinline{cc_explain_aux} function takes one pair of elements from the list, then it
+computes the lowest common ancestor between the two elements.
+Afterwards, it calls the function \lstinline{explain_along_path}, which has three return values. They are named $output$, $pending$ and $new\_l$.
+The $output$ is simply the set of labels on the path from the constant to the lowest common ancestor. For each edge on this path labeled with \lstinline|Two| $(F(a_1, a_2) = a)$ $(F(b_1, b_2) = b)$, the pairs $(a_1, b_1)$ and $(a_2, b_2)$ are added to the $pending$ list. The $new\_l$ is the additional union-find data structure, modified in order to keep track of the equations that are already in the output.
 
 \begin{lstlisting}
 function (domintros) cc_explain_aux :: "congruence_closure ⇒ nat list ⇒ (nat * nat) list ⇒ equation set"
@@ -666,9 +719,14 @@ else cc_explain_aux cc l xs)"
   by pat_completeness auto
 \end{lstlisting}
 
-The additional union-find does not use \lstinline{ufa_union} for the union, instead it simply adds the same edge which is in the proof forest for each union. This is not the most efficient strategy, but the union-find can easily be replaced by a classical union-find data structure, by showing that it has the same equivalence classes as this version. However, it is more convenient for the proofs to use this version of union-find. Nieuwenhuis et al. \cite{Nieuwenhuis} also implements a $Highest\_node$ function, in order to find the element of a representative class of the additional union-find which is highest in the proof forest. In our version of union-find, this corresponds to the \lstinline{rep_of} operation, because we do not use the optimization of checking which equivalence class is bigger, we just make the union in the given order. When adding this optimization, a $Highest\_node$ function must be also implemented (which is not difficult, see \cite{Nieuwenhuis}).
+The additional union-find does not use \lstinline{ufa_union} for the union, instead it simply adds the same edge as the one in the proof forest.
+For a more efficient implementation, the union-find can be replaced by a classical union-find data structure by showing that it has the same equivalence classes as this version.
+The version used in this implementation was chosen in order to simplify the proofs.
 
-\lstinline{explain_along_path} starts at the node $a$ in the proof forest, and recursively traverses all the edges from $a$ to $c$, skipping those edges which have already been traversed sometime before in the algorithm, i.e., the edges which are present in the additional union-find $l$. Therefore it starts at the element $rep\_of(l, a)$, and considers the edge to its parent, it adds the label of the edge to the output, adding the edge to $l$ and if necessary, and updates the pending list. It terminates when it reaches the equivalence class of $c$.
+Nieuwenhuis et al. \cite{Nieuwenhuis} also implement a $highest\_node$ function, in order to find the element of the additional union-find which is highest in the proof forest.
+In our version of union-find, this corresponds to the \lstinline{rep_of} operation, because we do not use the optimization of checking which equivalence class is bigger. Instead, we just make the union in the given order. When adding this optimization, a $highest\_node$ function must be also implemented.
+
+The function \lstinline{explain_along_path cc l a c} starts at the node $a$ in the proof forest, and recursively traverses all the edges from $a$ to $c$. It skips those edges that have already been traversed sometime before in the algorithm, i.e., the edges which are present in the additional union-find $l$. Therefore it starts at the element $rep\_of(l, a)$ and considers the edge to its parent. It adds the label of the edge to the output and adds the edge to $l$. If necessary, it updates the pending list. The function terminates when it reaches the equivalence class of $c$ in $l$.
 
 \begin{lstlisting}
 function (domintros) explain_along_path :: "congruence_closure ⇒ nat list ⇒ nat ⇒ nat ⇒
@@ -697,13 +755,13 @@ else
 \begin{exmp}
 Let $cc$ be the congruence closure data structure of Example \ref{example:merge}. We want to compute \lstinline|cc_explain cc 3 1|.
 
-The lowest common ancestor of 3 and 1 is 1. We call the function \lstinline{explain_along_path cc l 3 1} which considers all the edge between 3 and 1, in this case only one single edge labeled $F (1,3) = 3$ and $F(0,2) = 1$. The two equations are added to the output and the pairs $(1,0)$ and $(2,3)$ are added to pending.
+The lowest common ancestor of 3 and 1 is 1. We call the function \lstinline{explain_along_path cc l 3 1}, which considers all the edges on the path between 3 and 1. In this case it is one edge labeled $F (1,3) = 3$ and $F(0,2) = 1$. The two equations are added to the output and the pairs $(1,0)$ and $(2,3)$ are added to pending.
 
-For the two remaining pairs in pending, the explanations contain one edge each, and the final result contains all the equations that present in the proof forest.
+For the two remaining pairs in pending, the explanations contain one edge each, and the final result contains all the equations that are present in the proof forest.
 \end{exmp}
 
 
-The structure of the additional union-find can be formalized with an invariant, which states that all the edges in the additional union-find are also present in the proof forest. As usual, the \lstinline{ufa_invar} holds for the union-find list, and the list has the same length as the \lstinline{proof_forest} list $pf$.
+The structure of the additional union-find can be formalized with an invariant, which states that all the edges in the additional union-find are also present in the proof forest. It also affirms that the \lstinline{ufa_invar} holds for the union-find list, and that the list $l$ has the same length as the \lstinline{proof_forest} list $pf$.
 
 \begin{lstlisting}
 definition explain_list_invar :: "nat list ⇒ nat list ⇒ bool"
@@ -714,16 +772,18 @@ definition explain_list_invar :: "nat list ⇒ nat list ⇒ bool"
 
 Each time an edge is added to the union-find in \lstinline{explain_along_path}, it is an edge which is also present in the proof forest, therefore it is easy to prove that this is an invariant.
 
-This invariant implies this useful lemma, which states that each path in the additional union-find is also present in the proof forest.
+This invariant implies the following useful lemma, which states that each path in the additional union-find is also present in the proof forest.
 
 \begin{lstlisting}
 lemma explain_list_invar_paths:
   "path l a p b ⟹ explain_list_invar l pf ⟹ path pf a p b"
 \end{lstlisting}
 
-\subsection{Termination}
+\section{Termination}
 
-The \lstinline{explain_along_path_domain} function starts at the node $a$ and recursively goes to the parent node until it reaches $c$. Therefore the function terminates if $c$ is an ancestor of $a$.
+We need to prove the termination of the two functions \lstinline{explain_along_path} and \lstinline{cc_explain_aux}.
+
+The function \lstinline{explain_along_path} starts at the node $a$ and recursively considers the parent node until it reaches $c$. Therefore the function terminates if $c$ is an ancestor of $a$.
 
 \begin{lstlisting}
 theorem explain_along_path_domain:
@@ -738,11 +798,11 @@ The proof is by induction on the length of the path $p$.
 
 If the path has length 1 or if \lstinline{rep_of l a = rep_of l c}, the function terminates immediately.
 
-If the path is longer, then the union-find has this path:
+If the path is longer, then the union-find $l$ contains the following path:
 
 $a \longrightarrow rep\_of(l,a)$
 
-and the proof forest contains the same path, which continues until it reaches $c$:
+and the proof forest $pf$ contains the same path, which continues until it reaches $c$:
 
 $a \longrightarrow rep\_of(l,a) \rightarrow pf ! rep\_of(l,a) \longrightarrow c$.
 
@@ -753,7 +813,7 @@ Therefore there is a shorter path from $c$ to $pf ! rep\_of(l,a)$ in the proof f
 
 The function \lstinline{explain_along_path} is only executed in \lstinline{cc_explain_aux} when $c$ is the lowest common ancestor of $a$ and $b$, therefore the assumption that there is a path from $c$ to $a$ always holds when the function is executed.
 
-In order to prove the termination of \lstinline{cc_explain_aux}, we use the same idea as for the termination proof of \lstinline{propagate} in Subsection \ref{section:termination-propagate}, we consider the number of equivalence classes of the additional union-find, and prove that the number of equivalence classes decreases in each call of \lstinline{explain_along_path}.
+In order to prove the termination of \lstinline{cc_explain_aux}, we use the same idea as for the termination proof of \lstinline{propagate} in Subsection \ref{section:termination-propagate}. We consider the number of equivalence classes of the additional union-find, and prove that the number of equivalence classes decreases in each call of \lstinline{explain_along_path}.
 
 First, we prove that the number of equivalence classes decreases with a function update, if the updated index is a root:
 
@@ -763,8 +823,8 @@ lemma list_upd_eq_classes:
   shows "nr_eq_classes (l[a := b]) < nr_eq_classes l"
 \end{lstlisting}
 
-By analizing the function \lstinline{explain_along_path}, we see that each time the union-find list is updated, the updated index is a root, therefore the number of equivalence classes decreases.
-However, if \lstinline{rep_of l a = rep_of l c}, the union-find list is never updated, therefore we can only show that the number of equivalence classes does not decrease:
+By examining the function \lstinline{explain_along_path}, we see that each time the union-find list is updated, the updated index is a root, therefore the number of equivalence classes decreases.
+However, if \lstinline{rep_of l a = rep_of l c}, the union-find list is never updated, therefore we can only show that the number of equivalence classes does not increase after \lstinline{explain_along_path}:
 
 \begin{lstlisting}
 lemma explain_along_path_eq_classes:
@@ -774,7 +834,7 @@ lemma explain_along_path_eq_classes:
   shows "nr_eq_classes (fst (snd (explain_along_path cc l a c))) ≤ nr_eq_classes l"
 \end{lstlisting}
 
-We can show that it strictly decreases if the pending list is not empty after \lstinline{explain_along_path}, because we always update the union-find list when we add elements to pending:
+We can show that it strictly decreases if the pending list is not empty after the function  \lstinline{explain_along_path}, because we always update the union-find list when we add elements to pending:
 
 \begin{lstlisting}
 lemma explain_along_path_eq_classes_if_pending_not_empty:
@@ -797,53 +857,52 @@ theorem cc_explain_aux_domain:
 
 \begin{proof}
 We show it by using a nested induction: the outer induction is on the number of equivalence classes, and the inner induction is on the length of $xs$.
-
 If $xs$ is empty, then the function terminates.
 
-If \lstinline{are_congruent (a ≈ b)}, then we do a case distinction: if both \lstinline{pending1} and \lstinline{pending2} are empty, then the length of $xs$ decreases and we can use the induction hypothesis of the inner induction. In this case we need the lemma \lstinline{explain_along_path_eq_classes}, because we also need to show that the number of equivalence classes does not increase. If one of the pending lists is not empty, we use \lstinline{explain_along_path_eq_classes_if_pending_not_empty} to show that the \lstinline{nr_eq_classes} has decreased, and we use the first induction hypothesis.
+If \lstinline{are_congruent (a ≈ b)}, then we do a case distinction: if both \lstinline{pending1} and \lstinline{pending2} are empty, then the length of $xs$ decreases and we can use the induction hypothesis of the inner induction. In this case we need the previously proven lemma \lstinline{explain_along_path_eq_classes}, because we also need to show that the number of equivalence classes does not increase. If one of the pending lists is not empty, we use \lstinline{explain_along_path_eq_classes_if_pending_not_empty} to show that the \lstinline{nr_eq_classes} has decreased, and we use the first induction hypothesis.
 
 If \lstinline{are_congruent (a ≈ b)} does not hold, then the length of $xs$ decreases and we can use the second induction hypothesis.
 \end{proof}
 
 
-\subsection{Validity}
+\section{Validity}
 
 Similarly to the \lstinline{explain} operation for union-find (see Subsection \ref{subsection:uf-correctness}), we can prove that the equations in the output of \lstinline{cc_explain} are a subset of the input equations.
 
 \begin{lstlisting}
 theorem cc_explain_valid:
   assumes "cc_invar cc" "validity_invar cc"
-    "cc_explain_aux_dom (cc, [0..<nr_vars cc], [(a, b)])"
   shows "cc_explain cc a b ⊆ input cc"
 \end{lstlisting}
 
-Given that we have not yet proven the termination of \lstinline{cc_explain}, we need to assume that it terminates. Furthermore, we assume the \lstinline{cc_invar} which we have previously proven, and we introduce a new invariant, the \lstinline{validity_invar}, which states that all the equations in \lstinline{pf_labels}, \lstinline{lookup}, \lstinline{use_list} and \lstinline{pending} are equations from the \lstinline{input} set. In order to show that this is an invariant, we remark that all the new equations added in \lstinline{merge} to any data structure are also added to the \lstinline{input} set. In \lstinline{propagate}, no new equations are added, the equations are simply moved around between different lists.
+We assume the \lstinline{cc_invar} which we have previously proven, and we introduce a new invariant, the \lstinline{validity_invar}. It states that all the equations in \lstinline{pf_labels}, \lstinline{lookup}, \lstinline{use_list} and \lstinline{pending} are equations from the \lstinline{input} set. In order to show that this is an invariant, we remark that all the new equations added in \lstinline{merge} to any data structure are also added to the \lstinline{input} set. In \lstinline{propagate}, no new equations are added, the equations are simply moved around between different lists.
 
 With this invariant, we can prove that the output of \lstinline{explain_along_path} is valid.
 
 \begin{lstlisting}
 lemma explain_along_path_valid:
-  assumes "explain_along_path_dom (cc, l, a, c)" "cc_invar cc" "validity_invar cc"
+  assumes "cc_invar cc" "validity_invar cc"
     "explain_list_invar l (proof_forest cc)"
     "path (proof_forest cc) c p a"
   shows "fst (explain_along_path cc l a c) ⊆ input cc"
 \end{lstlisting}
 
 \begin{proof}
-We assumed that \lstinline{explain_along_path} terminates, therefore we can use the induction rule of the function.
+We already proved that \lstinline{explain_along_path} terminates, therefore we can use the induction rule of the function.
 
-If \lstinline{"rep_of l a = rep_of l c"}, then the output of \lstinline{explain_along_path} is the empty set, therefore the proof is trivial.
+If \lstinline{rep_of l a = rep_of l c}, then the output of \lstinline{explain_along_path} is the empty set, therefore the proof is trivial.
 
 Else, the new equations added to the output derive from the proof forest, more specifically from \lstinline{((pf_labels cc) ! rep_of l a)}.
-The \lstinline{validity_invar} states that all edge labels are valid, therefore we only need to prove that $rep\_of(l, a)$ is not a root in the proof forest, otherwise the \lstinline{validity_invar} would not be applicable for this index, because there is no outgoing edge from a root.
-Given that we assumed that there is a path from $c$ to $a$ in the proof forest, we know that $c$ is nearer to the root than $a$ and we can show that if $rep\_of(l,a)$ was a root in the proof forest, then $c$ can only be equal to the root, therefore \lstinline{"rep_of l a = rep_of l c"}, which is a contradiction.
+The \lstinline{validity_invar} states that all edge labels are valid, that is, the entries in \lstinline|pf_labels| are valid for indexes which are not roots. If the index is a root, there is no outgoing edge, therefore those entries are not valid.
+In order to use the invariant, we need to prove that $rep\_of(l, a)$ is not a root in the proof forest.
+Given that we assumed that there is a path from $c$ to $a$ in the proof forest, we know that $c$ is nearer to the root than $a$ and we can show that if $rep\_of(l,a)$ was a root in the proof forest, then $c$ can only be equal to the root, therefore \lstinline{rep_of l a = rep_of l c}, which is a contradiction.
 \end{proof}
 
-From this lemma we can easily show the theorem \lstinline{cc_explain_valid} by computation induction on \lstinline{cc_explain_aux}.
+From this lemma we can easily show the theorem \lstinline{cc_explain_valid} by computation induction on \lstinline{cc_explain_aux}. We can use the induction rule because we have already proven the termination of \lstinline{cc_explain_aux}.
 
-\subsection{Correctness}
+\section{Correctness}
 
-Proving the correctness of \lstinline{cc_explain} is more complicated than expected. We would like to use the induction rule of \lstinline{cc_explain}, but it is not strong enough to prove it. Our goal is to show that the two variables are congruent under the congruence closure of the output.
+Proving the correctness of \lstinline{cc_explain} is more complicated than expected. The most intuitive strategy would be to use the induction rule of \lstinline{cc_explain_aux}, but it is not strong enough to prove it. Our goal is to show that the two variables are congruent under the congruence closure of the output of \lstinline{cc_explain}.
 
 \begin{lstlisting}
 theorem cc_explain_correct:
@@ -851,7 +910,7 @@ theorem cc_explain_correct:
   shows "(a ≈ b) ∈ Congruence_Closure (cc_explain cc a b)"
 \end{lstlisting}
 
-It was possible to show for \lstinline{explain_along_path} that $a = b$ is in the congruence closure of the output, pending and the \lstinline{representative_set l}. Intuitively, the function adds the necessary equations to output and pending, except if the elements of the equations are already in the same equivalence class in the additional union-find.
+It is possible to show for \lstinline{explain_along_path} that $a = b$ is in the congruence closure of the output, pending and the \lstinline{representative_set l}. Intuitively, the function adds the necessary equations to output and pending, except if the elements of the equations are already in the same equivalence class in the additional union-find.
 
 \begin{lstlisting}
 lemma explain_along_path_correctness:
@@ -864,7 +923,7 @@ lemma explain_along_path_correctness:
 ∪ pending_set_explain pend)"
 \end{lstlisting}
 
-Given that at the end of the algorithm \lstinline{pending} is empty, and the initial union-find $l$ is empty, this should imply that $a = b$ is in the congruence closure of \lstinline{cc_explain}.
+Given that at after the termination of the function \lstinline{pending} and the initial union-find $l$ are empty, this should imply that $a = b$ is in the congruence closure of \lstinline{cc_explain}.
 However, this argument is not applicable. I will illustrate this with an example.
 
 \begin{exmp}
@@ -872,15 +931,18 @@ We consider the following proof forest:
 
 a $\xrightarrow[F(b,c) = b]{F(a,c) = a}$ b $\xleftarrow{\text{b = c}}$ c \ \ \ \ d
 
-The \lstinline{cc_invar} holds, in particular \lstinline{pf_labels_invar} holds, which states that for the labels in the proof forest of the type $F(a_1, a_2) = a_3$ and $F(b_1, b_2) = b_3$ it holds that $rep\_of(l, a_1) = rep\_of(l, b_1)$ and $rep\_of(l, a_2) = rep\_of(l, b_2)$.
+The \lstinline{cc_invar} holds, in particular \lstinline{pf_labels_invar} holds. This invariant states that for the labels in the proof forest of the type $F(a_1, a_2) = a_3$ and $F(b_1, b_2) = b_3$ it holds that $rep\_of(l, a_1) = rep\_of(l, b_1)$ and $rep\_of(l, a_2) = rep\_of(l, b_2)$.
 
 If we call \lstinline{cc_explain cc a b} it terminates and returns the two equations $F(a,c) = a$ and $F(b,c) = b$.
 However, $a = b$ is not in the congruence closure of these two equations.
-The problem in this case is that when \lstinline{explain_along_path cc l a b} is called, it simply adds $(a, b)$ to pending, adds the two equations to output and adds the edge between $a$ and $b$ to the additional union-find. Then when \lstinline{explain_along_path cc l a b} is called again, because $(a,b)$ is in pending again, the algorithm sees that it has already considered this edge, and returns an empty output.
+The problem in this case is that when \lstinline{explain_along_path cc l a b} is called, it simply adds $(a, b)$ to pending, adds the two equations to output and adds the edge between $a$ and $b$ to the additional union-find.
+In the recursive call of the function, $(a,b)$ is taken from pending.
+The algorithm sees that it has already considered this edge, and returns an empty output.
 \end{exmp}
 
-This example shows that our invariant together with the lemma \lstinline{explain_along_path_correctness} are not enough to prove that \lstinline{cc_explain} is correct, but it does not show that \lstinline{cc_explain} is incorrect, because the proof forest in the example cannot be produced by subsequent merges. For the labels in the proof forest of the type $F(a_1, a_2) = a_3$ and $F(b_1, b_2) = b_3$, it not only holds that $rep\_of(l, a_1) = rep\_of(l, b_1)$ and $rep\_of(l, a_2) = rep\_of(l, b_2)$, but also that those representatives have been equal before the addition of the edge. Therefore, \lstinline{explain_along_path} will never add equations to pending which are only congruent if the output equations are congruent.
+The previous example shows that the invariant \lstinline|cc_invar| together with the lemma \lstinline{explain_along_path_correctness} are not enough to prove that \lstinline{cc_explain} is correct. However, it does not show that \lstinline{cc_explain} is incorrect, because the proof forest in the example cannot be produced by subsequent merges. For the labels in the proof forest of the type $F(a_1, a_2) = a_3$ and $F(b_1, b_2) = b_3$, it not only holds that $rep\_of(l, a_1) = rep\_of(l, b_1)$ and $rep\_of(l, a_2) = rep\_of(l, b_2)$, but also that those representatives have been equal before the addition of the edge. Therefore, \lstinline{explain_along_path} will never add equations to pending which are only congruent if the output equations are congruent.
 
-A new idea for the proof would be to define an invariant that expresses what was explained in the previous paragraph. Alternatively, we could define the correctness of \lstinline{cc_explain} as an invariant, and prove that it is an invariant of merge.
+An idea for the proof would be to define an additional invariant that expresses what was explained in the previous paragraph. Alternatively, we could define the correctness of \lstinline{cc_explain} as an invariant, and prove that it is an invariant of merge.
 
-In order to prove that it is an invariant, we need to show that after a \lstinline{merge} operation, the path between two elements remains the same in the proof forest, therefore \lstinline{cc_explain} considers the same edges. The difficulty with this approach is that the edges could be inverted by \lstinline{add_edge}, which means that the lowest common ancestor of two elements could also change, consequently the \lstinline{cc_explain} algorithm considers the same edges but in a completely different order. As a result, we also need to show that the order of the edges which \lstinline{cc_explain} considers does not matter.
+In order to prove that it is an invariant, we need to show that after a \lstinline{merge} operation, the path between two elements remains the same in the proof forest. This implies that \lstinline{cc_explain} considers the same edges before and after the \lstinline|merge|. The difficulty with this approach is that some edges could be inverted by \lstinline{add_edge}, which means that the lowest common ancestor of two elements could also change.
+In other words, the \lstinline{cc_explain} function before and after \lstinline|merge| considers the same edges but in a completely different order. As a result, we also need to show that the order of the edges which \lstinline{cc_explain} considers does not matter.

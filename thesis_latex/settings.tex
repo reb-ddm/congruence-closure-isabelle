@@ -31,6 +31,7 @@
 \usepackage{amsfonts}
 \usepackage[hidelinks]{hyperref} % hidelinks removes colored boxes around references and links
 \usepackage{listings}
+\usepackage{enumitem}
 \usepackage{stmaryrd} % for \rrparenthesis
 \usepackage{courier}
 \usepackage{DejaVuSansMono}
@@ -114,3 +115,30 @@
   cycle list={TUMBlue\\TUMAccentOrange\\TUMAccentGreen\\TUMSecondaryBlue2\\TUMDarkGray\\},
 }
 
+
+%https://tex.stackexchange.com/questions/25053/easy-way-to-type-more-kinds-of-arrows
+\makeatletter
+\newcommand*{\doublerightarrow}[2]{\mathrel{
+  \settowidth{\@tempdima}{$\scriptstyle#1$}
+  \settowidth{\@tempdimb}{$\scriptstyle#2$}
+  \ifdim\@tempdimb>\@tempdima \@tempdima=\@tempdimb\fi
+  \mathop{\vcenter{
+    \offinterlineskip\ialign{\hbox to\dimexpr\@tempdima+1em{##}\cr
+    \rightarrowfill\cr\noalign{\kern.5ex}
+    \rightarrowfill\cr}}}\limits^{\!#1}_{\!#2}}}
+\newcommand*{\doubleleftarrow}[2]{\mathrel{
+  \settowidth{\@tempdima}{$\scriptstyle#1$}
+  \settowidth{\@tempdimb}{$\scriptstyle#2$}
+  \ifdim\@tempdimb>\@tempdima \@tempdima=\@tempdimb\fi
+  \mathop{\vcenter{
+    \offinterlineskip\ialign{\hbox to\dimexpr\@tempdima+1em{##}\cr
+    \leftarrowfill\cr\noalign{\kern.5ex}
+    \leftarrowfill\cr}}}\limits^{\!#1}_{\!#2}}}
+\newcommand*{\triplerightarrow}[1]{\mathrel{
+  \settowidth{\@tempdima}{$\scriptstyle#1$}
+  \mathop{\vcenter{
+    \offinterlineskip\ialign{\hbox to\dimexpr\@tempdima+1em{##}\cr
+    \rightarrowfill\cr\noalign{\kern.5ex}
+    \rightarrowfill\cr\noalign{\kern.5ex}
+    \rightarrowfill\cr}}}\limits^{\!#1}}}
+\makeatother

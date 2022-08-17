@@ -1,10 +1,14 @@
 \chapter{\abstractname}
 
+Congruence closure is a key algorithm of decision procedures in automated theorem proving. In these settings, it is important to have trustworthy implementations, that are formally proven for correctness.
 This thesis describes a formal implementation and verification of a congruence closure algorithm in the interactive theorem prover Isabelle/HOL.
-Congruence closure is used by theorem provers for solving decision procedures and in these settings, an \emph{explain} operation is useful. This operation returns a certificate which proves that two given terms are congruent.
+The implementation is based on the union-find algorithm.
+In the context of decision procedures, it is necessary to also compute a certificate which proves that two given terms are congruent.
+This is done by the \emph{explain} operation.
+The algorithms in this thesis are based on the description of Nieuwenhuis and Oliveras \cite{Nieuwenhuis}.
 
-The algorithm in this thesis is based on the union-find algorithm, as described by Nieuwenhuis and Oliveras in \cite{Nieuwenhuis}.
 First, an \emph{explain} operation for union-find is implemented with proofs for correctness and termination. It extends the formalization of the union-find data structure in Isabelle/HOL by Lammich \cite{unionfind-isabelle}.
 Then, the congruence closure algorithm is implemented and verified for correctness and termination.
 Lastly, an implementation of the \emph{cc\_explain} operation for congruence closure with a termination proof is presented.
-The implementation of this thesis can be used in the future in order to develop an automated proof strategy in Isabelle/HOL, which can detect if two given terms are congruent given a set of initial equations.
+The correctness proof of \emph{cc\_explain} is not part of this thesis.
+
