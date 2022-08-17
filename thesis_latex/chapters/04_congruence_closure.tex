@@ -57,11 +57,33 @@ function (domintros) add_edge :: "nat list ⇒ nat ⇒ nat ⇒ nat list"
 \begin{exmp}
 Assuming the proof forest looks like this
 
-2 $\longleftarrow$ 3 \ \ \ 1 $\longrightarrow$ 0 \
+\begin{center}
+\begin{tikzpicture}[node distance={13mm}, thick, main/.style = {draw, circle}]
+\node[main] (0) {0};
+\node[main] (1) [below left of=0] {1};
+\node[main] (3) [left of=1] {3};
+\node[main] (2) [above left of=3] {2};
+
+\draw[->] (3) -- (2);
+\draw[->] (1) -- (0);
+\end{tikzpicture}
+\end{center}
+
 
 After adding an edge between 3 and 1, the edges from 3 to its root 2 are inverted.
 
-2 $\longrightarrow$ 3 $\longrightarrow$ 1 $\longrightarrow$ 0 \
+\begin{center}
+\begin{tikzpicture}[node distance={13mm}, thick, main/.style = {draw, circle}]
+\node[main] (0) {0};
+\node[main] (1) [below left of=0] {1};
+\node[main] (3) [left of=1] {3};
+\node[main] (2) [above left of=3] {2};
+
+\draw[->] (2) -- (3);
+\draw[->] (3) -- (1);
+\draw[->] (1) -- (0);
+\end{tikzpicture}
+\end{center}
 \end{exmp}
 
 We can show that \lstinline{add_edge pf x y} terminates, if the invariant \lstinline{ufa_invar} holds for the proof forest and $x$ and $y$ do not belong to the same equivalence class.
@@ -115,7 +137,8 @@ We also show that \lstinline|add_edge| reverses all the edges from $rep\_of(pf,x
 lemma add_edge_correctness:
   assumes "ufa_invar pf"
     "rep_of pf x ≠ rep_of pf y"
-  shows "path (add_edge pf x y) y ([y] @ rev (path_to_root pf x)) (rep_of pf x)"
+  shows
+  "path (add_edge pf x y) y ([y] @ rev (path_to_root pf x)) (rep_of pf x)"
 \end{lstlisting}
 
 The proof forest has a similar structure as the union-find forest, therefore we prove that \lstinline|add_edge| preserves the \lstinline|ufa_invar| invariant from Section \ref{section:uf-isabelle}. This allows us to apply all the lemmas that were proven for the union-find forest also to the proof forest.
@@ -216,11 +239,14 @@ fun merge :: "congruence_closure ⇒ equation ⇒ congruence_closure"
 (F a$_1$ a$_2$ ≈ a) =
 (if (lookup_Some t l (F a$_1$ a$_2$ ≈ a))
   then propagate ⦇cc_list = l, use_list = u, lookup = t,
-            pending = link_to_lookup t l (F a$_1$ a$_2$ ≈ a)#pe, proof_forest = pf, pf_labels = pfl, input = insert (F a$_1$ a$_2$ ≈ a) ip⦈
+            pending = link_to_lookup t l (F a$_1$ a$_2$ ≈ a)#pe,
+            proof_forest = pf, pf_labels = pfl, input = insert (F a$_1$ a$_2$ ≈ a) ip⦈
   else ⦇cc_list = l,
-          use_list = (u[rep_of l a$_1$ := (F a$_1$ a$_2$ ≈ a)#(u ! rep_of l a$_1$)])[rep_of l a$_2$ := (F a$_1$ a$_2$ ≈ a)#(u ! rep_of l a$_2$)],
+          use_list = (u[rep_of l a$_1$ := (F a$_1$ a$_2$ ≈ a)#(u ! rep_of l a$_1$)])
+          [rep_of l a$_2$ := (F a$_1$ a$_2$ ≈ a)#(u ! rep_of l a$_2$)],
           lookup = update_lookup t l (F a$_1$ a$_2$ ≈ a),
-          pending = pe, proof_forest = pf, pf_labels = pfl, input = insert (F a$_1$ a$_2$ ≈ a) ip⦈
+          pending = pe, proof_forest = pf, pf_labels = pfl,
+          input = insert (F a$_1$ a$_2$ ≈ a) ip⦈
 )"
 \end{lstlisting}
 
@@ -283,8 +309,18 @@ fun propagate_loop
 
 \begin{exmp}\label{example:merge}
 Let $cc$ be a congruence closure data structure with an empty use list and lookup, with a union-find list $l$ and with the following proof forest:
+\begin{center}
+\begin{tikzpicture}[node distance={16mm}, thick, main/.style = {draw, circle}]
+\node[main] (0) {0};
+\node[main] (1) [below left of=0] {1};
+\node[main] (3) [left of=1] {3};
+\node[main] (2) [above left of=3] {2};
 
-2 $\xleftarrow{3 = 2}$ 3 \ \ \ 1 $\xrightarrow{\text{1 = 0}}$ 0 \
+\draw[->] (3) -- node[midway, above, sloped]{$3 = 2$} (2);
+\draw[->] (1) -- node[midway, above, sloped]{$1 = 0$} (0);
+\end{tikzpicture}
+\end{center}
+
 
 This shows that 2 and 3 are in one equivalence class and 1 and 0 are in the other.
 
@@ -294,7 +330,19 @@ If we then apply \lstinline|merge| with the equation $F(1,3) = 3$, then the look
 
 Then, \lstinline|propagate| is executed, which first performs the union of $3$ and $1$ in the union-find list and it adds a labeled edge to the proof forest, which then looks like this:
 
-2 $\xrightarrow{3 = 2}$ 3 $\xrightarrow[\text{F(0,2) = 1}]{\text{F(1,3) = 3}}$ 1 $\xrightarrow{\text{1 = 0}}$ 0 \
+
+\begin{center}
+\begin{tikzpicture}[node distance={16mm}, thick, main/.style = {draw, circle}]
+\node[main] (0) {0};
+\node[main] (1) [below left of=0] {1};
+\node[main] (3) [left of=1, node distance=23mm] {3};
+\node[main] (2) [above left of=3] {2};
+
+\draw[->] (2) -- node[midway, above, sloped]{$3 = 2$} (3);
+\draw[->] (1) -- node[midway, above, sloped]{$1 = 0$} (0);
+\draw[->] (3) -- node[midway, above, sloped]{\footnotesize $F(1,3) = 3$} node[midway, below, sloped]{\footnotesize $F(0,2) = 1$} (1);
+\end{tikzpicture}
+\end{center}
 
 After the union, the representative of 3 and 2 has changed, therefore the equations $F(1,3) = 3$ in the use list of the old representative of 2 is moved to the use list of the new representative by \lstinline|propagate_loop|, and it is also added to the lookup table with the new representative as index.
 \end{exmp}
@@ -446,7 +494,7 @@ abbreviation cc_list_set :: "nat list ⇒ equation set"
 \begin{lstlisting}
 abbreviation lookup_entries_set :: "congruence_closure ⇒ equation set"
   where
-    "lookup_entries_set cc ≡ {F a' b' ≈ rep_of (cc_list cc) c | a' b' c c$_1$ c$_2$ .
+    "lookup_entries_set cc ≡ {F a' b' ≈ rep_of (cc_list cc) c | a' b' c c$_1$ c$_2$.
                       cc_list cc ! a' = a' ∧ cc_list cc ! b' = b'
                       ∧ lookup cc ! a' ! b' = Some (F c$_1$ c$_2$ ≈ c)}"
 \end{lstlisting}
@@ -504,7 +552,7 @@ Congruence_Closure (representativeE
 \end{lstlisting}
 
 \begin{proof}
-There are two inclusions which need to be shown. We can use the rule \lstinline{Congruence_Closure_eq} from Subsection \ref{subsection:abstraction}, therefore it is sufficient to show that each equation in the set on the left-hand side is in the congruence closure of the right-hand side and vice versa. Note that the equation $eq$ of the left hand side is equal to $a = b$, because of the first two assumptions.
+There are two inclusions which need to be shown. We can use the proof rule \lstinline{Congruence_Closure_eq} from Subsection \ref{subsection:abstraction}, therefore it is sufficient to show that each equation in the set on the left-hand side is in the congruence closure of the right-hand side and vice versa. Note that the equation $eq$ of the left hand side is equal to $a = b$, because of the first two assumptions.
 
 "$\subseteq$" It needs to be shown that the equations in the \lstinline{cc_list_set}, in lookup and in pending are in the Congruence Closure of the right-hand side.
 
@@ -713,8 +761,8 @@ then
   (let c = lowest_common_ancestor (proof_forest cc) a b;
     (output1, new_l, pending1) = explain_along_path cc l a c;
     (output2, new_new_l, pending2) = explain_along_path cc new_l b c
-  in
-    output1 ∪ output2 ∪ cc_explain_aux cc new_new_l (xs @ pending1 @ pending2))
+ in
+   output1 ∪ output2 ∪ cc_explain_aux cc new_new_l (xs @ pending1 @ pending2))
 else cc_explain_aux cc l xs)"
   by pat_completeness auto
 \end{lstlisting}
@@ -741,11 +789,14 @@ else
     (
     case the ((pf_labels cc) ! rep_of l a) of
         One a' ⇒
-          (let (output, new_l, pending) = explain_along_path cc (l[rep_of l a := b]) b c
+          (let (output, new_l, pending) =
+            explain_along_path cc (l[rep_of l a := b]) b c
           in ({a'} ∪ output, new_l, pending))
         | Two (F a$_1$ a$_2$ ≈ a') (F b$_1$ b$_2$ ≈ b') ⇒
-          (let (output, new_l, pending) = explain_along_path cc (l[rep_of l a := b]) b c
-          in ({(F a$_1$ a$_2$ ≈ a'), (F b$_1$ b$_2$ ≈ b')} ∪ output, new_l, [(a$_1$, b$_1$), (a$_2$, b$_2$)] @ pending))
+          (let (output, new_l, pending) =
+            explain_along_path cc (l[rep_of l a := b]) b c
+          in
+          ({(F a$_1$ a$_2$ ≈ a'), (F b$_1$ b$_2$ ≈ b')} ∪ output, new_l, [(a$_1$, b$_1$), (a$_2$, b$_2$)] @ pending))
     )
   )
 )"
@@ -806,7 +857,7 @@ and the proof forest $pf$ contains the same path, which continues until it reach
 
 $a \longrightarrow rep\_of(l,a) \rightarrow pf ! rep\_of(l,a) \longrightarrow c$.
 
-The long arrows reperesent paths of arbitrary length, including paths with no edges, and the short arrow represents exactly one edge.
+The long arrows represent paths of arbitrary length, including paths with no edges, and the short arrow represents exactly one edge.
 
 Therefore there is a shorter path from $c$ to $pf ! rep\_of(l,a)$ in the proof forest and we can apply the induction hypothesis for the recursive call of \lstinline{explain_along_path}. Given that the recursive call terminates, the function also terminates.
 \end{proof}
@@ -929,7 +980,17 @@ However, this argument is not applicable. I will illustrate this with an example
 \begin{exmp}
 We consider the following proof forest:
 
-a $\xrightarrow[F(b,c) = b]{F(a,c) = a}$ b $\xleftarrow{\text{b = c}}$ c \ \ \ \ d
+\begin{center}
+\begin{tikzpicture}[node distance={16mm}, thick, main/.style = {draw, circle}]
+\node[main] (b) {b};
+\node[main] (a) [left of=b, node distance=23mm] {a};
+\node[main] (c) [below right of=b] {c};
+\node[main] (d) [right of=c] {d};
+
+\draw[->] (a) -- node[midway, above, sloped]{\footnotesize $F(1,3) = 3$} node[midway, below, sloped]{\footnotesize $F(0,2) = 1$} (b);
+\draw[->] (c) -- node[midway, above, sloped]{$1 = 0$} (b);
+\end{tikzpicture}
+\end{center}
 
 The \lstinline{cc_invar} holds, in particular \lstinline{pf_labels_invar} holds. This invariant states that for the labels in the proof forest of the type $F(a_1, a_2) = a_3$ and $F(b_1, b_2) = b_3$ it holds that $rep\_of(l, a_1) = rep\_of(l, b_1)$ and $rep\_of(l, a_2) = rep\_of(l, b_2)$.
 

@@ -103,7 +103,17 @@ For the induction step, we assume that the length of $p1$ is greater than 1. The
 
 The following is a graphical representation of the paths:
 
-$u\doubleleftarrow{p1'}{p2'}l!v\leftarrow v$.
+\begin{center}
+\begin{tikzpicture}[node distance={16mm}, thick, main/.style = {draw, circle}]
+\node[main] (u) {$u$};
+\node[main] (lv) [below of=u] {$l!v$};
+\node[main] (v) [below of=lv, node distance={10mm}] {$v$};
+\draw[->] (lv) to [out=135,in=225,looseness=1] node[midway, left]{$p1'$} (u);
+\draw[->] (lv) to [out=45,in=315,looseness=1] node[midway, right]{$p2'$} (u);
+\draw[->] (v) -- (lv);
+\end{tikzpicture}
+\end{center}
+
 
 We can apply the induction hypothesis, which tells us that $p1' = p2'$. Adding the node $v$ to those two paths gives us back the original paths $p1$ and $p2$, therefore we conclude that $p1 = p2$.
 \end{proof}
@@ -136,7 +146,16 @@ After a union of 1 and 0, the data structure from Example \ref{empty_ufe} looks 
 ⦇uf_list = [0, 0, 2, 3], unions = [(1, 0)], au = [None, Some 0, None, None]⦈
 \end{lstlisting}
 It has the following graphical representation:
-0 $\xleftarrow{\text{(1, 0)}}$ 1 \ \ 2 \ \ 3.
+\begin{center}
+\begin{tikzpicture}[node distance={16mm}, thick, main/.style = {draw, circle}]
+\node[main] (0) {0};
+\node[main] (1) [below right of=0] {1};
+\node[main] (2) [below left of=0] {2};
+\node[main] (3) [below left of=2] {3};
+\draw[->] (3) -- node[midway, above, sloped]{$(3,2)$} (2);
+\end{tikzpicture}
+\end{center}
+
 \end{exmp}
 
 Next, we define a function which takes a list of unions as parameter and simply applies each of those unions to the data structure. This will be needed for the invariant and the correctness proof in the next sections.
@@ -149,9 +168,19 @@ fun apply_unions :: "(nat * nat) list ⇒ ufe_data_structure ⇒ ufe_data_struct
 \end{lstlisting}
 
 \begin{exmp}\label{example:apply-unions}
-Let \lstinline|initial_ufe n| be the empty union-find list with $n$ variables. The result of \lstinline|apply_unions [(1,0), (3,2), (3,1)] (initial_ufe 4)| looks like this:
+Let \lstinline|initial_ufe n| be the empty union-find list with $n$ variables. The result of \lstinline|apply_unions [(1,0), (3,2), (3,1)] (initial_ufe 4)| is the following:
 
-3 $\xrightarrow{\text{(3, 2)}}$ 2$\xrightarrow{\text{(3, 1)}}$ 0 $\xleftarrow{\text{(1, 0)}}$ 1.
+\begin{center}
+\begin{tikzpicture}[node distance={16mm}, thick, main/.style = {draw, circle}]
+\node[main] (0) {0};
+\node[main] (1) [below right of=0] {1};
+\node[main] (2) [below left of=0] {2};
+\node[main] (3) [below left of=2] {3};
+\draw[->] (3) -- node[midway, above, sloped]{$(3,2)$} (2);
+\draw[->] (2) -- node[midway, above, sloped]{$(3,1)$} (0);
+\draw[->] (1) -- node[midway, above, sloped]{$(1,0)$} (0);
+\end{tikzpicture}
+\end{center}
 \end{exmp}
 
 \subsection{Helper Functions for Explain}\label{subsection:helper-functions}
@@ -273,7 +302,17 @@ function (domintros) find_newest_on_path  :: "nat list ⇒ nat option list ⇒ n
 \begin{exmp}
 Let $l$ be the union-find list of Example \ref{example:apply-unions}. If we consider the edge labels in the associated unions list instead of the unions they represent, the union-find graph looks like this:
 
-3 $\xrightarrow{\text{1}}$ 2$\xrightarrow{\text{2}}$ 0 $\xleftarrow{\text{0}}$ 1.
+\begin{center}
+\begin{tikzpicture}[node distance={13mm}, thick, main/.style = {draw, circle}]
+\node[main] (0) {0};
+\node[main] (1) [below right of=0] {1};
+\node[main] (2) [below left of=0] {2};
+\node[main] (3) [below left of=2] {3};
+\draw[->] (3) -- node[midway, above, sloped]{1} (2);
+\draw[->] (2) -- node[midway, above, sloped]{2} (0);
+\draw[->] (1) -- node[midway, above, sloped]{0} (0);
+\end{tikzpicture}
+\end{center}
 
 From this representation we can see that the newest label on the path from 3 to 0 is 2.
 \end{exmp}
@@ -368,7 +407,8 @@ lemma union_ufe_valid_invar:
 It is also useful to prove that the old invariant, \lstinline{ufa_invar}, is implied by the new invariant, so that we can use all the previously proved lemmas about \lstinline{ufa_invar}. This is easily shown by computation induction on the function \lstinline{apply_unions}. We use a lemma from the Theory ``Union Find'', which states that \lstinline{ufa_invar} holds after having applied \lstinline{ufa_union}, and we show that it holds for the initial empty data structure.
 
 \begin{lstlisting}
-theorem ufe_valid_invar_imp_ufa_invar: "ufe_valid_invar ufe ⟹ ufa_invar (uf_list ufe)"
+theorem ufe_valid_invar_imp_ufa_invar: "ufe_valid_invar ufe
+    ⟹ ufa_invar (uf_list ufe)"
 \end{lstlisting}
 
 With this definition of the invariant, we can prove a new induction rule, which will be very useful for proving many properties of a union-find data structure. The induction rule, called \lstinline{apply_unions_induct}, has as an assumption that the invariant holds for the given data structure $ufe$. With this rule we can show that a certain predicate holds for $ufe$. The base case that needs to be proven is that it holds for the initial data structure. The induction step is that the property remains invariant after applying a union.
@@ -377,7 +417,9 @@ With this definition of the invariant, we can prove a new induction rule, which 
 lemma apply_unions_induct[consumes 1, case_names initial union]:
   assumes "ufe_valid_invar ufe"
   assumes "P (initial_ufe (length (uf_list ufe)))"
-  assumes "⋀pufe x y. ufe_valid_invar pufe ⟹ x < length (uf_list pufe) ⟹ y < length (uf_list pufe)
+  assumes "⋀pufe x y. ufe_valid_invar pufe
+    ⟹ x < length (uf_list pufe)
+    ⟹ y < length (uf_list pufe)
     ⟹ P pufe ⟹ P (ufe_union pufe x y)"
   shows "P ufe"
 \end{lstlisting}
