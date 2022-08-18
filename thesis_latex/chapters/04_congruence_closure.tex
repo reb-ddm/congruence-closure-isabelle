@@ -11,7 +11,7 @@ Congruence closure considers equations containing constants and function symbols
     \item $\forall a: a = a \in CC(S)$ (reflexivity).
     \item if $a = b \in CC(S)$, then $b = a \in CC(S)$ (symmetry).
     \item if $a = b \in CC(S)$ and $b = c \in CC(S)$, then $a = c \in CC(S)$ (transitivity).
-    \item $\forall f$ of arity $k :$ if $\forall i \in [1..k]: a_i = b_i \in CC(S)$, then $f(a_1, ..., a_k) = f(b_1,..., b_k)$ (monotonicity).
+    \item $\forall f$ of arity $k :$ if $\forall i \in [1..k]: a_i = b_i \in CC(S)$, then $f(a_1, ..., a_k) = f(b_1,..., b_k) \in CC(S)$ (monotonicity).
 \end{enumerate}
 
 This chapter describes the implementation of an algorithm which maintains the congruence closure of a set of equations.
@@ -42,7 +42,7 @@ In order to implement a \emph{cc\_explain} operation with a reasonable runtime, 
 \subsubsection{add\_edge}
 \label{subsubsection:addedge}
 
-Analogously to the union-find forest, the proof forest has directed edges and for each equivalence class there is a representative element, or root. We denote the root of an element $x$ in the proof forest $pf$ as $rep\_of(pf, x)$. All edges are directed towards the root. To keep this invariant, each time and edge from $x$ to $y$ is added, all the edges on the path from $rep\_of(pf, x)$ to $x$ are reversed.
+Analogously to the union-find forest, the proof forest has directed edges and for each equivalence class there is a representative element, or root. We denote the root of an element $x$ in the proof forest $pf$ as $rep\_of(pf, x)$. All edges are directed towards the root. To keep this invariant, each time an edge from $x$ to $y$ is added, all the edges on the path from $rep\_of(pf, x)$ to $x$ are reversed.
 In the implementation, the proof forest is represented by a list which stores the parent of each node, exactly as in the union-find list. As before, the parent of an element $x$ in the proof forest $pf$ is denoted as $pf ! x$. The implementation for adding an edge, which corresponds to the \lstinline{union} operation, is the following:
 
 \begin{lstlisting}
@@ -151,13 +151,13 @@ lemma add_edge_ufa_invar_invar:
 \end{lstlisting}
 
 \begin{proof}
-In order to prove this lemma, we show another lemma which states that the invariant holds after a function update, if the update does not cause the formation of a cycle. Then we show that each function update of \lstinline|add_edge| does not form a cycle.
+First, we prove that the invariant holds after a function update, if the update does not cause the formation of a cycle. Then we show that each function update of \lstinline|add_edge| does not form a cycle.
 \end{proof}
 
 \subsubsection{add\_label}
 \label{subsubsection:addlabel}
 
-Additionally, each edge is labeled with the input equation, or the input equations, which caused the adding of this edge. This is not necessary for the union-find algorithm by itself, but it will be needed by the \lstinline|cc_explain| operation.
+Additionally, each edge is labeled with the input equation, or the input equations, which caused the adding of this edge. This is not necessary for the congruence closure algorithm by itself, but it will be needed by the \emph{cc\_explain} operation.
 There are two possible types of labels: either one equation $a = b$, or two equations of the type $F(a_1, a_2) = a$ and $F(b_1, b_2) = b$, where $a_1$ and $b_1$ were already in the same equivalence class before this union, as well as $a_2$ and $b_2$.
 Both these cases can cause the union between the equivalence classes of $a$ and $b$.
 The labeling is implemented by using an additional list, called \lstinline|pf_labels|.
@@ -344,7 +344,7 @@ Then, \lstinline|propagate| is executed, which first performs the union of $3$ a
 \end{tikzpicture}
 \end{center}
 
-After the union, the representative of 3 and 2 has changed, therefore the equations $F(1,3) = 3$ in the use list of the old representative of 2 is moved to the use list of the new representative by \lstinline|propagate_loop|, and it is also added to the lookup table with the new representative as index.
+After the union, the new representative of 3 and 2 is 0. Therefore, the equations $F(1,3) = 3$ in the use list of the old representative 2 is moved to the use list of 0 by \lstinline|propagate_loop|, and it is also added to the lookup table with the new representative as index.
 \end{exmp}
 
 The function \lstinline{are_congruent} returns \emph{True} if an equation is in the congruence closure of all the input equations so far. It simply checks if the elements have the same representative. In the case of equations containing $F$, it verifies if they have the same representative as the corresponding entry in lookup.
@@ -394,7 +394,7 @@ rep_of l i = rep_of l j ⟷ rep_of pf i = rep_of pf j
 This invariant is important for the proofs that consider \lstinline{add_edge}. That is because we only showed that \lstinline{add_edge pf x y} terminates if \lstinline{rep_of pf x ≠ rep_of pf y}. \lstinline{propagate} only executes \lstinline{add_edge} when \lstinline{rep_of l x ≠ rep_of l y}. The invariant shows that these two statements are equivalent, therefore \lstinline{add_edge} always terminates when used inside of the algorithm.
 In order to prove the invariant, given that the two lists $l$ and $pf$ are only modified during the \lstinline{mini_step}, it is sufficient to show that \lstinline{ufa_union l x y} and \lstinline{add_edge pf x y} have the same behaviour, which is what we showed in Subsection \ref{subsubsection:addedge}.
 
-Furthermore, for each data structure there is an invariant which states the properties which were informally described in Subsection \ref{subsection:datastructure}. The nvariants are presented in the following.
+Furthermore, for each data structure there is an invariant which states the properties which were informally described in Subsection \ref{subsection:datastructure}. The invariants are presented in the following.
 
 For the use list, the invariant \lstinline|use_list_invar| states that for each representative $a$, its use list only contains equations of the type $F(b_1, b_2) = b$, where $a$ is the representative of either $b_1$ or $b_2$.
 
@@ -523,7 +523,11 @@ These two lemmas imply that the congruence closure of the \lstinline{representat
 We will first prove the second statement, given that it is much easer to show.
 
 \begin{proof}
-We need to show that \lstinline{Congruence Closure (representativeE ∪ pending ∪ (u ! rep_of l a))} before the \lstinline{propagate_loop} is equal to \lstinline{Congruence Closure (representativeE ∪ pending)}  after the \lstinline{propagate_loop}. In each step of the loop, one element from $u ! rep\_of(l, a)$ is moved either to pending or to lookup. Therefore after the loop each element of $u ! rep\_of(l, a)$ is either in pending or in representativeE. The elements of pending and representativeE are never removed from the set, therefore they are present also after the loop.
+We need to show that
+\lstinline{Congruence Closure (representativeE ∪ pending ∪ (u ! rep_of l a))}
+before the
+\lstinline{propagate_loop} is equal to the
+\lstinline{Congruence Closure (representativeE ∪ pending)}  after the \lstinline{propagate_loop}. In each step of the loop, one element from $u ! rep\_of(l, a)$ is moved either to pending or to lookup. Therefore after the loop each element of $u ! rep\_of(l, a)$ is either in pending or in representativeE. The elements of pending and representativeE are never removed from the set, therefore they are present also after the loop.
 \end{proof}
 
 The first lemma is more difficult to prove. The following is the statement of the lemma. It states that the set \lstinline{Congruence Closure (representativeE ∪ pending)} before the \lstinline{propagate_step} is equal to \lstinline{Congruence Closure (representativeE ∪ pending ∪ (u ! rep_of l a))} after the \lstinline{mini_step}.
@@ -987,8 +991,8 @@ We consider the following proof forest:
 \node[main] (c) [below right of=b] {c};
 \node[main] (d) [right of=c] {d};
 
-\draw[->] (a) -- node[midway, above, sloped]{\footnotesize $F(1,3) = 3$} node[midway, below, sloped]{\footnotesize $F(0,2) = 1$} (b);
-\draw[->] (c) -- node[midway, above, sloped]{$1 = 0$} (b);
+\draw[->] (a) -- node[midway, above, sloped]{\footnotesize $F(a,c) = a$} node[midway, below, sloped]{\footnotesize $F(b,c) = b$} (b);
+\draw[->] (c) -- node[midway, above, sloped]{$b = c$} (b);
 \end{tikzpicture}
 \end{center}
 
