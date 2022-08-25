@@ -505,7 +505,7 @@ With this assumption we can show that each time an equation gets added to the us
 
 In the proof after the \lstinline{merge} operation, the use list is only modified in the third case of the function and only equations of the form $F(a_1, a_2) = a$ are added to $rep\_of(l, a_1)$  and $rep\_of(l, a_2)$. Therefore all the necessary properties hold for these new equations.
 
-For the remaining cases, use list is either unchanged, or something is removed from it, therefore the invariant trivially holds.
+For the remaining cases, the use list is either unchanged, or something is removed from it, therefore the invariant trivially holds.
 \end{proof}
 
 The invariant \lstinline|lookup_invar| for lookup is similar, it states that each entry in the lookup table at index $(i, j)$, for representatives $i$ and $j$, is either \lstinline{None} or is an equation of the form $F(a_1, a_2) = a$ where the representative of $a_1$ is $i$ and the representative of $a_2$ is $j$.
@@ -728,7 +728,7 @@ We assume that before \lstinline{propagate} the invariants \lstinline{lookup_inv
 In particular, we observe that for each equation $F(c_1, c_2) = c$ in $u ! rep\_of(l, a)$, which we shall refer to as $u_a$, there is a similar equation in lookup at the index $(rep\_of(l, c_1), rep\_of(l, c_2))$.
 Hence, there are similar equations in $u ! rep\_of(l, c_1)$ and in $u ! rep\_of(l, c_2)$.
 
-In the \lstinline{propagate_loop}, $u_a$ is emptied, while the other use lists are not modified. Then, $u_a$ is handed over as a parameter to the \lstinline{propagate_loop}.
+In the \lstinline{mini_step}, $u_a$ is emptied, while the other use lists are not modified. Then, $u_a$ is handed over as a parameter to the \lstinline{propagate_loop}.
 
 From now on let $l$ be the \lstinline{cc_list} after the \lstinline{ufe_union}.
 In \lstinline{loop1} the lookup table and the use lists are not modified, thus there is nothing to show.
@@ -751,6 +751,7 @@ The \lstinline|mini_step| performs a \lstinline|ufa_union| and afterwards $rep\_
 Therefore, if there are some equations $F(c_1, c_2) = c$ in the use list, where the representative of $c_1$ or $c_2$ is $rep\_of(l,a)$, they have a new representative after the union. Due to this, the corresponding \emph{similar} equations in the lookup table are not at the right index anymore.
 
 We shall again refer to $u ! rep\_of (l, a)$ as $u_a$.
+In the \lstinline{mini_step}, $u_a$ is emptied.
 If $F(c_1, c_2) = c$ was in $u_a$, then it is removed from the use list after the \lstinline|mini_step|. In this case, the invariant holds trivially.
 If $c_1$ and $c_2$ are both not in the same equivalence class as $a$, then the corresponding lookup entry has not changed and the invariant holds.
 However, there could be equations in the use list at an index which is not $rep\_of(l, a)$, where $c_1$ or $c_2$ has the same representative as $a$. These equations do not have a \emph{similar} equation in lookup after the \lstinline{mini_step}, but we know from \lstinline{lookup_invar2} that they have a similar equation in $u_a$.
@@ -835,7 +836,8 @@ If $a$ and $b$ are already in the same equivalence class, then the union-find li
 If $a$ and $b$ are not in the same equivalence class, they are merged by the \lstinline{propagate_step}, therefore the number of equivalence classes decreases by one according to the lemma \lstinline{ufa_union_decreases_nr_eq_classes} and we can prove the goal by using the induction hypothesis.
 \end{proof}
 
-\chapter{The CC\_Explain Operation}
+\chapter{The CC\_Explain Operation}\label{chapter:cc-explain}
+
 
 We will implement the \emph{cc\_explain} operation for congruence closure, leaving the formal proof of correctness open for future work.  This section describes the implementation, a validity and termination proof and a proposal of how the correctness could be proven.
 

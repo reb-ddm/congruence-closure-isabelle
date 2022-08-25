@@ -10,7 +10,7 @@ Several approaches to implement this operation have been described \cite{congrue
 They differ in their runtime and application area.
 
 
-Most implementations of congruence closure are based on the union-find algorithm. This algorithm maintains the equivalence closure of equations. The difference to congruence closure is that it considers equations containing only constants and no functions.
+Most implementations of congruence closure are based on the union-find algorithm. This algorithm maintains the equivalence closure of equations. The difference to congruence closure is that it considers equations containing only constants, without functions.
 Dating back to 1964 \cite{unionfind-og}, the union-find algorithm is nowadays the most widely used algorithm for maintaining the equivalence closure, due to its simplicity and amortized almost constant runtime \cite{Tarjan}.
 
 In the context of decision procedures it is also required to understand which subset of the given equations is responsible for the congruence. For this reason, the congruence closure algorithm has an \emph{explain} operation, which returns the set of input equations that justify the congruence.
