@@ -3,40 +3,36 @@
 
 \chapter{Introduction}\label{chapter:introduction}
 
-Isabelle is an interactive theorem prover, with which it is possible to formalize mathematical formulas and proofs \cite{isabelle}. A common use case for it is the verification of algorithms.
-It provides different types of logic, the most used one being Higher-Order Logic (HOL).
-
-The congruence closure algorithm is used in automated theorem proving in order to determine whether an equation is implied by a given set of equations.
-Therefore, it is a central part of decision procedures, such as satisfiability modulo theories (SMT) solvers \cite{z3}.
-Isabelle itself uses automated decision procedures to solve proof goals.
-Hence, the code of this thesis can be used as a basis for a new automated proof strategy in Isabelle.
-It is important for algorithms of theorem provers to be trustworthy, therefore the algorithms of this thesis are verified for correctness.
-The proofs are formalized in the interactive theorem prover Isabelle/HOL.
-The algorithms are based on the paper by Nieuwenhuis and Oliveras \cite{Nieuwenhuis}.
-
-This thesis describes the implementation in Isabelle/HOL of algorithms that find the congruence closure of a set of equations. We consider equations containing constant symbols and function symbols. In the following, $a$, $b$, $c$, $d$, $i$, $x$ and $y$ will denote constants and $f$ and $F$ functions.
-We consider only uninterpreted functions, that is, the only property we know of the functions is how many arguments the function takes.
-A constant or a function applied to constants, e.g., $f(a, b)$, is called a \emph{term} and an equality between two terms, e.g., $f(a, b) = c$, is called an \emph{equation}.
-
-We will first introduce the union-find algorithm, which maintains the congruence closure of equations containing only constants, e.g. $a = b$. When we only consider constants, the congruence closure is also called equivalence closure. The equivalence closure of a relation is the smallest reflexive, symmetric and transitive superset of the relation. We denote that $a$ is in relation with $b$ by writing $a = b$. For example, the equivalence closure of $a = b$ and $c = b$ contains $a = c$.
-
-Then, we consider an algorithm which maintains the congruence closure of equations containing also function symbols. The congruence closure of a set of equations satisfies, in addition to reflexivity, symmetry and transitivity, also monotonicity, i.e., $f(x_1, ... ,x_n) = f(y_1, ... ,y_n)$ if $x_i = y_i$ $\forall i \in [1..n]$ \cite{Nieuwenhuis}.
-For example, the congruence closure of $f(a,b) = c$, $f(d,b) = e$ and $a = d$ contains the equation $c = e$. Several approaches to solve this problem have been described \cite{congruenceclosure-og2,congruenceclosure-og,congruenceclosure-og3,Nieuwenhuis}.
+Congruence closure is an operation which determines whether an equation is implied by a given set of equations.
+For example, the congruence closure of $f(a,b) = c$, $f(d,b) = e$ and $a = d$ contains the equation $c = e$.
+Congruence closure is a central part of decision procedures, such as satisfiability modulo theories (SMT) solvers \cite{z3}, which are used by automated theorem provers.
+Several approaches to implement this operation have been described \cite{congruenceclosure-og2,congruenceclosure-og,congruenceclosure-og3,Nieuwenhuis}.
 They differ in their runtime and application area.
-Most implementations of congruence closure are based on the union-find algorithm. Dating back to 1964 \cite{unionfind-og}, the union-find algorithm is nowadays the most widely used algorithm for maintaining the equivalence closure of a set, due to its simplicity and almost constant runtime \cite{Tarjan}.
 
-In the context of decision procedures it is also required to understand which subset of the given equations is responsible for the congruence. For this reason, we also implement an \emph{explain} operation, which returns the set of input equations that caused the congruence.
+
+Most implementations of congruence closure are based on the union-find algorithm. This algorithm maintains the equivalence closure of equations. The difference to congruence closure is that it considers equations containing only constants and no functions.
+Dating back to 1964 \cite{unionfind-og}, the union-find algorithm is nowadays the most widely used algorithm for maintaining the equivalence closure, due to its simplicity and amortized almost constant runtime \cite{Tarjan}.
+
+In the context of decision procedures it is also required to understand which subset of the given equations is responsible for the congruence. For this reason, the congruence closure algorithm has an \emph{explain} operation, which returns the set of input equations that justify the congruence.
 This can be used by an external program in order to generate a certificate of the congruence and verify that it is in fact contained in the congruence closure of the input equations.
 Nieuwenhuis and Oliveras have presented an efficient version of the congruence closure algorithm and two versions of the union-find algorithm, each with their own \emph{explain} operation. Their conference paper \cite{Nieuwenhuis} was later extended, see \cite{Nieuwenhuis2}.
 We will call the \emph{explain} operation of the union-find algorithm \emph{explain}, and the one for congruence closure \emph{cc\_explain}.
 
+In this thesis, the algorithms of the paper by Nieuwenhuis et al. \cite{Nieuwenhuis} are implemented in the interactive theorem prover Isabelle/HOL.
+It is important for algorithms of theorem provers to be trustworthy, therefore the algorithms of this thesis are verified for correctness and completeness.
+The proofs are formalized in Isabelle/HOL.
 
-Our implementation is based on the union-find formalization by Lammich \cite{unionfind-isabelle} in Isabelle/HOL. We implement three algorithms: the \emph{explain} operation for union-find, the congruence closure algorithm and the \emph{cc\_explain} operation for congruence closure.
+The implementation is based on the union-find formalization by Lammich \cite{unionfind-isabelle} in Isabelle/HOL. Three algorithms are implemented: the \emph{explain} operation for union-find, the congruence closure algorithm and the \emph{cc\_explain} operation for congruence closure.
 
-To my knowledge, this thesis presents the first verified formalization of these algorithms in Isabelle/HOL. Given that the focus of this thesis is on the verification of the algorithms, a few optimizations are left out of the implementation, such as path compression for union-find.
+To my knowledge, this thesis presents the first verified formalization of these algorithms in Isabelle/HOL.
+The focus of this thesis is on proving the correctness and completeness of the algorithms.
+Therefore, a few optimizations are left out of the implementation, such as path compression for union-find.
+
+Isabelle itself uses automated decision procedures to solve proof goals.
+Hence, the code of this thesis can be used in the future as a basis for a new automated proof strategy in Isabelle.
 
 \section{Outline}
-This thesis is organized as follows: Chapter 2 gives a brief overview of the notation used by Isabelle and discusses some related work.
+This thesis is organized as follows: Chapter 2 gives a brief overview of the notation used in this thesis and it discusses some related work.
 
 In Chapter 3 the union-find implementation by Lammich \cite{unionfind-isabelle} is described and the \emph{explain} operation for union-find is presented together with its correctness and termination proofs.
 

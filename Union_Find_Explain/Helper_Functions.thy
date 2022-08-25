@@ -57,7 +57,7 @@ abbreviation "common_ancestor l x y ca \<equiv>
 (\<exists> p . path l ca p x) \<and>
 (\<exists> p . path l ca p y)"
 
-abbreviation "Lowest_common_ancestor l x y ca \<equiv>
+abbreviation "is_lca l x y ca \<equiv>
 (common_ancestor l x y ca \<and> 
 (\<forall>r ca2 p3 p4. (path l r p3 ca \<and> path l r p4 ca2 \<and> common_ancestor l x y ca2 
 \<longrightarrow> length p3 \<ge> length p4)))"
@@ -67,7 +67,7 @@ theorem lowest_common_ancestor_correct:
     and "x < length l"
     and "y < length l"
     and "rep_of l x = rep_of l y"
-  shows "Lowest_common_ancestor l x y (lowest_common_ancestor l x y)"
+  shows "is_lca l x y (lowest_common_ancestor l x y)"
 proof-
   have path_root_x: "path l (rep_of l x) (path_to_root l x) x"
     using assms path_to_root_correct by metis
@@ -373,6 +373,18 @@ next
     by (metis apply_unions.simps(1,2) assms(1) ufe_data_structure.select_convs(1,2) ufe_union_length_uf_list unions)
   with ** show ?thesis 
     by simp
+qed
+
+lemma union_ufe_valid_invar':
+  assumes "ufe_valid_invar ufe"
+    and "x < length (uf_list ufe)"
+    and "y < length (uf_list ufe)"
+  shows "ufe_valid_invar (ufe_union ufe x y)"
+proof-
+  obtain l a u where "ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr>"
+    using ufe_data_structure.cases by blast
+  with assms union_ufe_valid_invar show ?thesis 
+    by auto
 qed
 
 theorem apply_unions_ufe_valid_invar:

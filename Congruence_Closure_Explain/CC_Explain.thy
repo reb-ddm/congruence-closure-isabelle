@@ -81,7 +81,7 @@ then
     (output1, new_l, pending1) = explain_along_path cc l a c;
     (output2, new_new_l, pending2) = explain_along_path cc new_l b c
   in
-    output1 \<union> output2 \<union> cc_explain_aux cc new_new_l (xs @ pending1 @ pending2))
+    output1 \<union> output2 \<union> cc_explain_aux cc new_new_l (pending1 @ pending2 @ xs))
 else cc_explain_aux cc l xs)"
   by pat_completeness auto
 
@@ -96,7 +96,7 @@ lemma cc_explain_aux_simp2:
     "(output1, new_l, pending1) = explain_along_path cc l a c"
     "(output2, new_new_l, pending2) = explain_along_path cc new_l b c"
   shows "cc_explain_aux cc l ((a, b) # xs) = 
-output1 \<union> output2 \<union> cc_explain_aux cc new_new_l (xs @ pending1 @ pending2)" 
+output1 \<union> output2 \<union> cc_explain_aux cc new_new_l (pending1 @ pending2 @ xs)" 
   using cc_explain_aux.domintros cc_explain_aux.psimps assms unfolding Let_def 
   by auto
 
@@ -754,7 +754,7 @@ and \<open>explain_along_path_eq_classes_if_pending_not_empty\<close>\<close>
         then have domain: "cc_explain_aux_dom (cc, new_new_l, xs')" 
           using new_eq_classes Cons(1)[OF Cons(2) new_new_l_inv  ** ] Cons.prems(4) dual_order.trans new_eq_classes'
           by simp
-        from True2 True have "xs' @ pending1 @ pending2 = xs'" by blast
+        from True2 True have "(pending1 @ pending2 @ xs') = xs'" by simp
         then show ?thesis using cc_explain_aux.domintros defs True2 domain
           by (metis Pair_inject lowest_common_ancestor.simps)
 
@@ -774,12 +774,12 @@ and \<open>explain_along_path_eq_classes_if_pending_not_empty\<close>\<close>
         then have eq_classes: "nr_eq_classes new_new_l < nr_eq_classes l" 
           by (meson dual_order.strict_trans1 dual_order.strict_trans2 new_eq_classes new_eq_classes')
 
-        have "\<forall>a\<in>set (xs' @ pending1 @ pending2). case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc" 
+        have "\<forall>a\<in>set (pending1 @ pending2 @ xs'). case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc" 
           using 1 3 4 by fastforce
-        then have "\<forall>(a, b)\<in>set (xs' @ pending1 @ pending2). a < nr_vars cc \<and> b < nr_vars cc" 
+        then have "\<forall>(a, b)\<in> set (pending1 @ pending2 @ xs'). a < nr_vars cc \<and> b < nr_vars cc" 
           by blast
         with less(1) eq_classes Cons.prems(1) new_new_l_inv cc
-        have "cc_explain_aux_dom (cc, new_new_l, (xs' @ pending1 @ pending2))" 
+        have "cc_explain_aux_dom (cc, new_new_l, (pending1 @ pending2 @ xs'))" 
           using Cons.prems(4) by blast
         then show ?thesis using cc_explain_aux.domintros defs False cong 
           by (metis Pair_inject lowest_common_ancestor.simps)
@@ -1412,13 +1412,13 @@ lemma cc_explain_aux_valid:
       using "2.prems" dom1 p(1) rec1 explain_along_path_pending_in_bounds by auto
     have 4: "\<forall>a\<in>set pending2. case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc"
       using p(2) rec2 explain_along_path_pending_in_bounds[OF "2.prems"(1) new_l_inv] by auto
-    have "\<forall>a\<in>set (xs @ pending1 @ pending2). case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc" 
+    have "\<forall>a\<in>set (pending1 @ pending2 @ xs). case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc" 
       using 1 3 4 by fastforce
     with 2(2)[OF True c_def] rec1 rec2 "2.prems" cc new_new_l_inv
-    have IH: "cc_explain_aux cc new_new_l (xs @ pending1 @ pending2) \<subseteq> input cc"
+    have IH: "cc_explain_aux cc new_new_l (pending1 @ pending2 @ xs) \<subseteq> input cc"
       by simp
     have "cc_explain_aux cc l ((a, b) # xs) = 
-          output1 \<union> output2 \<union> cc_explain_aux cc new_new_l (xs @ pending1 @ pending2)"
+          output1 \<union> output2 \<union> cc_explain_aux cc new_new_l (pending1 @ pending2 @ xs)"
       using "2.hyps" True c_def cc_explain_aux_simp2 rec1 rec2 by auto
     then show ?thesis 
       using cc o IH by simp

@@ -90,8 +90,7 @@ proof-
   moreover have "rep_of (uf_list before) x \<noteq> rep_of (uf_list after) x"
     using assms(7) assms(8) assms(9) by auto
   have "ufe_valid_invar after"  
-    using union_ufe_valid_invar assms(1,2) 
-    by (smt (verit, ccfv_threshold) assms(5) assms(6) old.unit.exhaust ufe_data_structure.surjective)
+    using union_ufe_valid_invar' assms(1,2,5,6) by presburger
   then have invar:  "ufa_invar (uf_list after)" "ufa_invar (uf_list before)"
     using assms(1) ufe_valid_invar_imp_ufa_invar by blast+
   ultimately have rep_x_eq_x2: "rep_of (uf_list before) x = rep_of (uf_list before) x2"
@@ -1289,16 +1288,14 @@ lemma explain_domain_ufe_union_invar:
         \<comment>\<open>We need to prove the induction hypotheses for the symmetric case.\<close>
     with explain_symmetric_domain union_ufe_valid_invar *(1) ufe_union_length_uf_list 
       linorder_not_less case_y lowest_common_ancestor_symmetric  
-    have a: "(\<And>xa xba xc xaa xab ya xac xad yba.
+    have a: "(\<And>xa xba xc xaa xab ya.
         \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
         xa = lowest_common_ancestor l y x \<Longrightarrow>
         xba = find_newest_on_path l a y xa \<Longrightarrow>
         xc = find_newest_on_path l a x xa \<Longrightarrow>
+        xc \<le> xba \<Longrightarrow>
         xaa = u ! the xba \<Longrightarrow>
         (xab, ya) = xaa \<Longrightarrow>
-        xac = u ! the xc \<Longrightarrow>
-        (xad, yba) = xac \<Longrightarrow>
-        xc \<le> xba \<Longrightarrow>
         ufe_valid_invar \<lparr>uf_list = l, unions = u, au = a\<rparr> \<Longrightarrow>
         x2 < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) \<Longrightarrow>
         y2 < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) \<Longrightarrow>
@@ -1306,20 +1303,19 @@ lemma explain_domain_ufe_union_invar:
         xab < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) \<Longrightarrow>
         rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) y =
         rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) xab \<Longrightarrow>
-        explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, y, xab))"  
+        explain_dom
+         (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, y, xab))"  
       by (metis ufe_data_structure.select_convs(1))
     with explain_symmetric_domain union_ufe_valid_invar *(1) ufe_union_length_uf_list 
       linorder_not_less case_y lowest_common_ancestor_symmetric  
-    have b: "(\<And>xa xba xc xaa xab ya xac xad yba.
+    have b: "(\<And>xa xba xc xaa xab ya.
         \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
         xa = lowest_common_ancestor l y x \<Longrightarrow>
         xba = find_newest_on_path l a y xa \<Longrightarrow>
         xc = find_newest_on_path l a x xa \<Longrightarrow>
+        xc \<le> xba \<Longrightarrow>
         xaa = u ! the xba \<Longrightarrow>
         (xab, ya) = xaa \<Longrightarrow>
-        xac = u ! the xc \<Longrightarrow>
-        (xad, yba) = xac \<Longrightarrow>
-        xc \<le> xba \<Longrightarrow>
         ufe_valid_invar \<lparr>uf_list = l, unions = u, au = a\<rparr> \<Longrightarrow>
         x2 < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) \<Longrightarrow>
         y2 < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) \<Longrightarrow>
@@ -1327,51 +1323,50 @@ lemma explain_domain_ufe_union_invar:
         x < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) \<Longrightarrow>
         rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) ya =
         rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) x \<Longrightarrow>
-        explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, ya, x))"
+        explain_dom
+         (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, ya, x))"
       by (metis ufe_data_structure.select_convs(1))
     with explain_symmetric_domain union_ufe_valid_invar *(1) ufe_union_length_uf_list 
       linorder_not_less case_y lowest_common_ancestor_symmetric  
       linorder_le_cases
-    have c: "(\<And>xa xba xc xaa xab ya xac xad yba.
+    have c: "(\<And>xa xba xc xaa xab ya.
         \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
         xa = lowest_common_ancestor l y x \<Longrightarrow>
         xba = find_newest_on_path l a y xa \<Longrightarrow>
         xc = find_newest_on_path l a x xa \<Longrightarrow>
-        xaa = u ! the xba \<Longrightarrow>
-        (xab, ya) = xaa \<Longrightarrow>
-        xac = u ! the xc \<Longrightarrow>
-        (xad, yba) = xac \<Longrightarrow>
         \<not> xc \<le> xba \<Longrightarrow>
+        xaa = u ! the xc \<Longrightarrow>
+        (xab, ya) = xaa \<Longrightarrow>
         ufe_valid_invar \<lparr>uf_list = l, unions = u, au = a\<rparr> \<Longrightarrow>
         x2 < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) \<Longrightarrow>
         y2 < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) \<Longrightarrow>
         y < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) \<Longrightarrow>
-        yba < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) \<Longrightarrow>
+        ya < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) \<Longrightarrow>
         rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) y =
-        rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) yba \<Longrightarrow>
-        explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, y, yba))"
+        rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) ya \<Longrightarrow>
+        explain_dom
+         (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, y, ya))"
       by metis
     with explain_symmetric_domain union_ufe_valid_invar *(1) ufe_union_length_uf_list 
       linorder_not_less case_y lowest_common_ancestor_symmetric  
       linorder_le_cases
-    have d: "(\<And>xa xba xc xaa xab ya xac xad yba.
+    have d: "(\<And>xa xba xc xaa xab ya.
         \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
         xa = lowest_common_ancestor l y x \<Longrightarrow>
         xba = find_newest_on_path l a y xa \<Longrightarrow>
         xc = find_newest_on_path l a x xa \<Longrightarrow>
-        xaa = u ! the xba \<Longrightarrow>
-        (xab, ya) = xaa \<Longrightarrow>
-        xac = u ! the xc \<Longrightarrow>
-        (xad, yba) = xac \<Longrightarrow>
         \<not> xc \<le> xba \<Longrightarrow>
+        xaa = u ! the xc \<Longrightarrow>
+        (xab, ya) = xaa \<Longrightarrow>
         ufe_valid_invar \<lparr>uf_list = l, unions = u, au = a\<rparr> \<Longrightarrow>
         x2 < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) \<Longrightarrow>
         y2 < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) \<Longrightarrow>
-        xad < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) \<Longrightarrow>
+        xab < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) \<Longrightarrow>
         x < length (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) \<Longrightarrow>
-        rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) xad =
+        rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) xab =
         rep_of (uf_list \<lparr>uf_list = l, unions = u, au = a\<rparr>) x \<Longrightarrow>
-        explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, xad, x))"
+        explain_dom
+         (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, xab, x))"
       by metis
     from * a b c d case_y dom
     have "explain_dom (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2, y, x)" 
@@ -1645,89 +1640,86 @@ proof-
           \<comment>\<open>We need to prove the induction hypotheses for the symmetric case.\<close>
       with dom explain_symmetric union_ufe_valid_invar *(1) ufe_union_length_uf_list 
         linorder_not_less case_y lowest_common_ancestor_symmetric  
-      have a: "(\<And>xa xb xc xaa xab ya xac xad yb l1 u1 a1.
-            \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
-            xa = lowest_common_ancestor l y x \<Longrightarrow>
-            xb = find_newest_on_path l a y xa \<Longrightarrow>
-            xc = find_newest_on_path l a x xa \<Longrightarrow>
-            xaa = u ! the xb \<Longrightarrow>
-            (xab, ya) = xaa \<Longrightarrow>
-            xac = u ! the xc \<Longrightarrow>
-            (xad, yb) = xac \<Longrightarrow>
-            xc \<le> xb \<Longrightarrow>
-            ufe_valid_invar \<lparr>uf_list = l, unions = u, au = a\<rparr> \<Longrightarrow>
-            \<lparr>uf_list = l, unions = u, au = a\<rparr> = \<lparr>uf_list = l1, unions = u1, au = a1\<rparr> \<Longrightarrow>
-            y < length l1 \<Longrightarrow>
-            xab < length l1 \<Longrightarrow>
-            x2 < length l1 \<Longrightarrow>
-            y2 < length l1 \<Longrightarrow>
-            explain \<lparr>uf_list = l, unions = u, au = a\<rparr> y xab
-            \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) y xab)"
+      have a: "(\<And>xa xba xc xaa xab ya l1 u1 a1.
+        \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
+        xa = lowest_common_ancestor l y x \<Longrightarrow>
+        xba = find_newest_on_path l a y xa \<Longrightarrow>
+        xc = find_newest_on_path l a x xa \<Longrightarrow>
+        xc \<le> xba \<Longrightarrow>
+        xaa = u ! the xba \<Longrightarrow>
+        (xab, ya) = xaa \<Longrightarrow>
+        ufe_valid_invar \<lparr>uf_list = l, unions = u, au = a\<rparr> \<Longrightarrow>
+        \<lparr>uf_list = l, unions = u, au = a\<rparr> =
+        \<lparr>uf_list = l1, unions = u1, au = a1\<rparr> \<Longrightarrow>
+        y < length l1 \<Longrightarrow>
+        xab < length l1 \<Longrightarrow>
+        x2 < length l1 \<Longrightarrow>
+        y2 < length l1 \<Longrightarrow>
+        explain \<lparr>uf_list = l, unions = u, au = a\<rparr> y xab
+        \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) y xab)"
         by (metis ufe_data_structure.select_convs(1))
       with dom explain_symmetric union_ufe_valid_invar *(1) ufe_union_length_uf_list 
         linorder_not_less case_y lowest_common_ancestor_symmetric 
-      have b: "(\<And>xa xb xc xaa xab ya xac xad yb l1 u1 a1.
-            \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
-            xa = lowest_common_ancestor l y x \<Longrightarrow>
-            xb = find_newest_on_path l a y xa \<Longrightarrow>
-            xc = find_newest_on_path l a x xa \<Longrightarrow>
-            xaa = u ! the xb \<Longrightarrow>
-            (xab, ya) = xaa \<Longrightarrow>
-            xac = u ! the xc \<Longrightarrow>
-            (xad, yb) = xac \<Longrightarrow>
-            xc \<le> xb \<Longrightarrow>
-            ufe_valid_invar \<lparr>uf_list = l, unions = u, au = a\<rparr> \<Longrightarrow>
-            \<lparr>uf_list = l, unions = u, au = a\<rparr> = \<lparr>uf_list = l1, unions = u1, au = a1\<rparr> \<Longrightarrow>
-            ya < length l1 \<Longrightarrow>
-            x < length l1 \<Longrightarrow>
-            x2 < length l1 \<Longrightarrow>
-            y2 < length l1 \<Longrightarrow>
-            explain \<lparr>uf_list = l, unions = u, au = a\<rparr> ya x
-            \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) ya x)"
+      have b: "(\<And>xa xba xc xaa xab ya l1 u1 a1.
+        \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
+        xa = lowest_common_ancestor l y x \<Longrightarrow>
+        xba = find_newest_on_path l a y xa \<Longrightarrow>
+        xc = find_newest_on_path l a x xa \<Longrightarrow>
+        xc \<le> xba \<Longrightarrow>
+        xaa = u ! the xba \<Longrightarrow>
+        (xab, ya) = xaa \<Longrightarrow>
+        ufe_valid_invar \<lparr>uf_list = l, unions = u, au = a\<rparr> \<Longrightarrow>
+        \<lparr>uf_list = l, unions = u, au = a\<rparr> =
+        \<lparr>uf_list = l1, unions = u1, au = a1\<rparr> \<Longrightarrow>
+        ya < length l1 \<Longrightarrow>
+        x < length l1 \<Longrightarrow>
+        x2 < length l1 \<Longrightarrow>
+        y2 < length l1 \<Longrightarrow>
+        explain \<lparr>uf_list = l, unions = u, au = a\<rparr> ya x
+        \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) ya x)"
         by (metis ufe_data_structure.select_convs(1))
       with dom explain_symmetric union_ufe_valid_invar *(1) ufe_union_length_uf_list 
         linorder_not_less case_y lowest_common_ancestor_symmetric  
         linorder_le_cases
-      have c: "(\<And>xa xb xc xaa xab ya xac xad yb l1 u1 a1.
-            \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
-            xa = lowest_common_ancestor l y x \<Longrightarrow>
-            xb = find_newest_on_path l a y xa \<Longrightarrow>
-            xc = find_newest_on_path l a x xa \<Longrightarrow>
-            xaa = u ! the xb \<Longrightarrow>
-            (xab, ya) = xaa \<Longrightarrow>
-            xac = u ! the xc \<Longrightarrow>
-            (xad, yb) = xac \<Longrightarrow>
-            \<not> xc \<le> xb \<Longrightarrow>
-            ufe_valid_invar \<lparr>uf_list = l, unions = u, au = a\<rparr> \<Longrightarrow>
-            \<lparr>uf_list = l, unions = u, au = a\<rparr> = \<lparr>uf_list = l1, unions = u1, au = a1\<rparr> \<Longrightarrow>
-            y < length l1 \<Longrightarrow>
-            yb < length l1 \<Longrightarrow>
-            x2 < length l1 \<Longrightarrow>
-            y2 < length l1 \<Longrightarrow>
-            explain \<lparr>uf_list = l, unions = u, au = a\<rparr> y yb
-            \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) y yb)"
+      have c: "(\<And>xa xba xc xaa xab ya l1 u1 a1.
+        \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
+        xa = lowest_common_ancestor l y x \<Longrightarrow>
+        xba = find_newest_on_path l a y xa \<Longrightarrow>
+        xc = find_newest_on_path l a x xa \<Longrightarrow>
+        \<not> xc \<le> xba \<Longrightarrow>
+        xaa = u ! the xc \<Longrightarrow>
+        (xab, ya) = xaa \<Longrightarrow>
+        ufe_valid_invar \<lparr>uf_list = l, unions = u, au = a\<rparr> \<Longrightarrow>
+        \<lparr>uf_list = l, unions = u, au = a\<rparr> =
+        \<lparr>uf_list = l1, unions = u1, au = a1\<rparr> \<Longrightarrow>
+        y < length l1 \<Longrightarrow>
+        ya < length l1 \<Longrightarrow>
+        x2 < length l1 \<Longrightarrow>
+        y2 < length l1 \<Longrightarrow>
+        explain \<lparr>uf_list = l, unions = u, au = a\<rparr> y ya
+        \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) y ya)"
         by metis
       with dom explain_symmetric union_ufe_valid_invar *(1) ufe_union_length_uf_list 
         linorder_not_less case_y lowest_common_ancestor_symmetric  
         linorder_le_cases
-      have d: "(\<And>xa xb xc xaa xab ya xac xad yb l1 u1 a1.
-            \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
-            xa = lowest_common_ancestor l y x \<Longrightarrow>
-            xb = find_newest_on_path l a y xa \<Longrightarrow>
-            xc = find_newest_on_path l a x xa \<Longrightarrow>
-            xaa = u ! the xb \<Longrightarrow>
-            (xab, ya) = xaa \<Longrightarrow>
-            xac = u ! the xc \<Longrightarrow>
-            (xad, yb) = xac \<Longrightarrow>
-            \<not> xc \<le> xb \<Longrightarrow>
-            ufe_valid_invar \<lparr>uf_list = l, unions = u, au = a\<rparr> \<Longrightarrow>
-            \<lparr>uf_list = l, unions = u, au = a\<rparr> = \<lparr>uf_list = l1, unions = u1, au = a1\<rparr> \<Longrightarrow>
-            xad < length l1 \<Longrightarrow>
-            x < length l1 \<Longrightarrow>
-            x2 < length l1 \<Longrightarrow>
-            y2 < length l1 \<Longrightarrow>
-            explain \<lparr>uf_list = l, unions = u, au = a\<rparr> xad x
-            \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) xad x)"
+      have d: "(\<And>xa xba xc xaa xab ya l1 u1 a1.
+        \<not> (y = x \<or> rep_of l y \<noteq> rep_of l x) \<Longrightarrow>
+        xa = lowest_common_ancestor l y x \<Longrightarrow>
+        xba = find_newest_on_path l a y xa \<Longrightarrow>
+        xc = find_newest_on_path l a x xa \<Longrightarrow>
+        \<not> xc \<le> xba \<Longrightarrow>
+        xaa = u ! the xc \<Longrightarrow>
+        (xab, ya) = xaa \<Longrightarrow>
+        ufe_valid_invar \<lparr>uf_list = l, unions = u, au = a\<rparr> \<Longrightarrow>
+        \<lparr>uf_list = l, unions = u, au = a\<rparr> =
+        \<lparr>uf_list = l1, unions = u1, au = a1\<rparr> \<Longrightarrow>
+        xab < length l1 \<Longrightarrow>
+        x < length l1 \<Longrightarrow>
+        x2 < length l1 \<Longrightarrow>
+        y2 < length l1 \<Longrightarrow>
+        explain \<lparr>uf_list = l, unions = u, au = a\<rparr> xab x
+        \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2)
+            xab x)"
         by metis
       with dom * a b c d 
       have y_x: "explain \<lparr>uf_list = l, unions = u, au = a\<rparr> y x \<subseteq> explain (ufe_union \<lparr>uf_list = l, unions = u, au = a\<rparr> x2 y2) y x"

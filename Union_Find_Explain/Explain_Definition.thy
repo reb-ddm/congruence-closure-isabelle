@@ -121,16 +121,16 @@ function (domintros) explain :: "ufe_data_structure \<Rightarrow> nat \<Rightarr
       else 
           (let lca = lowest_common_ancestor l x y;
            newest_index_x = find_newest_on_path l a x lca;
-           newest_index_y = find_newest_on_path l a y lca;
-           (ax, bx) = u ! the (newest_index_x);
-           (ay, by) = u ! the (newest_index_y)
+           newest_index_y = find_newest_on_path l a y lca
         in
         (if newest_index_x \<ge> newest_index_y then
-          {(ax, bx)} \<union> explain \<lparr>uf_list = l, unions = u, au = a\<rparr> x ax 
-            \<union> explain \<lparr>uf_list = l, unions = u, au = a\<rparr> bx y
+            let (ax, bx) = u ! the (newest_index_x) in
+              {(ax, bx)} \<union> explain \<lparr>uf_list = l, unions = u, au = a\<rparr> x ax 
+                \<union> explain \<lparr>uf_list = l, unions = u, au = a\<rparr> bx y
         else 
-          {(ay, by)} \<union> explain \<lparr>uf_list = l, unions = u, au = a\<rparr> x by 
-            \<union> explain \<lparr>uf_list = l, unions = u, au = a\<rparr> ay y)
+            let (ay, by) = u ! the (newest_index_y) in
+              {(ay, by)} \<union> explain \<lparr>uf_list = l, unions = u, au = a\<rparr> x by 
+                \<union> explain \<lparr>uf_list = l, unions = u, au = a\<rparr> ay y)
 )
 )"
   by pat_completeness auto
@@ -182,7 +182,7 @@ lemma explain_case_x_domain:
   \<Longrightarrow> newest_index_x \<ge> newest_index_y
   \<Longrightarrow> explain_dom (\<lparr>uf_list = l, unions = u, au = a\<rparr>, x, y) "
   using explain.domintros 
-  by (smt (verit, best) lowest_common_ancestor.simps prod.inject) 
+  by (smt (verit, best) Pair_inject lowest_common_ancestor.simps)
 
 lemma explain_case_y_domain:
   "ufe = \<lparr>uf_list = l, unions = u, au = a\<rparr> 

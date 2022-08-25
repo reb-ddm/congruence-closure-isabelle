@@ -39,11 +39,10 @@ abbreviation "ex10_1 \<equiv> explain_along_path ex9_3 [0..<4] 3 1"
 value ex10_1
 
 text \<open>Example 11\<close>
-text \<open>a is 0, b is 1, c is 2 d is 3\<close>
 
 abbreviation "ex11 \<equiv> \<lparr>cc_list = [1, 1, 1, 3], use_list = [[], [], [], []],
     lookup = [[None, None, None, None], [None, None, None, None], [None, None, None, None], [None, None, None, None]], pending = [],
-    proof_forest = [1, 1, 1, 3], pf_labels = [Some(Two (F 0 3 \<approx> 0) (F 1 3 \<approx> 1)), None, Some (One (2 \<approx> 1)), None], 
+    proof_forest = [1, 1, 1, 3], pf_labels = [Some (Two (F 0 3 \<approx> 0) (F 1 3 \<approx> 1)), None, Some (One (2 \<approx> 1)), None], 
     input = {F 0 3 \<approx> 0, F 1 3 \<approx> 1, 2 \<approx> 1}\<rparr>"
 value "cc_explain ex11 0 1"
 

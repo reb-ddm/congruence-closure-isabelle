@@ -16,12 +16,12 @@ value ex1
 
 text \<open>Example 2\<close>
 
-abbreviation "ex2 \<equiv> ufe_union ex1 1 0"
+abbreviation "ex2 \<equiv> ufe_union ex1 3 2"
 value ex2
 
 text \<open>Example 3\<close>
 
-abbreviation "ex3 \<equiv> apply_unions [(1,0), (3,2), (3,1)] ex1"
+abbreviation "ex3 \<equiv> apply_unions [(3,2), (3,0), (1,0)] ex1"
 value ex3
 
 abbreviation "l \<equiv> uf_list ex3"
@@ -39,8 +39,10 @@ value ex5
 
 text \<open>Example 6\<close>
 
-abbreviation "ex6 \<equiv> find_newest_on_path l (au ex3) 3 0"
-value ex6
+abbreviation "ex6_1 \<equiv> find_newest_on_path l (au ex3) 3 0"
+value ex6_1
+abbreviation "ex6_2 \<equiv> find_newest_on_path l (au ex3) 1 0"
+value ex6_2
 
 text \<open>Example 7\<close>
 
