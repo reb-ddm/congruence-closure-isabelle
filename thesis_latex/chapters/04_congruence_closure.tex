@@ -27,9 +27,9 @@ The data structure contains a union-find forest, in order to maintain the equiva
 
 Moreover, it contains two data structures for storing equations containing function symbols. The following sections describe the \emph{proof forest} and then the congruence closure algorithm, as well as their correctness proofs.
 
-As before, the optimizations of path compression and considering the sizes of the representative classes are left out. These optimizations are not relevant for the correctness of the algorithm, and they could later be added to a refinement of the algorithm.
+As before, the optimizations of path compression and union by rank are left out. These optimizations are not relevant for the correctness of the algorithm, and they could later be added to a refinement of the algorithm.
 
-\section{Input equations}\label{section:inputequations}
+\section{Input Equations}\label{section:inputequations}
 
 Arbitrary equations can be transformed to equations which have one of the following two forms: either constant equations of the form $a = b$ or equations of the form $F(a,b) = c$, where $a$, $b$ and $c$ are constants from a set of $n$ constants, which are indexed from $0$ to $n-1$. $F$ is a specific function of arity 2.
 
@@ -39,7 +39,7 @@ The datatype we use for these equations is the one described in Subsection \ref{
 
 \section{Congruence Closure Implementation}
 
-\subsection{The proof forest}
+\subsection{The Proof Forest}
 
 In order to implement a \emph{cc\_explain} operation efficiently, the paper by Nieuwenhuis et al. \cite{Nieuwenhuis} introduces an additional data structure, the \emph{proof forest}. It is a forest which has as nodes the variables and as edges the unions that were made. Each time \lstinline|ufa_union| is called on the union-find forest, the proof forest is modified with \lstinline|add_edge|. In order to avoid the creation of cycles, redundant unions are ignored.
 
@@ -72,7 +72,6 @@ Assuming the proof forest looks like this
 \draw[->] (1) -- (0);
 \end{tikzpicture}
 \end{center}
-
 
 After adding an edge between 3 and 1, the edges from 3 to its root 2 are inverted.
 
@@ -226,6 +225,10 @@ On the other hand, if the respective lookup entry is \lstinline{None}, then the 
 For this case distinction there are two auxiliary functions.
 The function \lstinline{lookup_Some} returns \emph{True} if there is an entry in lookup at the index $(rep\_of(l,a_1), rep\_of(l,a_2))$ and \emph{False} otherwise. The function \lstinline{update_lookup} adds the equation to lookup at the index $(rep\_of(l,a_1), rep\_of(l,a_2))$.
 
+The following is the implementation of \lstinline|merge| in Isabelle.
+
+\hfill \break
+
 \begin{lstlisting}
 fun merge :: "congruence_closure ⇒ equation ⇒ congruence_closure"
   where
@@ -249,7 +252,7 @@ fun merge :: "congruence_closure ⇒ equation ⇒ congruence_closure"
 )"
 \end{lstlisting}
 
-The main part of the algorithm is executed in \lstinline{propagate}. It recursively takes one item from pending and performs the union of the representative classes. As previously mentioned, the pending item could be either an equation of the type $a = b$, or two equations of the type $F(a_1, a_2) = a$ and $F(b_1, b_2) = b$, where $a_1$ and $a_2$ are already in the same representative class as $b_1$ and $b_2$ respectively. In both cases the representative classes of $a$ and $b$ need to be merged. The functions \lstinline{left} and \lstinline{right} simply retrieve $a$ and $b$ from either of the two types of pending equations. If $a$ and $b$ are already in the same representative class, nothing needs to be done, otherwise the union is performed. For more clarity, the union is defined separately as \lstinline{propagate_step}.
+The main part of the algorithm is executed in \lstinline{propagate}. It recursively takes one item from pending and performs the union of the representative classes. As previously mentioned, the pending item could be either an equation of the type $a = b$, or two equations of the type $F(a_1, a_2) = a$ and $F(b_1, b_2) = b$, where $a_1$ and $a_2$ are already in the same representative class as $b_1$ and $b_2$ respectively. In both cases the representative classes of $a$ and $b$ need to be merged.
 
 \begin{lstlisting}
 function propagate :: "congruence_closure ⇒ congruence_closure"
@@ -262,10 +265,12 @@ function propagate :: "congruence_closure ⇒ congruence_closure"
   (if rep_of l a = rep_of l b
     then propagate ⦇cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, input = ip⦈
     else
-      propagate (propagate_step l u t pe pf pfl ip a b eq)
-))"
+      propagate (propagate_step l u t pe pf pfl ip a b eq)))"
   by pat_completeness auto
 \end{lstlisting}
+
+The functions \lstinline{left} and \lstinline{right} simply retrieve $a$ and $b$ from either of the two types of pending equations. If $a$ and $b$ are already in the same representative class, nothing needs to be done, otherwise the union is performed. For more clarity, the union is defined separately as \lstinline{propagate_step}.
+
 
 The union consists of \lstinline{ufa_union}, \lstinline{add_edge} and \lstinline{add_label}, as well as the function \lstinline|propagate_loop| which moves all elements from the use list of $rep\_of(l,a)$ to either $rep\_of(l, b)$, or to pending. This is necessary, because the old representative of $a$ is not a representative any more, and its new representative is  $rep\_of(l, b)$.
 
@@ -446,7 +451,13 @@ After the union, the new representative of 3 and 2 is 0. Therefore, the equation
     \end{tabular}
 \end{table}
 
+After the entire operation was executed, all the elements are contained in the same equivalence class.
+
 \end{exmp}
+
+\clearpage
+
+
 
 The function \lstinline{are_congruent} returns \emph{True} if an equation is in the congruence closure of all the input equations so far. It simply checks if the elements have the same representative. In the case of equations containing $F$, it verifies if they have the same representative as the corresponding entry in lookup.
 
@@ -787,7 +798,7 @@ theorem cc_invar_merge:
 \end{lstlisting}
 
 \begin{proof}
-We already proved for each individual invariant that they hold after propagate.
+We already proved for each individual invariant that they hold after \lstinline|propagate|.
 The proof for \lstinline|merge| uses the fact that \lstinline{propagate} terminates, which will be proven in the following section.
 \end{proof}
 
@@ -862,6 +873,8 @@ computes the lowest common ancestor between the two elements.
 Afterwards, it calls the function \lstinline{explain_along_path}, which has three return values. They are named $output$, $pending$ and $new\_l$.
 The $output$ is simply the set of labels on the path from the constant to the lowest common ancestor. For each edge on this path labeled with \lstinline|Two| $(F(a_1, a_2) = a)$ $(F(b_1, b_2) = b)$, the pairs $(a_1, b_1)$ and $(a_2, b_2)$ are added to the $pending$ list. The $new\_l$ is the additional union-find data structure, modified in order to keep track of the equations that are already in the output.
 
+The following is the implementation of \lstinline|cc_explain_aux| in Isabelle.
+
 \begin{lstlisting}
 function (domintros) cc_explain_aux :: "congruence_closure ⇒ nat list ⇒ (nat * nat) list ⇒ equation set"
   where
@@ -886,6 +899,10 @@ Nieuwenhuis et al. \cite{Nieuwenhuis} also implement a $highest\_node$ function,
 In our version of union-find, this corresponds to the \lstinline{rep_of} operation, because we do not use the union by rank optimization. Instead, we just make the union in the given order. When adding this optimization, a $highest\_node$ function must be also implemented.
 
 The function \lstinline{explain_along_path cc l a c} starts at the node $a$ in the proof forest, and recursively traverses all the edges from $a$ to $c$. It skips those edges that have already been traversed sometime before in the algorithm, i.e., the edges which are present in the additional union-find $l$. Therefore it starts at the element $rep\_of(l, a)$ and considers the edge to its parent. It adds the label of the edge to the output and adds the edge to $l$. If necessary, it updates the pending list. The function terminates when it reaches the equivalence class of $c$ in $l$.
+
+The following is the implementation of \lstinline|explain_along_path| in Isabelle.
+
+\clearpage
 
 \begin{lstlisting}
 function (domintros) explain_along_path :: "congruence_closure ⇒ nat list ⇒ nat ⇒ nat ⇒
