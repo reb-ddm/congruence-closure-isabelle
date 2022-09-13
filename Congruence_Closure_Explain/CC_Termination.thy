@@ -8,7 +8,7 @@ abbreviation root_set
     "root_set l \<equiv> {i | i. i < length l \<and> l ! i = i}"
 
 text \<open>To prove the termination of \<open>propagate\<close>, we show that the amount of equivalence classes 
-decreases at each step if \<open>propagate\<close>.\<close>
+decreases at each step of \<open>propagate\<close>.\<close>
 definition nr_eq_classes :: "nat list \<Rightarrow> nat"
   where 
     "nr_eq_classes l = card (root_set l)"

@@ -5,10 +5,9 @@ begin
 
 subsection \<open>Explain definition\<close>
 
-text \<open>The \<open>"highest node"\<close> is in this case the same as the \<open>rep_of\<close>, because we do not 
-      have the optimisation of checking which equivalence class is bigger, 
-      we just make the union in the given order. When adding this optimisation,
-      a \<open>highest_node\<close> function must be also implemented.\<close>
+text \<open>The \<open>"highest node"\<close> is the same as the \<open>rep_of\<close> in this case, because we do not 
+      have the union by rank optimization, we just make the union in the given order. 
+      When adding this optimization, a \<open>highest_node\<close> function must be also implemented.\<close>
 
 text \<open>There are three variables changed by the function \<open>explain_along_path\<close>: 
 
@@ -529,7 +528,7 @@ proof-
 qed
 
 text \<open>If the pending list is not empty after \<open>explain_along_path\<close>, then
-the number of equivalence classes must have increased. \<close>
+      the number of equivalence classes must have increased. \<close>
 
 lemma explain_along_path_eq_classes_if_pending_not_empty:
   assumes "cc_invar cc"
@@ -663,7 +662,7 @@ theorem cc_explain_aux_domain:
   case less
   show ?case using less(2-) less(1) proof(induction xs arbitrary: l)
     \<comment> \<open>There is an induction 1 on the number of equivalence classes 
-and an induction 2 on the length of xs.\<close>
+        and an induction 2 on the length of xs.\<close>
     case Nil
       \<comment> \<open>If xs is empty, the function terminates immediately\<close>
     then show ?case using cc_explain_aux.domintros 

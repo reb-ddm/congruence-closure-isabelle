@@ -543,7 +543,7 @@ subsection \<open>Correctness invar of \<open>cc_explain\<close>\<close>
 
 text \<open>This invar shows the correctness of the explain function.
       We can't directly show that it's correct, because the correctness of it
-      depends on how exactly the proof forest was built, aka in a way that the 
+      depends on how exactly the proof forest was built, that is, in a way that the 
       algorithms can terminate and the proofs of two different edges do not 
       depend on each other.\<close>
 
@@ -558,117 +558,9 @@ explain_list_invar l (proof_forest cc)
     (a \<approx> b) \<in> Congruence_Closure (cc_explain_aux cc l eqs \<union> cc_list_set l))
 )"
 
-lemma cc_explain_correctness_invar':
-  assumes "cc_explain_correctness_invar cc"
-    "explain_list_invar l (proof_forest cc)"
-    "(\<forall> (a, b) \<in> set eqs . a < nr_vars cc \<and> b < nr_vars cc)"
-    "(a, b) \<in> set eqs"
-    "are_congruent cc (a \<approx> b)"
-  shows "(a \<approx> b) \<in> Congruence_Closure (cc_explain_aux cc l eqs \<union> cc_list_set l)"
-  using assms unfolding cc_explain_correctness_invar_def by blast
+subsection \<open>Correctness invariant proof\<close>
 
-lemma path_invariant_after_add_edge:
-  assumes "c = lowest_common_ancestor pf a b"
-    "c' = lowest_common_ancestor (add_edge pf e e') a b"
-    "path pf c pAC a" "path pf c pBC b"  
-    "path (add_edge pf e e') c' pAC' a" "path (add_edge pf e e') c' pBC' b" 
-    "ufa_invar pf" "e < length pf" "e' < length pf" "rep_of pf e \<noteq> rep_of pf e'"
-  shows
-    "\<Union>{pending_set' [the (pfl ! x)] | x. x \<in> set (tl pAC) \<and> l ! x = x}
-\<union> \<Union>{pending_set' [the (pfl ! x)] | x. x \<in> set (tl pBC) \<and> l ! x = x}
-= \<Union>{pending_set' [the ((add_label pfl pf e lbl) ! x)] | x. x \<in> set (tl pAC') \<and> l ! x = x}
-\<union> \<Union>{pending_set' [the ((add_label pfl pf e lbl) ! x)] | x. x \<in> set (tl pBC') \<and> l ! x = x}"
-    (is "?base = ?step")
-proof-
-  have dom: "add_label_dom (pfl, pf, e, lbl)"
-    using add_label_domain assms by blast
-  from dom assms show "?base = ?step"
-  proof(induction rule: add_label.pinduct)
-    case (1 pfl pf e lbl)
-    then show ?case 
-    proof(cases "pf ! e = e")
-      case True
-      with "1.prems" have "add_label pfl pf e lbl = (pfl[e := Some lbl])" 
-        using "1.hyps" add_label.psimps by auto
-      have dom': "add_edge_dom (pf, e, e')"
-        using add_edge_domain "1.prems" by blast
-      with "1.prems"  have "add_edge pf e e' = (pf[e := e'])" 
-        using "1.hyps" add_edge.psimps True by presburger
-      have "ufa_invar (add_edge pf e e')" 
-        by (simp add: "1.prems" add_edge_ufa_invar_invar)
-      have "e \<notin> set (tl pAC)" "e \<notin> set (tl pBC)" 
-        using "1.prems" True path_contains_no_root by blast+
-      then have paths: "path (pf[e := e']) c pAC a" "path (pf[e := e']) c pBC b"  
-        by (auto simp add: "1.prems"(3-) path_fun_upd)
-      from "1.prems" have "c = c'" using lowest_common_ancestor_fun_upd
-        by (metis True \<open>add_edge pf e e' = pf[e := e']\<close> path_nodes_lt_length_l path_rep_eq)
-      then have "pAC = pAC'"  "pBC = pBC'" 
-        using "1.prems" \<open>add_edge pf e e' = pf[e := e']\<close> paths \<open>ufa_invar (add_edge pf e e')\<close> path_unique by auto
-      have "x \<noteq> e \<Longrightarrow> pfl ! x = add_label pfl pf e lbl ! x" for x 
-        by (simp add: \<open>add_label pfl pf e lbl = pfl[e := Some lbl]\<close>)
-      then show ?thesis 
-        by (smt (verit, best) Collect_cong \<open>e \<notin> set (tl pAC)\<close> \<open>e \<notin> set (tl pBC)\<close> \<open>pAC = pAC'\<close> \<open>pBC = pBC'\<close> )
-    next
-      case False
-      have IH: 
-        "\<Union> {pending_set' [the (pfl[e := Some lbl] ! x)] |x. x \<in> set (tl pAC) \<and> l ! x = x} \<union>
-    \<Union> {pending_set' [the (pfl[e := Some lbl] ! x)] |x. x \<in> set (tl pBC) \<and> l ! x = x}
-    = \<Union> {pending_set' [the (add_label (pfl[e := Some lbl]) pf (pf ! e) (the (pfl ! e)) ! x)] |x.
-          x \<in> set (tl pAC') \<and> l ! x = x} \<union>
-       \<Union> {pending_set' [the (add_label (pfl[e := Some lbl]) pf (pf ! e) (the (pfl ! e)) ! x)] |x.
-           x \<in> set (tl pBC') \<and> l ! x = x}"
-        sorry
-      have 2: "\<Union> {pending_set' [the (pfl[e := Some lbl] ! x)] |x. x \<in> set (tl pAC) \<and> l ! x = x} \<union>
-    \<Union> {pending_set' [the (pfl[e := Some lbl] ! x)] |x. x \<in> set (tl pBC) \<and> l ! x = x}
-= \<Union> {pending_set' [the (pfl ! x)] |x. x \<in> set (tl pAC) \<and> l ! x = x} \<union>
-    \<Union> {pending_set' [the (pfl ! x)] |x. x \<in> set (tl pBC) \<and> l ! x = x}"
-        sorry
-      from False have "add_label pfl pf e lbl = add_label (pfl[e := Some lbl]) pf (pf ! e) (the (pfl ! e))"
-        by (simp add: "1.hyps" add_label.psimps)
-      then show ?thesis using False 2 IH by simp
-    qed
-  qed
-qed
-
-lemma cc_explain_correctness_invar_mini_step:
-  assumes "cc_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf,
- pf_labels = pfl, input = ip\<rparr>" 
-    "cc_explain_correctness_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), 
-proof_forest = pf, pf_labels = pfl, input = ip\<rparr>" 
-    (is "cc_explain_correctness_invar ?base")
-    "validity_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf,
- pf_labels = pfl, input = ip\<rparr>"
-  shows "cc_explain_correctness_invar \<lparr>cc_list = ufa_union l a b, 
-    use_list = u[rep_of l a := []], 
-    lookup = t, 
-    pending = pe,
-    proof_forest = add_edge pf a b, 
-    pf_labels = add_label pfl pf a eq, 
-    input = ip\<rparr>"
-    (is "cc_explain_correctness_invar ?step")
-  unfolding cc_explain_correctness_invar_def
-proof(standard, standard, standard, standard, standard, standard, standard)
-  fix la eqs x aa ba
-  assume prems: "explain_list_invar la (proof_forest ?step)"
-    "\<forall>(aa, ba)\<in>set eqs. aa < nr_vars ?step \<and> ba < nr_vars ?step"
-    "x \<in> set eqs" "x = (aa, ba)" 
-    "are_congruent ?step (aa \<approx> ba)"
-  then have explain_list_invar_base: "explain_list_invar la (proof_forest ?base)" 
-    "nr_vars ?step = nr_vars ?base"
-    unfolding congruence_closure.select_convs sorry
-  then show "(aa \<approx> ba) \<in> Congruence_Closure (cc_explain_aux ?step la eqs \<union> cc_list_set la)"
-  proof(cases "are_congruent ?base (aa \<approx> ba)")
-    case True
-    then have 
-      "(aa \<approx> ba) \<in> Congruence_Closure (cc_explain_aux ?base la eqs \<union> cc_list_set la)"
-      using assms cc_explain_correctness_invar' explain_list_invar_base prems 
-      by simp
-    then show ?thesis sorry
-  next
-    case False
-    then show ?thesis sorry
-  qed
-qed
+text \<open>TODO prove that it is an invariant\<close>
 
 subsubsection \<open>Initial cc\<close>
 
@@ -724,3 +616,5 @@ proof-
   then show ?thesis 
     by (metis "*" Un_empty_right)
 qed
+
+end
