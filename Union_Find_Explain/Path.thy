@@ -624,6 +624,39 @@ proof-
     using path_split(1) by blast
 qed
 
+lemma complement_of_subpath:
+  assumes "ufa_invar l" "path l b p1 a" "path l c p2 a" "b \<notin> set p2"
+  shows "path l b (take (length p1 - length p2 + 1) p1) c"
+    (is "path l b ?p3 c")
+proof-
+  let ?p4 = "(drop (length p1 - length p2 + 1) p1)"
+  have "length p1 > length p2" 
+  proof(rule ccontr)
+    assume p2_longer: "\<not> length p2 < length p1"
+    then have "b \<in> set p2" proof(cases "length p2 = length p1")
+      case True
+      then have "b = c" 
+        using assms(1) assms(2) assms(3) path_unique_if_length_eq by auto
+      then show ?thesis 
+        by (metis assms(3) in_set_member member_rec(1) path.cases)
+    next
+      case False
+      then have "length p1 < length p2" 
+        using p2_longer by linarith
+      then obtain p5 where "path l c p5 b" 
+        using path_longer assms by blast
+      then have "path l c (p5 @ tl p1) a" 
+        using assms(2) paths_iff by blast
+      then show ?thesis 
+        by (metis (no_types, lifting) \<open>path l c p5 b\<close> assms(1) assms(2) assms(3) in_set_conv_decomp path.simps path_concat2 path_unique)
+    qed
+    then show "False" using assms(4) 
+      by blast
+  qed
+  then show ?thesis 
+    using assms(1) assms(2) assms(3) path_longer by blast
+qed
+
 lemma path_take_two:
   assumes "ufa_invar l" "i < length p" "i \<noteq> 0" "path l a p b"
   shows "path l (l ! (p ! i)) [l ! (p ! i), (p ! i)] (p ! i)"

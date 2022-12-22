@@ -134,8 +134,28 @@ lemma explain_list_invar_initial:
   unfolding explain_list_invar_def 
   using ufa_init_invar by simp
 
+lemma rep_of_l_a_is_root_in_pf_if_parent_has_same_rep: 
+  assumes "explain_list_invar l pf" "a < length l" "ufa_invar pf"
+    "pf ! rep_of l a < length l" "rep_of l a = rep_of l (pf ! rep_of l a)"
+  shows "pf ! rep_of l a = rep_of l a"
+proof(rule ccontr)
+  assume assm: "pf ! rep_of l a \<noteq> rep_of l a"
+  have path_1: "path pf (rep_of l a) [rep_of l a] (rep_of l a)" 
+    using assms unfolding explain_list_invar_def 
+    by (metis path_length_1 rep_of_less_length_l)
+  have p1: "path pf (pf ! rep_of l a) [pf ! rep_of l a, rep_of l a] (rep_of l a)"
+    using assms assm unfolding explain_list_invar_def 
+    by (metis path.step path_1)
+  obtain path_root where "path l (rep_of l a) path_root (pf ! rep_of l a)"
+    by (metis assms(1) assms(4) assms(5) explain_list_invar_def path_to_rep_of)
+  then have "path pf (rep_of l a) path_root (pf ! rep_of l a)" 
+    by (simp add: assms(1) explain_list_invar_paths)
+  then show False using p1  
+  by (metis assm assms(3) list.set_intros(1) path.cases path_remove_child)
+qed
+
 lemma explain_list_invar_union:
-  assumes "explain_list_invar l pf" "a < length l" "rep_of l a \<noteq> rep_of l (pf ! rep_of l a)"
+  assumes "explain_list_invar l pf" "a < length l"  "ufa_invar pf"
     "pf ! rep_of l a < length l"
   shows "explain_list_invar (l[rep_of l a := (pf ! rep_of l a)]) pf"
   unfolding explain_list_invar_def 
@@ -158,8 +178,21 @@ proof(standard, standard, standard, standard)
   qed
 next 
   show "length (l[rep_of l a := (pf ! rep_of l a)]) = length pf 
-\<and> ufa_invar (l[rep_of l a := pf ! rep_of l a]) " 
-    using assms ufa_invar_fun_upd' rep_of_idem unfolding explain_list_invar_def by simp 
+\<and> ufa_invar (l[rep_of l a := pf ! rep_of l a])"
+  proof(cases "rep_of l a = rep_of l (pf ! rep_of l a)")
+    case True
+    then have "pf ! rep_of l a = rep_of l a"
+      using rep_of_l_a_is_root_in_pf_if_parent_has_same_rep assms by simp
+    then have "l ! rep_of l a = pf ! rep_of l a" using assms unfolding explain_list_invar_def
+      by metis
+    then have "l[rep_of l a := pf ! rep_of l a] = l" 
+      by (metis list_update_id)
+    then show ?thesis using assms unfolding explain_list_invar_def by presburger
+  next
+    case False
+    then show ?thesis 
+      using assms ufa_invar_fun_upd' rep_of_idem unfolding explain_list_invar_def by simp 
+  qed
 qed
 
 lemma explain_list_invar_imp_valid_rep:
@@ -252,6 +285,40 @@ proof
     by (metis list.set_intros(1) path.cases path_remove_child)
 qed
 
+lemma explain_list_invar_step:
+  assumes "explain_list_invar l pf" "a < length l" "ufa_invar pf"
+  shows "explain_list_invar (l[rep_of l a := pf ! rep_of l a]) pf" 
+proof-
+  fix cc_l u t pe pfl ip
+  let ?cc = "\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl,
+         input = ip\<rparr>"
+  let ?union = "(l[rep_of l a := (pf ! rep_of l a)])"
+  from assms have invar: "ufa_invar l" "length l = length pf"
+    unfolding explain_list_invar_def by blast+
+  from assms show explain_list_invar: "explain_list_invar (l[rep_of l a := pf ! rep_of l a]) pf" 
+    by (metis explain_list_invar_union invar(1) invar(2) rep_of_bound ufa_invarD(2))
+qed
+
+lemma explain_list_invar_step':
+  assumes "explain_list_invar l (proof_forest cc)" 
+ "ufa_invar (proof_forest cc)" "a < length l"
+  shows "explain_list_invar (l[rep_of l a := (proof_forest cc) ! rep_of l a]) (proof_forest cc)" 
+  by (metis (no_types, lifting) assms explain_list_invar_step)
+
+lemma explain_list_invar_fun_upd:
+  assumes "explain_list_invar l pf" 
+ "ufa_invar pf" "k < length l"
+  shows "explain_list_invar (l[k := pf ! k]) pf" 
+proof(cases "k = rep_of l k")
+  case True
+  then show ?thesis 
+    by (metis assms(1) assms(2) assms(3) explain_list_invar_step)
+next
+  case False
+  then show ?thesis 
+    by (metis assms(1) assms(3) explain_list_invar_def list_update_same_conv rep_of_refl)
+qed
+
 theorem explain_list_invar_explain_along_path:
   assumes 
     "explain_along_path_dom (\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, 
@@ -294,7 +361,7 @@ proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
         "using "1.prems" unfolding pf_labels_invar_def congruence_closure.select_convs
       by (meson pRAC path_nodes_lt_length_l)
     from "1.prems" have explain_list_invar: "explain_list_invar (l[rep_of l a := pf ! rep_of l a]) pf" 
-      by (metis invar(2) explain_list_invar_union pRAC pRAC' path_nodes_lt_length_l rep_of_a_and_parent_rep_neq)
+      by (simp add: False explain_list_invar_step)
     have rep_neq: "rep_of l a \<noteq> rep_of l (pf ! rep_of l a)"
       using pRAC "1.prems" False rep_of_a_and_parent_rep_neq invar by blast
     then have valid: "(pf ! rep_of l a) < length pf" 
@@ -330,6 +397,24 @@ proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
         using IH recursive_step by auto
     qed
   qed
+qed
+
+theorem explain_list_invar_explain_along_path':
+  assumes 
+    "explain_along_path_dom (cc, l, a, c)"
+    "explain_list_invar l (proof_forest cc)" 
+    "a < nr_vars cc" "cc_invar cc"
+    "path (proof_forest cc) c p a"
+"explain_along_path cc l a c = (output, new_l, pend)"
+shows "explain_list_invar new_l (proof_forest cc)"
+proof-
+ obtain cc_l u t pe pf pfl ip where cc: "cc = 
+\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl,
+         input = ip\<rparr>" using congruence_closure.cases by blast
+  then show ?thesis using assms explain_list_invar_explain_along_path
+    proof_forest_invar_def same_length_invar_def fst_conv snd_conv 
+    unfolding explain_list_invar_def
+    by (smt (verit) congruence_closure.select_convs(5))
 qed
 
 subsection \<open>Termination of \<open>explain_along_path\<close>\<close>
@@ -374,7 +459,7 @@ theorem explain_along_path_domain:
       from "less.prems" invar have explain_list_invar: 
         "explain_list_invar (l[rep_of l a := pf ! rep_of l a]) (proof_forest cc)" 
         unfolding cc congruence_closure.select_convs 
-        by (metis (no_types, lifting) explain_list_invar_def explain_list_invar_union pRAC pRAC' path_nodes_lt_length_l rep_of_a_and_parent_rep_neq)
+        by (metis (no_types, lifting) explain_list_invar_def explain_list_invar_union pRAC' path_nodes_lt_length_l)
       with less(1,2) length pRAC' cc have recursive_dom:
         "explain_along_path_dom (cc, (l[rep_of l a := (pf ! rep_of l a)]), (pf ! rep_of l a), c)"
         by fastforce

@@ -15,6 +15,32 @@ lemma pending_set_explain_Cons:
   "pending_set_explain ((a, b) # pend) = {(a \<approx> b)} \<union> pending_set_explain pend"
   by auto
 
+
+lemma explain_along_path_lowest_common_ancestor:
+  assumes "cc_invar cc"
+"a < nr_vars cc"
+"b < nr_vars cc"
+"are_congruent cc (a \<approx> b)"
+"c = lowest_common_ancestor (proof_forest cc) a b"
+obtains p1 p2 where "path (proof_forest cc) c p1 a" 
+      "path (proof_forest cc) c p2 b"
+proof-
+  assume *: "(\<And>p1 p2.
+        path (proof_forest cc) c p1 a \<Longrightarrow>
+        path (proof_forest cc) c p2 b \<Longrightarrow> thesis)"
+  have 1: "ufa_invar (proof_forest cc)" 
+    using assms proof_forest_invar_def by blast
+  moreover have 2: "a < length (proof_forest cc)"
+"b < length (proof_forest cc)"
+    using assms same_length_invar_def by auto
+  moreover have 3: "rep_of (proof_forest cc) a = rep_of (proof_forest cc) b"
+    using are_congruent_rep_of assms 
+    by blast
+  ultimately show thesis
+      using * assms(5) lowest_common_ancestor_correct 
+      by presburger
+qed
+
 lemma explain_along_path_correctness:
   assumes "explain_along_path_dom (\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, 
 proof_forest = pf, pf_labels = pfl, input = ip\<rparr>, l, a, c)"

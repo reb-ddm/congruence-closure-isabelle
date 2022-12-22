@@ -2759,7 +2759,7 @@ eq = (Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d
     "length l = length pfl"
     "rep_of pf a \<noteq> rep_of pf b"
   shows "valid_labels_invar (CONST list_update pfl a (Some eq)) (pf[a := b]) l"
-proof(standard, standard, standard)
+proof(standard, standard, standard, standard)
   fix n
   assume prems: "n < length (pf[a := b])" "pf[a := b] ! n \<noteq> n"
   obtain a\<^sub>1 a\<^sub>2 b\<^sub>1 b\<^sub>2 aa bb where valid_eq: "(eq = (One (aa \<approx> bb)) \<or> 
@@ -2782,13 +2782,18 @@ proof(standard, standard, standard)
     apply(cases "n = a")
      apply blast
     by force
+next
+  fix n
+  assume "n < length (pf[a := b])" 
+  then show "pf[a := b] ! n = n \<longrightarrow> pfl[a := Some eq] ! n = None"
+    by (metis (mono_tags, lifting) assms(1) assms(6) length_list_update nth_list_update_eq nth_list_update_neq)
 qed  
 
 lemma valid_labels_invar_ufa_union: 
   assumes "valid_labels_invar pfl pf l"
     "ufa_invar l" "a < length l" "b < length l"
   shows "valid_labels_invar pfl pf (ufa_union l a b)"
-proof(standard, standard, standard)
+proof(standard, standard, standard, standard)
   fix n
   assume prems: "n < length pf" "pf ! n \<noteq> n"
   then obtain a\<^sub>1 a\<^sub>2 b\<^sub>1 b\<^sub>2 aa bb where valid_eq: "((pfl ! n) = Some (One (aa \<approx> bb)) \<or> 
@@ -2810,6 +2815,11 @@ proof(standard, standard, standard)
       using assms valid_vars_pending_cases length_list_update rep_of_ufa_union_invar 
       by force
   qed
+next
+  fix n
+  assume "n < length pf"
+  with assms show "pf ! n = n \<longrightarrow> pfl ! n = None" 
+    by presburger
 qed
 
 lemma add_label_fun_upd:
@@ -3412,8 +3422,8 @@ proof-
 \<and> valid_vars_pending eq l"
     using assms pending_invar_Cons valid_vars_pending_cases by fastforce
   have "valid_labels_invar (add_label pfl pf a eq) (add_edge pf a b) l"
-    using valid_labels_invar_mini_step * assms(1,7,8,9,10,11) 
-    unfolding pf_labels_invar_def congruence_closure.select_convs by simp
+    using valid_labels_invar_mini_step[OF assms(7)[unfolded pf_labels_invar_def congruence_closure.select_convs] * assms(1,8,9,10)] 
+    by blast
   then have "pf_labels_invar \<lparr>cc_list = ufa_union l a b, 
     use_list = u[rep_of l a := []], 
     lookup = t, 
@@ -3422,7 +3432,7 @@ proof-
     pf_labels = add_label pfl pf a eq, 
     input = ip\<rparr>" using  assms(2,3,11) valid_labels_invar_ufa_union
     unfolding pf_labels_invar_def congruence_closure.select_convs 
-    by auto
+    by presburger
   then show ?thesis using pf_labels_invar_loop proof_forest_loop cc_list_loop
     unfolding pf_labels_invar_def congruence_closure.select_convs
     by simp

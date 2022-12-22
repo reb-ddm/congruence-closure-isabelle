@@ -428,12 +428,13 @@ of an edge correspond to the vertices connected by the edge. \<close>
 abbreviation valid_labels_invar :: "pending_equation option list \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> bool"
   where
     "valid_labels_invar pfl pf l \<equiv> (\<forall> n < length pf.
-    pf ! n \<noteq> n
+    (pf ! n \<noteq> n
     \<longrightarrow> (\<exists> a a\<^sub>1 a\<^sub>2 b b\<^sub>1 b\<^sub>2 . (pfl ! n = Some (One (a \<approx> b)) \<or> 
           pfl ! n = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> a) (F b\<^sub>1 b\<^sub>2 \<approx> b)))
           \<and> (a = pf ! n \<and> b = n \<or> a = n \<and> b = pf ! n)
           \<and> valid_vars_pending (the (pfl ! n)) l
-        )
+        )) \<and>
+    (pf ! n = n \<longrightarrow> pfl ! n = None)
     )"
 
 definition pf_labels_invar :: "congruence_closure \<Rightarrow> bool"
