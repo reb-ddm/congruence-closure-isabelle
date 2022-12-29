@@ -15,7 +15,6 @@ lemma pending_set_explain_Cons:
   "pending_set_explain ((a, b) # pend) = {(a \<approx> b)} \<union> pending_set_explain pend"
   by auto
 
-
 lemma explain_along_path_lowest_common_ancestor:
   assumes "cc_invar cc"
 "a < nr_vars cc"
@@ -40,6 +39,18 @@ proof-
       using * assms(5) lowest_common_ancestor_correct 
       by presburger
 qed
+
+text \<open>These functions are needed in order to interpret the additional union find as the set
+of labels on the corresponding edges in the proof forest.\<close>
+
+fun pending_set' :: "pending_equation list \<Rightarrow> equation set"
+  where
+    "pending_set' [] = {}"
+  | "pending_set' ((One a') # xs) = {a'} \<union> pending_set xs"
+  | "pending_set' ((Two a' b') # xs) = {a', b'} \<union> pending_set xs"
+
+abbreviation additional_uf_labels_set where
+ "additional_uf_labels_set l pfl \<equiv> \<Union>{pending_set' [the (pfl ! a)] |a. a < length l \<and> l ! a \<noteq> a}"
 
 lemma explain_along_path_correctness:
   assumes "explain_along_path_dom (\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, 
@@ -220,11 +231,6 @@ Congruence_Closure (cc_list_set l \<union> output \<union> pending_set_explain p
   qed
 qed
 
-fun pending_set' :: "pending_equation list \<Rightarrow> equation set"
-  where
-    "pending_set' [] = {}"
-  | "pending_set' ((One a') # xs) = {a'} \<union> pending_set xs"
-  | "pending_set' ((Two a' b') # xs) = {a', b'} \<union> pending_set xs"
 
 lemma set_union_divide_lemma: "\<Union>{y | y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. k1 y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb }
 \<union> \<Union>{y| y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb. k2 y x a\<^sub>1 a\<^sub>2 aa b\<^sub>1 b\<^sub>2 bb } = 
@@ -581,7 +587,7 @@ explain_list_invar l (proof_forest cc)
 \<longrightarrow>
   (\<forall> (a, b) \<in> set eqs .
     are_congruent cc (a \<approx> b) \<longrightarrow>
-    (a \<approx> b) \<in> Congruence_Closure (cc_explain_aux cc l eqs \<union> cc_list_set l))
+    (a \<approx> b) \<in> Congruence_Closure (cc_explain_aux cc l eqs \<union> additional_uf_labels_set l (pf_labels cc)))
 )"
 
 subsection \<open>Correctness invariant proof\<close>
@@ -618,7 +624,7 @@ proof(standard, standard, standard, standard, standard, standard, standard)
     by auto
   then show "(a \<approx> b)
        \<in> Congruence_Closure
-           (cc_explain_aux (initial_cc n) l eqs \<union> cc_list_set l)" 
+           (cc_explain_aux (initial_cc n) l eqs \<union> additional_uf_labels_set l (pf_labels (initial_cc n)))" 
     by blast
 qed
 
@@ -635,10 +641,10 @@ proof-
     using assms by auto
   moreover have "(a, b) \<in> set [(a, b)]" by simp
   ultimately have *: "(a \<approx> b) \<in> Congruence_Closure 
-(cc_explain_aux cc [0..<nr_vars cc] [(a, b)] \<union> cc_list_set [0..<nr_vars cc])"
+(cc_explain_aux cc [0..<nr_vars cc] [(a, b)] \<union> additional_uf_labels_set [0..<nr_vars cc] (pf_labels cc))"
     using assms unfolding cc_explain_correctness_invar_def by blast
-  then have "cc_list_set [0..<nr_vars cc] = {}"
-    by simp
+  then have "additional_uf_labels_set [0..<nr_vars cc] (pf_labels cc) = {}"
+    by fastforce
   then show ?thesis 
     by (metis "*" Un_empty_right)
 qed
