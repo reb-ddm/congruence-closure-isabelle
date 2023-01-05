@@ -744,13 +744,49 @@ add_label (pfl[e := Some lbl]) (pf[e := e']) (pf ! e) (the (pfl ! e))"
   qed
 qed
 
-text \<open>Yet another definition to convert a pending equation to set.\<close>
+lemma add_label_case_2_rep_of_neq:
+  assumes "ufa_invar pf" "e < length pf" "e' < length pf" "rep_of pf e \<noteq> rep_of pf e'"
+"pf ! e \<noteq> e"
+shows "rep_of (pf[e := e']) e \<noteq> rep_of (pf[e := e']) (pf ! e)"
+  proof-
+ obtain pER where "path pf (rep_of pf e) pER e" 
+        using assms path_to_root_correct by metis
+      with assms have pER:  "path pf (rep_of pf e) (butlast pER) (pf ! e)" 
+        by (metis path_butlast rep_of_min)
+      have e_e': "e < length pf" "e' < length pf" using assms
+        by metis+
+      have "e \<notin> set (butlast pER)" 
+        using assms \<open>path pf (rep_of pf e) pER e\<close> path_remove_right by auto
+      with assms have "path pf (pf ! e) [pf ! e, e] e" 
+        by (simp add: path.step single ufa_invarD(2) e_e')
+      have "rep_of (pf[e := e']) (pf ! e) = rep_of pf (pf ! e)" 
+        using rep_of_fun_upd_aux1 
+        using assms \<open>path pf (pf ! e) [pf ! e, e] e\<close> by auto
+      with assms have 5: "rep_of (pf[e := e']) (pf ! e) \<noteq> rep_of (pf[e := e']) e" 
+        by (metis \<open>e < length pf\<close> \<open>e' < length pf\<close> length_list_update nth_list_update_eq rep_of_fun_upd' rep_of_idx ufa_invar_fun_upd')
+      from assms have 6: "ufa_invar (pf[e := e'])" 
+        by (simp add: \<open>e' < length pf\<close> ufa_invar_fun_upd')
+      then show ?thesis 
+        by (metis "5")
+    qed
+  
 
-fun pe_to_set :: "pending_equation option \<Rightarrow> equation set"
-  where
-    "pe_to_set None = {}"
-  | "pe_to_set (Some (One a')) = {a'}"
-  | "pe_to_set (Some (Two a' b')) = {a', b'}"
+lemma add_label_simp2:
+  assumes "ufa_invar pf" "e < length pf" "e' < length pf" "rep_of pf e \<noteq> rep_of pf e'"
+"pf ! e \<noteq> e"
+  shows "add_label pfl pf e eq = add_label (pfl[e := Some eq]) (pf[e := e']) (pf ! e) (the (pfl ! e))"
+proof-
+  have *: "ufa_invar (pf[e := e'])" "rep_of (pf[e := e']) e \<noteq> rep_of (pf[e := e']) (pf ! e)"
+     apply (simp add: assms(1) assms(3) assms(4) ufa_invar_fun_upd')
+    using assms add_label_case_2_rep_of_neq by blast
+  have "add_label pfl pf e eq = add_label2 pfl pf e eq e'"
+    using assms add_label_add_label2_eq by blast
+  also have "... = add_label2 (pfl[e := Some eq]) (pf[e := e']) (pf ! e) (the (pfl ! e)) e"
+    using add_label2.psimps add_label2_domain assms by presburger
+  also have "... = add_label (pfl[e := Some eq]) (pf[e := e']) (pf ! e) (the (pfl ! e))"
+    using assms add_label_add_label2_eq * by (metis length_list_update ufa_invarD(2))
+  finally show ?thesis .
+qed
 
 section \<open>Abstraction of \<open>cc_explain_aux\<close>\<close>
 
@@ -953,8 +989,8 @@ proof
     have "x \<noteq> rep_of l a" using assms unfolding proof_forest_invar_def assms(4) 
       by (metis explain_list_invar_def path_root rep_of_idem)
     then have "p2 @ p3 = p1" "path l (rep_of l a) p3 a" 
-      using path_from_rep_of_l_a_to_a_eap_case2 assms p3_def
-      by (metis append_take_drop_id)+
+      using path_from_rep_of_l_a_to_a_eap_case2 assms p3_def 
+       by (metis append_take_drop_id)+
     have "ixa \<in> set p3" 
       by (metis Un_iff \<open>ixa \<notin> set (tl p2)\<close> \<open>p2 @ p3 = p1\<close> in_set_tlD ixa(1) self_append_conv2 set_union_code tl_append2)
     have "l ! ixa \<noteq> ixa" using assms ixa 
@@ -1010,5 +1046,232 @@ pe_to_set (pf_labels cc ! rep_of l a) \<union> labels_in_uf l (pf_labels cc)"
   show ?case using Two *  ***
     by auto
 qed
+
+subsection \<open>New invariant\<close>
+
+lemma additional_uf_labels_set_fun_upd:
+  assumes "e < length pf" "length pf = length pfl" "e \<noteq> e'"
+"pf ! e \<noteq> e \<or> pfl ! e = None"
+  shows "additional_uf_labels_set pf pfl \<union> pe_to_set eq
+= additional_uf_labels_set (pf[e := e']) (pfl[e := eq]) \<union> pe_to_set (pfl ! e)"
+proof
+  show "additional_uf_labels_set pf pfl \<union> pe_to_set eq
+    \<subseteq> additional_uf_labels_set (pf[e := e']) (pfl[e := eq]) \<union> pe_to_set (pfl ! e)"
+  proof
+    fix x assume "x \<in> additional_uf_labels_set pf pfl \<union> pe_to_set eq"
+    then show "x \<in> additional_uf_labels_set (pf[e := e']) (pfl[e := eq]) \<union> pe_to_set (pfl ! e)"
+      proof
+        assume "x \<in> additional_uf_labels_set pf pfl"
+        then obtain i where i: "x \<in> pe_to_set (pfl ! i)" "i < length pf \<and> pf ! i \<noteq> i"
+          unfolding additional_uf_labels_set_def by blast
+        then show ?thesis
+          proof(cases "i = e")
+            case True
+            then show ?thesis 
+              using i(1) by auto
+          next
+            case False
+            then show ?thesis unfolding additional_uf_labels_set_def using i 
+              using Union_iff length_list_update by fastforce
+          qed
+      next
+        assume "x \<in> pe_to_set eq"
+        show ?thesis 
+          unfolding additional_uf_labels_set_def using assms 
+          using Un_def Union_iff \<open>x \<in> pe_to_set eq\<close> length_list_update mem_Collect_eq nth_list_update  
+          by fastforce
+      qed
+    qed
+next
+  show "additional_uf_labels_set (pf[e := e']) (pfl[e := eq]) \<union> pe_to_set (pfl ! e)
+    \<subseteq> additional_uf_labels_set pf pfl \<union> pe_to_set eq"
+    proof
+    fix x assume "x \<in> additional_uf_labels_set (pf[e := e']) (pfl[e := eq]) \<union> pe_to_set (pfl ! e)"
+    then show "x \<in> additional_uf_labels_set pf pfl \<union> pe_to_set eq"
+      proof
+        assume "x \<in> additional_uf_labels_set (pf[e := e']) (pfl[e := eq])"
+        then obtain i where i: "x \<in> pe_to_set (pfl[e := eq] ! i)" "i < length (pf[e := e']) \<and> pf[e := e'] ! i \<noteq> i"
+          unfolding additional_uf_labels_set_def by blast
+        then show ?thesis 
+        proof(cases "i = e")
+          case True
+          then show ?thesis using additional_uf_labels_set_def assms i(1) by fastforce
+        next
+          case False
+          then show ?thesis 
+            unfolding additional_uf_labels_set_def using i by auto
+        qed
+      next
+        assume "x \<in> pe_to_set (pfl ! e)"
+        then show ?thesis unfolding additional_uf_labels_set_def
+          using \<open>x \<in> pe_to_set (pfl ! e)\<close> assms by auto
+      qed
+    qed
+  qed
+
+lemma additional_uf_labels_set_add_label:
+  assumes "ufa_invar pf" "e < length pf" "e' < length pf" 
+"rep_of pf e \<noteq> rep_of pf e'"
+"valid_labels_invar pfl pf cc_l"
+"length pf = length pfl"
+"length cc_l = length pf"
+"(\<exists> c\<^sub>1 c\<^sub>2 c d\<^sub>1 d\<^sub>2 d . (eq = (One (c \<approx> d)) \<or>
+eq = (Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d)))
+\<and> ((e' = c \<and> e = d) \<or> (e = c \<and> e' = d))
+\<and> c < length cc_l \<and> d < length cc_l
+\<and> valid_vars_pending eq cc_l
+)"
+  shows "additional_uf_labels_set pf pfl \<union> pe_to_set (Some eq)
+= additional_uf_labels_set (add_edge pf e e') (add_label pfl pf e eq)"
+proof-
+  have "add_edge_dom (pf, e, e')" 
+    using add_edge_domain assms proof_forest_invar_def by auto
+  then show ?thesis 
+    using assms proof(induction 
+arbitrary: pfl eq rule: add_edge.pinduct)
+  case (1 pf e e')
+  then show ?case proof(cases "pf ! e = e")
+    case True
+    then have 2: "pfl ! e = None" using "1.prems"(1,2,5)
+      unfolding pf_labels_invar_def by simp
+    have add_edge: "add_edge pf e e' = pf[e := e']" 
+      using True 1 add_edge.psimps add_edge_domain by presburger
+    have add_label: "add_label pfl pf e eq = pfl[e:= Some eq]"
+      using True 1 add_label.psimps by (metis add_label.domintros)
+    then show ?thesis 
+      using additional_uf_labels_set_fun_upd[OF "1.prems"(2)] "1.prems"(3,6) 2
+      by (metis "1.prems"(4) add_edge add_label pe_to_set.simps(1) sup_bot_right)
+  next
+    case False
+    have add_edge: "add_edge pf e e' = add_edge (pf[e := e']) (pf ! e) e" 
+      using False 1 add_edge.psimps add_edge_domain by presburger
+    have add_label: "add_label pfl pf e eq = add_label (pfl[e := Some eq]) (pf[e := e']) (pf ! e) (the (pfl ! e))"
+      using False 1(1-6) add_label.psimps add_label_add_label2_eq 
+      by (metis add_label_simp2)
+    from add_label_case_2_rep_of_neq have rep_rec: "rep_of (pf[e := e']) (pf ! e) \<noteq> rep_of (pf[e := e']) e"
+      using "1.prems"(1-7) False  
+      by metis
+    have invar_pfl_e: "\<exists>c\<^sub>1 c\<^sub>2 c d\<^sub>1 d\<^sub>2 d.
+       (the (pfl ! e) = One (c \<approx> d) \<or>
+        the (pfl ! e) = Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d)) \<and>
+       (e = c \<and> pf ! e = d \<or> pf ! e = c \<and> e = d) \<and>
+       c < length cc_l \<and>
+       d < length cc_l \<and>
+       valid_vars_pending (the (pfl ! e)) cc_l"
+      using "1.prems"(1,2,5,7) False option.sel by auto
+    have "ufa_invar (pf[e := e'])"
+    "pf ! e < length (pf[e := e'])"
+    "valid_labels_invar (pfl[e := Some eq]) (pf[e := e']) cc_l"
+        apply (simp add: "1.prems"(1,3,4) ufa_invar_fun_upd')
+      using "1.prems"(1,2) ufa_invar_def apply auto[1]
+      using valid_labels_invar_fun_upd "1.prems" by presburger
+    with 1(2)[OF False this(1-2) _ rep_rec this(3) _ _ invar_pfl_e] have IH: "additional_uf_labels_set (pf[e := e']) (pfl[e := Some eq]) \<union>
+    pe_to_set (Some (the (pfl ! e))) =
+    additional_uf_labels_set (add_edge (pf[e := e']) (pf ! e) e)
+     (add_label (pfl[e := Some eq]) (pf[e := e']) (pf ! e)
+       (the (pfl ! e)))" 
+      by (metis "1.prems"(2) "1.prems"(6) "1.prems"(7) length_list_update)
+    then show ?thesis using "1.prems"(2) "1.prems"(5) "1.prems"(6) False \<open>valid_labels_invar (pfl[e := Some eq]) (pf[e := e']) cc_l\<close> add_edge add_label additional_uf_labels_set_fun_upd length_list_update nth_list_update_eq option.collapse option.distinct(1)
+      by metis
+  qed
+qed
+qed
+
+section \<open>New invariant that describes a well-formed proof forest.\<close>
+
+abbreviation well_formed_pf :: "nat list \<Rightarrow> pending_equation option list \<Rightarrow> equation set \<Rightarrow> bool"
+  where
+"well_formed_pf pf pfl other_set \<equiv>
+  (\<forall> a b . a < length pf \<longrightarrow> b < length pf \<longrightarrow>
+    rep_of pf a = rep_of pf b \<longrightarrow> 
+(a \<approx> b) \<in> Congruence_Closure (additional_uf_labels_set pf pfl \<union> other_set))"
+
+text \<open>Invariant for the additional union find in the explain function.\<close>
+definition well_formed_uf_invar
+  where
+"well_formed_uf_invar l pfl other_set \<equiv>
+well_formed_pf l pfl other_set"
+
+text \<open>Invariant for the proof forest in the congruence closure data structure.\<close>
+definition well_formed_pf_invar :: "congruence_closure \<Rightarrow> bool"
+  where
+"well_formed_pf_invar cc \<equiv>
+well_formed_pf (proof_forest cc) (pf_labels cc) {}"
+
+subsection \<open>Proof that \<open>well_formed_pf_invar\<close> is an invariant of \<open>merge\<close>.\<close>
+
+lemma a_eq_b_in_CC_of_eq:
+  assumes "well_formed_pf pf pfl {}"
+"(\<exists> c\<^sub>1 c\<^sub>2 c d\<^sub>1 d\<^sub>2 d . (eq = (One (c \<approx> d)) \<or>
+eq = (Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d)))
+\<and> ((b = c \<and> a = d) \<or> (a = c \<and> b = d))
+\<and> c < length cc_l \<and> d < length cc_l
+\<and> valid_vars_pending eq cc_l
+\<and> rep_of pf c\<^sub>1 = rep_of pf d\<^sub>1
+\<and> rep_of pf c\<^sub>2 = rep_of pf d\<^sub>2
+)"
+  shows "(a \<approx> b) \<in> Congruence_Closure (additional_uf_labels_set pf pfl \<union> pe_to_set (Some eq))"
+proof-
+  obtain c\<^sub>1 c\<^sub>2 c d\<^sub>1 d\<^sub>2 d where "eq = (One (c \<approx> d)) \<or>
+eq = (Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d))"
+"(b = c \<and> a = d) \<or> (a = c \<and> b = d)"
+"c < length cc_l" "d < length cc_l"
+"valid_vars_pending eq cc_l" 
+"rep_of pf c\<^sub>1 = rep_of pf d\<^sub>1"
+"rep_of pf c\<^sub>2 = rep_of pf d\<^sub>2"
+using assms by blast
+
+
+lemma well_formed_pf_add_edge:
+  assumes 
+"well_formed_pf pf pfl {}"
+"ufa_invar pf" "a < length pf" "b < length pf"
+"rep_of pf a \<noteq> rep_of pf b"
+"valid_labels_invar pfl pf cc_l"
+"length pf = length pfl"
+"length cc_l = length pf"
+"(\<exists> c\<^sub>1 c\<^sub>2 c d\<^sub>1 d\<^sub>2 d . (eq = (One (c \<approx> d)) \<or>
+eq = (Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d)))
+\<and> ((b = c \<and> a = d) \<or> (a = c \<and> b = d))
+\<and> c < length cc_l \<and> d < length cc_l
+\<and> valid_vars_pending eq cc_l
+)"
+  shows "well_formed_pf (add_edge pf a b) (add_label pfl pf a eq) {}"
+proof(standard, standard, standard, standard, standard)
+  fix a' b'
+  assume prems: "a' < length (add_edge pf a b)"
+       "b' < length (add_edge pf a b)"
+       "rep_of (add_edge pf a b) a' = rep_of (add_edge pf a b) b'"
+  from additional_uf_labels_set_add_label[OF assms(2-)]
+  have *: "additional_uf_labels_set (add_edge pf a b) (add_label pfl pf a eq) 
+= additional_uf_labels_set pf pfl \<union> pe_to_set (Some eq)"
+    by auto
+  then show "(a' \<approx> b')
+       \<in> Congruence_Closure
+           (additional_uf_labels_set (add_edge pf a b) (add_label pfl pf a eq) \<union> {})"
+  proof(cases "rep_of pf a' = rep_of pf b'")
+    case True
+    then show ?thesis using assms(1-5) * prems 
+      by (simp add: Congruence_Closure_split_rule add_edge_preserves_length')
+  next
+    case False
+    then have "(rep_of pf a' = rep_of pf a \<and> rep_of pf b' = rep_of pf b) 
+        \<or> 
+      (rep_of pf b' = rep_of pf a \<and> rep_of pf b' = rep_of pf a)"
+      by (metis add_edge_preserves_length' assms(2-5) prems rep_of_add_edge_aux)
+    then show ?thesis 
+    proof
+      assume "rep_of pf a' = rep_of pf a \<and> rep_of pf b' = rep_of pf b"
+      then have "(a' \<approx> a) \<in> Congruence_Closure (additional_uf_labels_set pf pfl)"
+        "(b' \<approx> b) \<in> Congruence_Closure (additional_uf_labels_set pf pfl)"
+        using add_edge_preserves_length' assms(1-5) prems by force+
+      then show ?thesis sorry
+    next 
+      assume "rep_of pf b' = rep_of pf a \<and> rep_of pf b' = rep_of pf a"
+      then show ?thesis sorry
+    qed
+  qed
+qed
+
 
 end

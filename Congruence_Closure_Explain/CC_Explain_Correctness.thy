@@ -43,14 +43,17 @@ qed
 text \<open>These functions are needed in order to interpret the additional union find as the set
 of labels on the corresponding edges in the proof forest.\<close>
 
+fun pe_to_set :: "pending_equation option \<Rightarrow> equation set"
+  where
+    "pe_to_set None = {}"
+  | "pe_to_set (Some (One a')) = {a'}"
+  | "pe_to_set (Some (Two a' b')) = {a', b'}"
+
 fun pending_set' :: "pending_equation list \<Rightarrow> equation set"
   where
     "pending_set' [] = {}"
-  | "pending_set' ((One a') # xs) = {a'} \<union> pending_set xs"
-  | "pending_set' ((Two a' b') # xs) = {a', b'} \<union> pending_set xs"
-
-abbreviation additional_uf_labels_set where
- "additional_uf_labels_set l pfl \<equiv> \<Union>{pending_set' [the (pfl ! a)] |a. a < length l \<and> l ! a \<noteq> a}"
+  | "pending_set' ((One a') # xs) = {a'} \<union> pending_set' xs"
+  | "pending_set' ((Two a' b') # xs) = {a', b'} \<union> pending_set' xs"
 
 lemma explain_along_path_correctness:
   assumes "explain_along_path_dom (\<lparr>cc_list = cc_l, use_list = u, lookup = t, pending = pe, 
@@ -579,6 +582,9 @@ text \<open>This invar shows the correctness of the explain function.
       algorithms can terminate and the proofs of two different edges do not 
       depend on each other.\<close>
 
+definition additional_uf_labels_set where
+ "additional_uf_labels_set l pfl \<equiv> \<Union>{pe_to_set (pfl ! a) |a. a < length l \<and> l ! a \<noteq> a}"
+
 definition cc_explain_correctness_invar :: "congruence_closure \<Rightarrow> bool"
   where
     "cc_explain_correctness_invar cc \<equiv> (\<forall> l eqs.
@@ -644,6 +650,7 @@ proof-
 (cc_explain_aux cc [0..<nr_vars cc] [(a, b)] \<union> additional_uf_labels_set [0..<nr_vars cc] (pf_labels cc))"
     using assms unfolding cc_explain_correctness_invar_def by blast
   then have "additional_uf_labels_set [0..<nr_vars cc] (pf_labels cc) = {}"
+    unfolding additional_uf_labels_set_def
     by fastforce
   then show ?thesis 
     by (metis "*" Un_empty_right)
