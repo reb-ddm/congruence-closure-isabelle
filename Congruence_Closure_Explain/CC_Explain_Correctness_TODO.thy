@@ -1206,21 +1206,44 @@ lemma a_eq_b_in_CC_of_eq:
 eq = (Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d)))
 \<and> ((b = c \<and> a = d) \<or> (a = c \<and> b = d))
 \<and> c < length cc_l \<and> d < length cc_l
+\<and> c\<^sub>1 < length cc_l \<and> c\<^sub>2 < length cc_l
+\<and> d\<^sub>1 < length cc_l \<and> d\<^sub>2 < length cc_l
 \<and> valid_vars_pending eq cc_l
 \<and> rep_of pf c\<^sub>1 = rep_of pf d\<^sub>1
 \<and> rep_of pf c\<^sub>2 = rep_of pf d\<^sub>2
 )"
+"length cc_l = length pf"
   shows "(a \<approx> b) \<in> Congruence_Closure (additional_uf_labels_set pf pfl \<union> pe_to_set (Some eq))"
 proof-
-  obtain c\<^sub>1 c\<^sub>2 c d\<^sub>1 d\<^sub>2 d where "eq = (One (c \<approx> d)) \<or>
+  obtain c\<^sub>1 c\<^sub>2 c d\<^sub>1 d\<^sub>2 d where 
+eq: "eq = (One (c \<approx> d)) \<or>
 eq = (Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d))"
 "(b = c \<and> a = d) \<or> (a = c \<and> b = d)"
 "c < length cc_l" "d < length cc_l"
 "valid_vars_pending eq cc_l" 
 "rep_of pf c\<^sub>1 = rep_of pf d\<^sub>1"
 "rep_of pf c\<^sub>2 = rep_of pf d\<^sub>2"
-using assms by blast
-
+    using assms by blast
+  from eq(1) show ?thesis 
+  proof
+    assume "eq = (One (c \<approx> d))"
+    then show ?thesis
+      using assms by auto
+  next
+    assume *: "eq = (Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d))"
+    then have **: "(c\<^sub>1 \<approx> d\<^sub>1) \<in> Congruence_Closure (additional_uf_labels_set pf pfl \<union> pe_to_set (Some eq))"
+"(c\<^sub>2 \<approx> d\<^sub>2) \<in> Congruence_Closure (additional_uf_labels_set pf pfl \<union> pe_to_set (Some eq))"
+      using assms eq 
+      by (metis Congruence_Closure_split_rule equation.inject(2) pending_equation.distinct(1) pending_equation.inject(2) sup_bot.right_neutral)+
+    then have ***: "(F c\<^sub>1 c\<^sub>2 \<approx> c) \<in> Congruence_Closure (additional_uf_labels_set pf pfl \<union> pe_to_set (Some eq))"
+"(F d\<^sub>1 d\<^sub>2 \<approx> d) \<in> Congruence_Closure (additional_uf_labels_set pf pfl \<union> pe_to_set (Some eq))"
+      using * by auto
+    then have "(F d\<^sub>1 d\<^sub>2 \<approx> c) \<in> Congruence_Closure (additional_uf_labels_set pf pfl \<union> pe_to_set (Some eq))"
+      using ** by blast
+    then show ?thesis 
+      using "***"(2) eq(2) by blast
+  qed
+qed
 
 lemma well_formed_pf_add_edge:
   assumes 
@@ -1234,7 +1257,11 @@ lemma well_formed_pf_add_edge:
 eq = (Two (F c\<^sub>1 c\<^sub>2 \<approx> c) (F d\<^sub>1 d\<^sub>2 \<approx> d)))
 \<and> ((b = c \<and> a = d) \<or> (a = c \<and> b = d))
 \<and> c < length cc_l \<and> d < length cc_l
+\<and> c\<^sub>1 < length cc_l \<and> c\<^sub>2 < length cc_l
+\<and> d\<^sub>1 < length cc_l \<and> d\<^sub>2 < length cc_l
 \<and> valid_vars_pending eq cc_l
+\<and> rep_of pf c\<^sub>1 = rep_of pf d\<^sub>1
+\<and> rep_of pf c\<^sub>2 = rep_of pf d\<^sub>2
 )"
   shows "well_formed_pf (add_edge pf a b) (add_label pfl pf a eq) {}"
 proof(standard, standard, standard, standard, standard)
@@ -1242,10 +1269,12 @@ proof(standard, standard, standard, standard, standard)
   assume prems: "a' < length (add_edge pf a b)"
        "b' < length (add_edge pf a b)"
        "rep_of (add_edge pf a b) a' = rep_of (add_edge pf a b) b'"
-  from additional_uf_labels_set_add_label[OF assms(2-)]
+  from additional_uf_labels_set_add_label[OF assms(2-8)]
   have *: "additional_uf_labels_set (add_edge pf a b) (add_label pfl pf a eq) 
-= additional_uf_labels_set pf pfl \<union> pe_to_set (Some eq)"
-    by auto
+= additional_uf_labels_set pf pfl \<union> pe_to_set (Some eq)" 
+    using assms(9) by blast
+  have **: "(a \<approx> b) \<in> Congruence_Closure (additional_uf_labels_set pf pfl \<union> pe_to_set (Some eq))"
+        using a_eq_b_in_CC_of_eq assms by simp
   then show "(a' \<approx> b')
        \<in> Congruence_Closure
            (additional_uf_labels_set (add_edge pf a b) (add_label pfl pf a eq) \<union> {})"
@@ -1257,7 +1286,7 @@ proof(standard, standard, standard, standard, standard)
     case False
     then have "(rep_of pf a' = rep_of pf a \<and> rep_of pf b' = rep_of pf b) 
         \<or> 
-      (rep_of pf b' = rep_of pf a \<and> rep_of pf b' = rep_of pf a)"
+      (rep_of pf b' = rep_of pf a \<and> rep_of pf a' = rep_of pf b)"
       by (metis add_edge_preserves_length' assms(2-5) prems rep_of_add_edge_aux)
     then show ?thesis 
     proof
@@ -1265,10 +1294,21 @@ proof(standard, standard, standard, standard, standard)
       then have "(a' \<approx> a) \<in> Congruence_Closure (additional_uf_labels_set pf pfl)"
         "(b' \<approx> b) \<in> Congruence_Closure (additional_uf_labels_set pf pfl)"
         using add_edge_preserves_length' assms(1-5) prems by force+
-      then show ?thesis sorry
+      then have "(a' \<approx> a) \<in> Congruence_Closure (additional_uf_labels_set pf pfl \<union> pe_to_set (Some eq))"
+        "(b' \<approx> b) \<in> Congruence_Closure (additional_uf_labels_set pf pfl \<union> pe_to_set (Some eq))"
+        by (auto simp add: Congruence_Closure_split_rule)
+      then show ?thesis using * ** 
+        by (metis Congruence_Closure.symmetric Congruence_Closure.transitive1 boolean_algebra.disj_zero_right)
     next 
-      assume "rep_of pf b' = rep_of pf a \<and> rep_of pf b' = rep_of pf a"
-      then show ?thesis sorry
+      assume "rep_of pf b' = rep_of pf a \<and> rep_of pf a' = rep_of pf b"
+      then have "(a' \<approx> b) \<in> Congruence_Closure (additional_uf_labels_set pf pfl)"
+        "(b' \<approx> a) \<in> Congruence_Closure (additional_uf_labels_set pf pfl)"
+        using add_edge_preserves_length' assms(1-5) prems by force+
+      then have "(a' \<approx> b) \<in> Congruence_Closure (additional_uf_labels_set pf pfl \<union> pe_to_set (Some eq))"
+        "(b' \<approx> a) \<in> Congruence_Closure (additional_uf_labels_set pf pfl \<union> pe_to_set (Some eq))"
+        by (auto simp add: Congruence_Closure_split_rule)
+      then show ?thesis using * ** 
+        by (metis Congruence_Closure.symmetric Congruence_Closure.transitive1 boolean_algebra.disj_zero_right)
     qed
   qed
 qed
