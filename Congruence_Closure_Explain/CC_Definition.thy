@@ -210,6 +210,10 @@ fun are_congruent :: "congruence_closure \<Rightarrow> equation \<Rightarrow> bo
     | None \<Rightarrow> False
 )"
 
+lemma are_congruent_simp:
+"are_congruent cc (a \<approx> b) = (rep_of (cc_list cc) a = rep_of (cc_list cc) b)"
+  by (metis are_congruent.simps(1) congruence_closure.surjective old.unit.exhaust)
+
 text \<open>For the initialisation of the congruence closure algorithm.\<close>
 abbreviation 
 "initial_cc n \<equiv> \<lparr>cc_list = [0..<n], use_list = replicate n [], lookup = replicate n (replicate n None),

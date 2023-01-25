@@ -17,6 +17,20 @@ proof-
     by auto
 qed
 
+lemma are_congruent_rep_of_neq:
+  assumes "cc_invar cc"
+"\<not> are_congruent cc (a \<approx> b)"
+"a < nr_vars cc" "b < nr_vars cc"
+shows "rep_of (cc_list cc) a \<noteq> rep_of (cc_list cc) b"
+"rep_of (proof_forest cc) a \<noteq> rep_of (proof_forest cc) b"
+proof-
+  show "rep_of (cc_list cc) a \<noteq> rep_of (cc_list cc) b"
+    by (metis (full_types) are_congruent.simps(1) assms(2) congruence_closure.surjective old.unit.exhaust)
+  then show "rep_of (proof_forest cc) a \<noteq> rep_of (proof_forest cc) b"
+    using assms same_length_invar_def same_eq_classes_invar_def 
+    by auto
+qed
+
 theorem cc_invar_merge: 
   assumes "cc_invar cc" "valid_vars eq (nr_vars cc)"
   shows "cc_invar (merge cc eq)"
