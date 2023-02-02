@@ -533,7 +533,7 @@ proof-
       from "1.prems" invar have explain_list_invar: 
         "explain_list_invar (l[rep_of l a := pf ! rep_of l a]) (proof_forest cc)" 
         unfolding cc congruence_closure.select_convs 
-        by (metis (no_types, lifting) explain_list_invar_def explain_list_invar_union pRAC pRAC' path_nodes_lt_length_l rep_of_a_and_parent_rep_neq)
+        by (metis (no_types, lifting) explain_list_invar_def explain_list_invar_union pRAC' path_nodes_lt_length_l)
       have rep_neq: "rep_of l a \<noteq> rep_of l (pf ! rep_of l a)"
         using pRAC "1.prems" False rep_of_a_and_parent_rep_neq unfolding cc congruence_closure.select_convs 
         using invar by blast
@@ -685,7 +685,7 @@ proof-
         by (meson pRAC path_nodes_lt_length_l)
       from "1.prems" invar have explain_list_invar: "explain_list_invar (l[rep_of l a := pf ! rep_of l a]) (proof_forest cc)" 
         unfolding cc congruence_closure.select_convs 
-        by (metis (no_types, lifting) explain_list_invar_def explain_list_invar_union pRAC pRAC' path_nodes_lt_length_l rep_of_a_and_parent_rep_neq)
+        by (metis (no_types, lifting) explain_list_invar_def explain_list_invar_union pRAC' path_nodes_lt_length_l)
       have rep_neq: "rep_of l a \<noteq> rep_of l (pf ! rep_of l a)"
         using pRAC "1.prems" False rep_of_a_and_parent_rep_neq unfolding cc congruence_closure.select_convs 
         using invar by blast
@@ -1389,7 +1389,7 @@ proof-
       from "1.prems" invar have explain_list_invar: 
         "explain_list_invar (l[rep_of l a := pf ! rep_of l a]) (proof_forest cc)" 
         unfolding cc congruence_closure.select_convs 
-        by (metis (no_types, lifting) explain_list_invar_def explain_list_invar_union pRAC pRAC' path_nodes_lt_length_l rep_of_a_and_parent_rep_neq)
+        by (metis (no_types, lifting) explain_list_invar_def explain_list_invar_union pRAC' path_nodes_lt_length_l)
       have rep_neq: "rep_of l a \<noteq> rep_of l (pf ! rep_of l a)"
         using pRAC "1.prems" False rep_of_a_and_parent_rep_neq unfolding cc congruence_closure.select_convs 
         using invar by blast
