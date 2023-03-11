@@ -3,8 +3,8 @@ theory CC_Explain_Invar2
 
 begin
 
-
 subsubsection \<open>Equivalence of \<open>cc_explain_aux\<close> and \<open>cc_explain_aux2\<close>\<close>
+
 
 fun pending_pairs :: "pending_equation option \<Rightarrow> (nat * nat) set"
   where
@@ -13,138 +13,8 @@ fun pending_pairs :: "pending_equation option \<Rightarrow> (nat * nat) set"
   | "pending_pairs (Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> a') (F b\<^sub>1 b\<^sub>2 \<approx> b'))) = {(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)}"
   | "pending_pairs (Some (Two a b)) = {}"
 
-
 definition additional_uf_pairs_set where
   "additional_uf_pairs_set l pfl \<equiv> \<Union>{pending_pairs (pfl ! a) |a. a < length l \<and> l ! a \<noteq> a}"
-
-
-(*
-lemma explain_along_path_explain_along_path2_equivalence:
-  assumes "cc_invar cc"
-    "path (proof_forest cc) c p a"
-"explain_along_path2 cc a c = (output2, pend2)"
-"explain_along_path cc l a c = (output, new_l, pend)"
-shows "output2 - additional_uf_labels_set l (pf_labels cc) \<subseteq> output"
-  sorry
-
-lemma explain_along_path_new_l_labels_in_output:
-  assumes "cc_invar cc"
-    "path (proof_forest cc) c p a"
-    "explain_along_path cc l a c = (output, new_l, pend)"
-shows "additional_uf_labels_set new_l (pf_labels cc) - additional_uf_labels_set l (pf_labels cc) 
-= output"
-  sorry
-*)
-
-
-subsubsection \<open>Induction rule on \<open>explain_long_path2\<close>\<close>
-
-lemma explain_along_path2_induct[consumes 3, case_names base One Two]:
-  assumes "cc_invar cc"
-    "path (proof_forest cc) c p a"
-    "explain_along_path2 cc a c = (output, pend)"
-    "(\<And>cc a c p.
-    explain_along_path2_dom (cc, a, c) \<Longrightarrow>
-    cc_invar cc \<Longrightarrow>
-      path (proof_forest cc) c p a \<Longrightarrow>
-        a = c \<Longrightarrow>
-        P cc a c {} [] p)" 
-    "(\<And>cc a c p1 p2 x x1 x11 x12 output pend.
-    explain_along_path2_dom (cc, a, c) \<Longrightarrow>
-    cc_invar cc \<Longrightarrow>
-      path (proof_forest cc) c p1 a \<Longrightarrow>
-      path (proof_forest cc) c p2 x \<Longrightarrow>
-      explain_along_path2 cc x c = (output, pend) \<Longrightarrow>
-      a \<noteq> c \<Longrightarrow>
-      x = proof_forest cc ! a \<Longrightarrow> 
-      pf_labels cc ! a = Some (One x1) \<Longrightarrow>
-      x11 < nr_vars cc \<Longrightarrow> x12 < nr_vars cc \<Longrightarrow> x1 = (x11 \<approx> x12) \<Longrightarrow>
-      x < nr_vars cc \<Longrightarrow>
-      P cc x c output pend p2 \<Longrightarrow>
-         P cc a c ({x1} \<union> output) pend p1)" 
-    "(\<And>cc a c p1 p2 x x21 x22 x\<^sub>1 x\<^sub>2 x' y\<^sub>1 y\<^sub>2 y output pend.
-      explain_along_path2_dom (cc, a, c) \<Longrightarrow>
-      cc_invar cc \<Longrightarrow>
-      path (proof_forest cc) c p1 a \<Longrightarrow>
-      path (proof_forest cc) c p2 x \<Longrightarrow>
-       explain_along_path2 cc x c = (output, pend) \<Longrightarrow>
-       a \<noteq> c \<Longrightarrow>
-        x = proof_forest cc ! a \<Longrightarrow>
-        pf_labels cc ! a = Some (Two x21 x22) 
-      \<Longrightarrow> x21 = (F x\<^sub>1 x\<^sub>2 \<approx> x') \<Longrightarrow> x22 = (F y\<^sub>1 y\<^sub>2 \<approx> y) \<Longrightarrow>
-      x < nr_vars cc \<Longrightarrow> x\<^sub>1 < nr_vars cc \<Longrightarrow> x\<^sub>2 < nr_vars cc 
-      \<Longrightarrow> x' < nr_vars cc \<Longrightarrow> y\<^sub>1 < nr_vars cc \<Longrightarrow> y\<^sub>2 < nr_vars cc \<Longrightarrow> y < nr_vars cc 
-      \<Longrightarrow> P cc x c output pend p2 \<Longrightarrow>
-      P cc a c ({(F x\<^sub>1 x\<^sub>2 \<approx> x'), (F y\<^sub>1 y\<^sub>2 \<approx> y)} \<union> output) ([(x\<^sub>1, y\<^sub>1), (x\<^sub>2, y\<^sub>2)] @ pend) p1)"
-  shows "P cc a c output pend p"
-proof-
-  have "explain_along_path2_dom (cc, a, c)"
-    using assms explain_along_path2_domain by fast
-  then show ?thesis
-    using assms proof(induction 
-      arbitrary: "output" pend p
-      rule: explain_along_path2.pinduct)
-    case (1 cc a c)
-    then show ?case 
-    proof(cases "a = c")
-      case True
-      with 1(6) have "output = {}"  "pend = []" using explain_along_path2_simp1
-        by simp+
-      then show ?thesis using 1(7) 
-        using "1.hyps" "1.prems"(1,2) True by blast
-    next
-      case False
-      define x where "x = (proof_forest cc) ! a"
-      have path_to_rep: "path (proof_forest cc) c (butlast p) x" 
-        using "1.prems" x_def 
-        using False path_butlast by auto
-      have not_none: "(pf_labels cc) ! a \<noteq> None"   
-        using "1.prems" False pf_labels_invar_def path_nodes_lt_length_l 
-        by (metis option.distinct(1) path_root)
-      then obtain output_rec' pending_rec' 
-        where 
-          rec': "explain_along_path2 cc x c = (output_rec',  pending_rec')"
-        using old.prod.exhaust by blast
-      then have "x < nr_vars cc" 
-        using "1.prems"(1,2) same_length_invar_def path_nodes_lt_length_l path_to_rep 
-        by metis
-      show ?thesis
-      proof(cases "the ((pf_labels cc) ! a)")
-        case (One x1)
-        then have Some: "(pf_labels cc) ! a = Some (One x1)"
-          using not_none by auto
-        then obtain x11 x12 where "x1 = (x11 \<approx> x12)" "x11 < nr_vars cc" "x12 < nr_vars cc" 
-          using "1.prems" One not_none unfolding pf_labels_invar_def same_length_invar_def 
-          by (metis False \<open>x < nr_vars cc\<close> option.sel path_nodes_lt_length_l path_root pending_equation.distinct(1) pending_equation.inject(1) x_def)
-        then have rec: "(output, pend) = ({x1} \<union> output_rec', pending_rec')"
-          using "1.hyps" "1.prems" False Some x_def explain_along_path2_simp2 
-          by (metis rec')
-        have IH: "P cc x c output_rec' pending_rec' (butlast p)" using 1(2) 
-          using "1.prems"(1) False One assms(4-6) rec' x_def path_to_rep by blast
-        then show ?thesis using 1(8) 
-          using "1.hyps" "1.prems"(1,2,3) False Some \<open>x < nr_vars cc\<close> \<open>x1 = (x11 \<approx> x12)\<close> \<open>x11 < nr_vars cc\<close> \<open>x12 < nr_vars cc\<close> local.rec path_to_rep rec' x_def
-          by blast
-      next
-        case (Two x21 x22)
-        then obtain x\<^sub>1 x\<^sub>2 x' y\<^sub>1 y\<^sub>2 y where Some: "(pf_labels cc) ! a = 
-Some (Two (F x\<^sub>1 x\<^sub>2 \<approx> x') (F y\<^sub>1 y\<^sub>2 \<approx> y))" "x\<^sub>1 < nr_vars cc" "x\<^sub>2 < nr_vars cc" "x' < nr_vars cc"
-          "y\<^sub>1 < nr_vars cc" "y\<^sub>2 < nr_vars cc"  "y < nr_vars cc"
-          using pf_labels_invar_def "1.prems" False not_none sorry
-        then have x21x22: "x21 = (F x\<^sub>1 x\<^sub>2 \<approx> x')" "x22 = (F y\<^sub>1 y\<^sub>2 \<approx> y)" using Two by auto
-        have rec: "(output, pend) 
-= ({(F x\<^sub>1 x\<^sub>2 \<approx> x'), (F y\<^sub>1 y\<^sub>2 \<approx> y)} \<union> output_rec', [(x\<^sub>1, y\<^sub>1), (x\<^sub>2, y\<^sub>2)] @ pending_rec')"
-          using explain_along_path2_simp3 False Some(1) rec' x_def 1(1,6) by auto
-        have IH: "P cc x c output_rec' pending_rec' (butlast p)" 
-          using 1(3) False x_def Two x21x22 "1.prems"(1) path_to_rep rec' 
-          using assms(4-6) by blast
-        then show ?thesis  
-          using 1(9)[OF 1(1,4,5) path_to_rep rec' False
-              x_def Some(1) _ _ \<open>x < nr_vars cc\<close> Some(2,3,4,5,6,7) IH] rec 
-          by blast
-      qed
-    qed
-  qed
-qed
 
 subsubsection \<open>Induction rule on \<open>cc_explain2\<close>\<close>
 
@@ -182,7 +52,7 @@ proof-
     show ?case proof(cases "are_congruent cc (a \<approx> b)")
       case True
       define c where "c = lowest_common_ancestor (proof_forest cc) a b"
-      obtain output1 new_l pending1 output2 pending2
+      obtain output1 pending1 output2 pending2
         where eap: "(output1, pending1) = explain_along_path2 cc a c" 
           "(output2, pending2) = explain_along_path2 cc b c"
         by (metis old.prod.exhaust)
@@ -215,7 +85,6 @@ proof-
     qed
   qed blast
 qed
-
 
 subsubsection \<open>Lemma about \<open>cc_explain2\<close> and append and subset\<close>
 
@@ -284,97 +153,46 @@ next
     using not_congruent cc_explain_aux2_simp3 dom(2) 
     using \<open>\<forall>a\<in>set xs. case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc\<close> by presburger
 qed
-  (*
+
+lemma cc_explain_aux2_union:
+  assumes "cc_invar cc"
+    "\<forall> (a, b) \<in> set xs . a < nr_vars cc \<and> b < nr_vars cc"
+  shows "cc_explain_aux2 cc xs = \<Union>{cc_explain_aux2 cc [x] |x. x \<in> set xs}"
+using assms proof(induction xs)
+  case Nil
+  then show ?case 
+    using cc_explain_aux2_simp1 by fastforce
+next
+  case (Cons a xs)
+  then have "cc_explain_aux2 cc xs = \<Union> {cc_explain_aux2 cc [x] |x. x \<in> set xs}" 
+    by simp
+  moreover have "cc_explain_aux2 cc (a # xs) = cc_explain_aux2 cc [a] \<union> cc_explain_aux2 cc xs"
+"set (a # xs) = {a} \<union> set xs"
+    using cc_explain_aux2_app[of cc "[a]" xs] Cons by auto
+  moreover have "\<Union> {cc_explain_aux2 cc [x] |x. x \<in> set (a # xs)} = 
+\<Union> {cc_explain_aux2 cc [x] |x. x \<in> {a}} \<union> \<Union> {cc_explain_aux2 cc [x] |x. x \<in> set xs}"
+    by fastforce
+  moreover have "\<Union> {cc_explain_aux2 cc [x] |x. x \<in> {a}} = cc_explain_aux2 cc [a]"
+    by blast
+  ultimately show ?case using cc_explain_aux2_app 
+    by auto
+qed
+
 theorem cc_explain_aux2_subset:
   assumes "cc_invar cc"
     "\<forall> (a, b) \<in> set xs . a < nr_vars cc \<and> b < nr_vars cc"
     "\<forall> (a, b) \<in> set ys . a < nr_vars cc \<and> b < nr_vars cc"
     "set xs \<subseteq> set ys"
   shows "cc_explain_aux2 cc xs \<subseteq> cc_explain_aux2 cc ys"
-  using assms proof(induction "mset xs" arbitrary: ys rule: wf_induct[of "mult {(x, y). x < y}"])
-  case 1
-  then show ?thesis sorry
-next
-  case 2
-  then show ?case sorry
-qed
-  case empty
-  then show ?case 
-    using cc_explain_aux2_simp1 by simp
-next
-  case (add x1 x2)
-  then show ?case sorry
-qed
-  case Nil
-  then show ?case 
-    using cc_explain_aux2_simp1 by simp
-next
-  case (Cons a xs)
-  then have "cc_explain_aux2 cc (a # xs) = cc_explain_aux2 cc [a] \<union> cc_explain_aux2 cc xs"
-    using cc_explain_aux2_app[of cc "[a]" xs] by simp
-  then obtain ys1 ys2 where ys: "ys = ys1 @ [a] @ ys2"
-      using Cons.prems(4) 
-      by (metis append_Cons empty_append_eq_id in_set_conv_decomp_first insert_subset list.simps(15))
-    then have "cc_explain_aux2 cc ys = cc_explain_aux2 cc ys1 \<union> cc_explain_aux2 cc ([a] @ ys2)"
-      using cc_explain_aux2_app[of cc "ys1" "[a] @ ys2"] Cons by simp
-    also have "... = 
-cc_explain_aux2 cc ys1 \<union> cc_explain_aux2 cc [a] \<union> cc_explain_aux2 cc ys2"
-      using cc_explain_aux2_app[of cc "[a]" "ys2"] Cons ys by auto
-    also have **: "... = cc_explain_aux2 cc [a] \<union> cc_explain_aux2 cc (ys1 @ ys2)"
-      using cc_explain_aux2_app[of cc "ys1" "ys2"] Cons ys by auto
-    from Cons show ?case proof(induction "count_list xs a" arbitrary: xs)
-    case 0
-    then have "a \<notin> set xs"
-        by (metis count_list_0_iff)
-    then have *: "set xs \<subseteq> set (ys1 @ ys2)"
-      using ys 0(6) by auto
-    have " \<forall>a\<in>set xs. case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc"
-   "\<forall>a\<in>set (ys1 @ ys2). case a of (a, b) \<Rightarrow> a < nr_vars cc \<and> b < nr_vars cc"
-      using 0(4,5) ys by auto
-    with 0(2,3) * have "cc_explain_aux2 cc xs \<subseteq> cc_explain_aux2 cc (ys1 @ ys2)"
-      by simp
-    then have "cc_explain_aux2 cc (a # xs) = cc_explain_aux2 cc [a] \<union> cc_explain_aux2 cc xs"
-      using cc_explain_aux2_app[of cc "[a]" xs] 0 by simp
-    then show ?case 
-      using ** \<open>cc_explain_aux2 cc xs \<subseteq> cc_explain_aux2 cc (ys1 @ ys2)\<close> calculation by auto
-  next
-    case (Suc x)
-    then obtain xs1 xs2 where xs: "xs = xs1 @ [a] @ xs2"
-      using Cons.prems(4) 
-      by (metis Cons_eq_appendI Suc.hyps(2) Zero_not_Suc count_notin empty_append_eq_id in_set_conv_decomp_first)
-    then have "set (a # xs1 @ xs2) \<subseteq> set ys"  using Suc 
-      by simp
-    let ?xs = "xs1 @ xs2"
-    have "(\<And>ys. cc_invar cc \<Longrightarrow>
-           \<forall>(a, b)\<in>set ?xs. a < nr_vars cc \<and> b < nr_vars cc \<Longrightarrow>
-           \<forall>(a, b)\<in>set ys. a < nr_vars cc \<and> b < nr_vars cc \<Longrightarrow> set ?xs \<subseteq> set ys \<Longrightarrow> cc_explain_aux2 cc ?xs \<subseteq> cc_explain_aux2 cc ys)"
-      sorry
-    have "x = count_list (xs1 @ xs2) a" 
-      using xs Suc(2) by simp
-    then have "cc_explain_aux2 cc (a # xs1 @ xs2) \<subseteq> cc_explain_aux2 cc ys"
-      using Suc 
-    then show ?case sorry
-    
-    proof(cases x)
-      case 0
-     
-     
-        sorry
-      then show ?thesis sorry
-    next
-      case (Suc nat)
-      have "set (a # xs) \<subseteq> set (ys1 @ ys2)" sorry
-have " cc_explain_aux2 cc (a # xs) \<subseteq> cc_explain_aux2 cc (ys1 @ ys2)"
-      using Suc(1)[OF * _ Cons(2,3) _] Cons(1) Suc(6,7) sorry
-      sorry
-      then show ?thesis sorry
-    qed
-  qed
-   
-    
+proof-
+  have "cc_explain_aux2 cc xs = \<Union>{cc_explain_aux2 cc [x] |x. x \<in> set xs}"
+    using cc_explain_aux2_union assms by simp
+  moreover have "cc_explain_aux2 cc ys = \<Union>{cc_explain_aux2 cc [y] |y. y \<in> set ys}"
+    using cc_explain_aux2_union assms by simp
+  ultimately show ?thesis using assms 
+    by blast
 qed
 
-TODO  ! *)
 
 subsubsection \<open>Invariant of elements in the additional union find\<close>
 
@@ -401,8 +219,6 @@ function (domintros) was_already_in_pending where
      )
 "
   by pat_completeness auto
-
-(*maybe output of explain_along path 2 \<in> output and pending*)
 
 thm was_already_in_pending.domintros
   (*lemma that was_already_in_pending terminates if explain2 terminates*)
@@ -593,72 +409,62 @@ qed
 
 text \<open>Invariant\<close>
 
-definition equations_of_l_in_pending_invar where
-  "equations_of_l_in_pending_invar cc l xs \<equiv>
-  (\<forall> n a\<^sub>1 a\<^sub>2 a b\<^sub>1 b\<^sub>2 b . n < length l \<longrightarrow> l ! n \<noteq> n 
-    \<longrightarrow> (pf_labels cc) ! n = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> a) (F b\<^sub>1 b\<^sub>2 \<approx> b))
-    \<longrightarrow> was_already_in_pending cc l [(a\<^sub>1, a\<^sub>2), (b\<^sub>1, b\<^sub>2)] xs
-  )"
+definition was_already_in_pending3 where
+  "was_already_in_pending3 cc l a b xs \<equiv> 
+    (((a, b) \<in> set xs) \<or> 
+        (let c = lowest_common_ancestor (proof_forest cc) a b;
+             (output1, pending1) = explain_along_path2 cc a c;
+             (output2, pending2) = explain_along_path2 cc b c
+         in ((output1 \<union> output2) \<subseteq> additional_uf_labels_set l (pf_labels cc)
+            \<and> set pending1 \<union> set pending2 \<subseteq> additional_uf_pairs_set l (pf_labels cc))
+        ))"
 
-abbreviation was_already_in_pending2 where
-  "was_already_in_pending2 cc l a b xs \<equiv> 
-    (cc_explain_aux2 cc [(a, b)] \<subseteq> 
-      cc_explain_aux2 cc xs \<union> additional_uf_labels_set l (pf_labels cc))"
-
-definition equations_of_l_in_pending_invar2 where
-  "equations_of_l_in_pending_invar2 cc l xs \<equiv>
+definition equations_of_l_in_pending_invar3 where
+  "equations_of_l_in_pending_invar3 cc l xs \<equiv>
   (\<forall> (a, b) \<in> additional_uf_pairs_set l (pf_labels cc).
-      was_already_in_pending2 cc l a b xs
+      was_already_in_pending3 cc l a b xs
   )"
 
-lemma equations_of_l_in_pending_invar2_a_b:
+lemma equations_of_l_in_pending_invar3_a_b:
   assumes "cc_invar cc"
     "\<forall> (a, b) \<in> set ((a, b) # xs) . a < nr_vars cc \<and> b < nr_vars cc"
     "\<forall> (a, b) \<in> set ((a, b) # xs) . are_congruent cc (a \<approx> b)"
     "c = lowest_common_ancestor (proof_forest cc) a b"
     "(output1, new_l, pending1) = explain_along_path cc l a c"
     "(output2, new_new_l, pending2) = explain_along_path cc new_l b c"
-    "equations_of_l_in_pending_invar2 cc l ((a, b) # xs)"
+    "equations_of_l_in_pending_invar3 cc l ((a, b) # xs)"
     "explain_list_invar l (proof_forest cc)"
   shows 
-    "was_already_in_pending2 cc new_new_l a b (pending1 @ pending2 @ xs)"
-proof
-  fix x
-  assume "x \<in> cc_explain_aux2 cc [(a, b)]"
+    "was_already_in_pending3 cc new_new_l a b (pending1 @ pending2 @ xs)"
+proof-
   obtain output12 pending12 output22 pending22 where
-    defs: "(output12, pending12) = explain_along_path2 cc a c"
-    "(output22, pending22) = explain_along_path2 cc b c"
+defs: "(output12, pending12) = explain_along_path2 cc a c"
+         "(output22, pending22) = explain_along_path2 cc b c"
     by (metis old.prod.exhaust)
-  have "cc_explain_aux2 cc [(a, b)] = output12 \<union> output22 \<union>
-cc_explain_aux2 cc (pending12 @ pending22)"
-    using cc_explain_aux2_domain cc_explain_aux2_simp2 defs assms(1,2,3,4) 
-    by auto
-  have "output12 \<union> output22 \<subseteq> additional_uf_labels_set new_new_l (pf_labels cc)"
+have "output12 \<union> output22 \<subseteq> additional_uf_labels_set new_new_l (pf_labels cc)"
     sorry
-  have "cc_explain_aux2 cc (pending12 @ pending22) \<supseteq> 
-cc_explain_aux2 cc (pending1 @ pending2)"
+  moreover have "set pending12 \<union> set pending22 \<subseteq>
+additional_uf_pairs_set new_new_l (pf_labels cc)"
     sorry
-  then show "x \<in> cc_explain_aux2 cc (pending1 @ pending2 @ xs) \<union>
-              additional_uf_labels_set new_new_l (pf_labels cc)"
-    sorry
+  ultimately show ?thesis unfolding was_already_in_pending3_def Let_def using defs 
+    using assms(4) by force
 qed
 
-lemma equations_of_l_in_pending_invar2_invar:
+lemma equations_of_l_in_pending_invar3_invar:
   assumes "cc_invar cc"
     "\<forall> (a, b) \<in> set ((a, b) # xs) . a < nr_vars cc \<and> b < nr_vars cc"
     "\<forall> (a, b) \<in> set ((a, b) # xs) . are_congruent cc (a \<approx> b)"
     "c = lowest_common_ancestor (proof_forest cc) a b"
     "(output1, new_l, pending1) = explain_along_path cc l a c"
     "(output2, new_new_l, pending2) = explain_along_path cc new_l b c"
-    "equations_of_l_in_pending_invar2 cc l ((a, b) # xs)"
+    "equations_of_l_in_pending_invar3 cc l ((a, b) # xs)"
     "explain_list_invar l (proof_forest cc)"
   shows 
-    "equations_of_l_in_pending_invar2 cc new_new_l (pending1 @ pending2 @ xs)"
-  unfolding equations_of_l_in_pending_invar2_def
-proof(standard, standard, standard)
-  fix x x\<^sub>1 x\<^sub>2 eq
+    "equations_of_l_in_pending_invar3 cc new_new_l (pending1 @ pending2 @ xs)"
+  unfolding equations_of_l_in_pending_invar3_def
+proof(standard, standard)
+  fix x x\<^sub>1 x\<^sub>2
   assume eq: "x \<in> additional_uf_pairs_set new_new_l (pf_labels cc)" "x = (x\<^sub>1, x\<^sub>2)" 
-    "eq \<in> cc_explain2 cc x\<^sub>1 x\<^sub>2"
   then obtain n where n: "n < length new_new_l \<and> new_new_l ! n \<noteq> n"
     "x \<in> pending_pairs (pf_labels cc ! n)" unfolding additional_uf_pairs_set_def 
     by blast
@@ -670,396 +476,147 @@ proof(standard, standard, standard)
 
   have valid_eqs: "a < nr_vars cc \<and> b < nr_vars cc"
     "are_congruent cc (a \<approx> b)" sorry
-  then show "eq \<in> cc_explain_aux2 cc (pending1 @ pending2 @ xs) \<union> additional_uf_labels_set new_new_l (pf_labels cc)"
-  proof(cases "l ! n = n")
-    case True
-    then have "(x\<^sub>1, x\<^sub>2) \<in> set (pending1 @ pending2)" sorry
-    then have "set [(x\<^sub>1, x\<^sub>2)] \<subseteq> set (pending1 @ pending2 @ xs)"
-      by auto
-    then have "cc_explain_aux2 cc [(x\<^sub>1, x\<^sub>2)] \<subseteq> cc_explain_aux2 cc (pending1 @ pending2 @ xs)"
-      sorry
-    then show ?thesis using eq valid_eqs valid_eqs 
-      by blast
-  next
-    case False
-    then have a_b: "x \<in> additional_uf_pairs_set l (pf_labels cc)" using n same_length 
-      unfolding additional_uf_pairs_set_def by auto
-    then have 1: "was_already_in_pending2 cc l x\<^sub>1 x\<^sub>2 ((a, b) # xs)"
-      using assms(2,3,7) n same_length eq unfolding equations_of_l_in_pending_invar2_def  
-      by blast
-    then have "cc_explain_aux2 cc [(x\<^sub>1, x\<^sub>2)] \<subseteq> 
-cc_explain_aux2 cc ((a, b) # xs) \<union> additional_uf_labels_set l (pf_labels cc)"
-      by blast
-    have append: "cc_explain_aux2 cc ((a, b) # xs) = cc_explain_aux2 cc [(a, b)] \<union> cc_explain_aux2 cc xs"
-      using cc_explain_aux2_app[of cc "[(a, b)]" xs] assms(1,2) 
-      by auto
-    have 0: "was_already_in_pending2 cc new_new_l a b (pending1 @ pending2 @ xs)"
-      using equations_of_l_in_pending_invar2_a_b assms by blast
-        (*! TODO*)
-    then have "cc_explain_aux2 cc [(a, b)] \<subseteq> 
-cc_explain_aux2 cc (pending1 @ pending2 @ xs) \<union> additional_uf_labels_set new_new_l (pf_labels cc)"
-      by blast
-    consider "eq \<in> cc_explain_aux2 cc [(a, b)]" | "eq \<in> cc_explain_aux2 cc xs" | "eq \<in> additional_uf_labels_set l (pf_labels cc)"
-      using "1" append eq(3) by auto
-    then show "eq \<in> cc_explain_aux2 cc (pending1 @ pending2 @ xs) \<union> additional_uf_labels_set new_new_l (pf_labels cc)"
-    proof(cases)
-      case 1
-      then show ?thesis 
-        using "0" by blast
-    next
-      case 2
-      have "cc_explain_aux2 cc xs \<subseteq> cc_explain_aux2 cc (pending1 @ pending2 @ xs)"
-        sorry
-      then show ?thesis 
-        by (simp add: "2" subsetD)
-    next
-      case 3
-      have "additional_uf_labels_set l (pf_labels cc) \<subseteq> additional_uf_labels_set new_new_l (pf_labels cc)"
-        sorry
-      then show ?thesis 
-        using "3" by auto
-    qed
-  qed
-qed
-
-lemma was_already_in_pending_larger_l:
-  assumes "was_already_in_pending_dom (cc, l1, xs, pend)"
-    "was_already_in_pending_dom (cc, l2, xs, pend)"
-    "additional_uf_labels_set l1 (pf_labels cc) \<subseteq> 
-additional_uf_labels_set l2 (pf_labels cc)"
-  shows "was_already_in_pending cc l1 xs pend
-\<Longrightarrow> was_already_in_pending cc l2 xs pend"
-  using assms proof(induction)
-  case (1 cc l pend)
-  then show ?case 
-    by (simp add: was_already_in_pending.domintros(1) was_already_in_pending.psimps(1))
-next
-  case (2 cc l a b xs pend)
-  define c where "c = lowest_common_ancestor (proof_forest cc) a b"
-  obtain output1 pending1 output2 pending2 where
-    defs: "(output1, pending1) = explain_along_path2 cc a c"
-    "(output2, pending2) = explain_along_path2 cc b c"
-    by (metis old.prod.exhaust)
-  then show ?case 
-  proof(cases "(a, b) \<in> set pend \<and> was_already_in_pending cc l xs pend")
-    case True
-    have "was_already_in_pending_dom (cc, l2, xs, pend)"
-      using 2(5) was_already_in_pending.domintros sorry
-        (*domintros show the implication in the wrong direction; you need to show it
-with inductive_cases or whatever*)
-    then have "was_already_in_pending cc l2 xs pend" 
-      using 2(2,5,6) was_already_in_pending.domintros 
-      by (simp add: True)
-    then show ?thesis        
-      using 2(1,5) was_already_in_pending.psimps by (simp add: True)
-  next
-    case False
-    then have *: "(output1 \<union> output2) \<subseteq> additional_uf_labels_set l (pf_labels cc)
-              \<and> was_already_in_pending cc l (pending1 @ pending2 @ xs) pend"
-      using 2(1,4) was_already_in_pending.psimps(2) defs c_def unfolding Let_def
-      by auto
-    have dom: "was_already_in_pending_dom (cc, l2, pending1 @ pending2 @ xs, pend)" sorry
-    have "(output1 \<union> output2) \<subseteq> additional_uf_labels_set l2 (pf_labels cc)"
-      "was_already_in_pending cc l2 (pending1 @ pending2 @ xs) pend"
-      using 2(6) 2(3) defs c_def * dom by blast+
-    then show ?thesis 
-      using was_already_in_pending.psimps(2)[OF 2(5)] 
-        defs unfolding Let_def c_def by force
-  qed
-qed
-
-lemma was_already_in_pending_larger_pend:
-  assumes "was_already_in_pending_dom (cc, l, xs, pend1)"
-    "was_already_in_pending_dom (cc, l, xs, pend2)"
-    "set pend1 \<subseteq> set pend2"
-  shows "was_already_in_pending cc l xs pend1
-\<Longrightarrow> was_already_in_pending cc l xs pend2"
-  using assms proof(induction)
-  case (1 cc l pend)
-  then show ?case 
-    by (simp add: was_already_in_pending.domintros(1) was_already_in_pending.psimps(1))
-next
-  case (2 cc l a b xs pend)
-  define c where "c = lowest_common_ancestor (proof_forest cc) a b"
-  obtain output1 pending1 output2 pending2 where
-    defs: "(output1, pending1) = explain_along_path2 cc a c"
-    "(output2, pending2) = explain_along_path2 cc b c"
-    by (metis old.prod.exhaust)
-  then show ?case 
-  proof(cases "(a, b) \<in> set pend \<and> was_already_in_pending cc l xs pend")
-    case True
-    have "was_already_in_pending_dom (cc, l, xs, pend2)"
-      using 2(5) was_already_in_pending.domintros sorry
-        (*domintros show the implication in the wrong direction; you need to show it
-with inductive_cases or whatever*)
-    then have "was_already_in_pending cc l xs pend2" 
-      using 2(2,5,6) was_already_in_pending.domintros 
-      by (simp add: True)
-    then show ?thesis        
-      using 2(1,5) was_already_in_pending.psimps "2.prems"(3) True by blast
-  next
-    case False
-    then have *: "(output1 \<union> output2) \<subseteq> additional_uf_labels_set l (pf_labels cc)
-              \<and> was_already_in_pending cc l (pending1 @ pending2 @ xs) pend"
-      using 2(1,4) was_already_in_pending.psimps(2) defs c_def unfolding Let_def
-      by auto
-    have dom: "was_already_in_pending_dom (cc, l, pending1 @ pending2 @ xs, pend2)" sorry
-    have "(output1 \<union> output2) \<subseteq> additional_uf_labels_set l (pf_labels cc)"
-      "was_already_in_pending cc l (pending1 @ pending2 @ xs) pend2"
-      using 2(6) 2(3) defs c_def * dom by blast+
-    then show ?thesis 
-      using was_already_in_pending.psimps(2)[OF 2(5)] 
-        defs unfolding Let_def c_def by force
-  qed
-qed
-
-lemma was_already_in_pending_larger_l':
-  assumes "cc_invar cc"
-    "\<forall> (a, b) \<in> set xs . a < nr_vars cc \<and> b < nr_vars cc"
-    "\<forall> (a, b) \<in> set xs . are_congruent cc (a \<approx> b)"
-    "explain_list_invar l1 (proof_forest cc)"
-    "a < nr_vars cc" "b < nr_vars cc"
-    "are_congruent cc (a \<approx> b)"
-    "c = lowest_common_ancestor (proof_forest cc) a b"
-    "(output1, new_l, pending1) = explain_along_path cc l1 a c"
-    "(output2, l2, pending2) = explain_along_path cc new_l b c"
-    "was_already_in_pending cc l1 xs pend"
-  shows "was_already_in_pending cc l2 xs pend"
-proof-
-  have "rep_of (proof_forest cc) a = rep_of (proof_forest cc) b"
-    using are_congruent_implies_proof_forest_rep_of_eq assms unfolding explain_list_invar_def 
-    using are_congruent_rep_of(2) by presburger
-  then obtain p1 p2 where "path (proof_forest cc) c p1 a"
-    "path (proof_forest cc) c p2 b" 
-    using assms lowest_common_ancestor_correct unfolding proof_forest_invar_def 
-      same_length_invar_def by presburger
-  have "was_already_in_pending_dom (cc, l1, xs, pend)"
-    "was_already_in_pending_dom (cc, l2, xs, pend)"
-    "additional_uf_labels_set l1 (pf_labels cc) \<subseteq> 
-additional_uf_labels_set l2 (pf_labels cc)"
-    using assms was_already_in_pending_domain apply blast
-    using assms was_already_in_pending_domain apply blast
-    using assms additional_uf_labels_set_explain_along_path 
-    by (metis Un_upper1 \<open>path (proof_forest cc) c p1 a\<close> \<open>path (proof_forest cc) c p2 b\<close> explain_list_invar_explain_along_path'' length_explain_list_cc_list sup.coboundedI1)
-  then show ?thesis using was_already_in_pending_larger_l assms(11) by blast
-qed
-
-lemma was_already_in_pending_larger_pend':
-  assumes "cc_invar cc"
-    "\<forall> (a, b) \<in> set xs . a < nr_vars cc \<and> b < nr_vars cc"
-    "\<forall> (a, b) \<in> set xs . are_congruent cc (a \<approx> b)"
-    "was_already_in_pending cc l xs (x # pend)"
-  shows "was_already_in_pending cc l xs (x # zs @ pend)"
-proof-
-  have "was_already_in_pending_dom (cc, l, xs, (x # pend))"
-    "was_already_in_pending_dom (cc, l, xs, (x # zs @ pend))"
-    "set (x # pend) \<subseteq> set (x # zs @ pend)"
-    using assms was_already_in_pending_domain apply blast
-    using assms was_already_in_pending_domain apply blast
-    by auto
-  then show ?thesis using was_already_in_pending_larger_pend assms by presburger
-qed
-
-lemma was_already_in_pending_remove_from_pend:
-  assumes 
-    "was_already_in_pending_dom (cc, new_new_l, ys, (pending1 @ pending2 @ xs))"
-    "was_already_in_pending cc l ys ((a, b) # xs)"
-    "was_already_in_pending cc new_new_l [(a, b)] (pending1 @ pending2 @ xs)"
-    "c = lowest_common_ancestor (proof_forest cc) a b"
-    "(output1, new_l, pending1) = explain_along_path cc l a c"
-    "(output2, new_new_l, pending2) = explain_along_path cc new_l b c"
-    "\<forall>(a, b)\<in>set ys. a < nr_vars cc \<and> b < nr_vars cc"
-    "\<forall>(a, b)\<in>set ys. are_congruent cc (a \<approx> b)"
-    "cc_invar cc"
-  shows "was_already_in_pending cc new_new_l ys (pending1 @ pending2 @ xs)"
-  using assms proof(induction cc new_new_l ys "pending1 @ pending2 @ xs" 
-    arbitrary: rule: was_already_in_pending.pinduct)
-  case (1 cc l)
-  then show ?case 
-    by (simp add: was_already_in_pending.domintros(1) was_already_in_pending.psimps(1))
-next
-  case (2 cc new_new_l a' b' ys)
-  define c where "c = lowest_common_ancestor (proof_forest cc) a' b'"
-  obtain out1 pend1 out2 pend2
-    where defs: "(out1, pend1) = explain_along_path2 cc a' c"
-      "(out2, pend2) = explain_along_path2 cc b' c"
-    by (metis old.prod.exhaust)
-  have recursive: "was_already_in_pending cc new_new_l ((a', b') # ys) (pending1 @ pending2 @ xs)
-= ((a', b') \<in> set (pending1 @ pending2 @ xs) \<and> was_already_in_pending cc new_new_l ys (pending1 @ pending2 @ xs)) \<or> 
-         (out1 \<union> out2) \<subseteq> additional_uf_labels_set new_new_l (pf_labels cc)
-              \<and> was_already_in_pending cc new_new_l (pend1 @ pend2 @ ys) (pending1 @ pending2 @ xs)"
-    using 2(1) was_already_in_pending.psimps(2) defs c_def unfolding Let_def 
-    by auto
-  have waip_ys: "was_already_in_pending cc l ys ((a, b) # xs)" 
-    using 2(4,9,10,11) was_already_in_pending_append[of cc "[(a', b')]" ys] by auto
-  then have "was_already_in_pending cc new_new_l ys (pending1 @ pending2 @ xs)" 
-    using 2(2,5,6,7,8,9,10,11)
-    by simp
-  have dom: "was_already_in_pending_dom (cc, l, ((a', b') # ys), ((a, b) # xs))"
-    sorry
-  then have *: "((a', b') \<in> set ((a, b) # xs) \<and> was_already_in_pending cc l ys ((a, b) # xs)) \<or> 
-         (out1 \<union> out2) \<subseteq> additional_uf_labels_set l (pf_labels cc)
-              \<and> was_already_in_pending cc l (pend1 @ pend2 @ ys) ((a, b) # xs)"
-    using 2(1,4) was_already_in_pending.psimps(2) defs c_def unfolding Let_def
-    by auto
-  then show ?case 
-  proof(cases "((a', b') \<in> set ((a, b) # xs) \<and> was_already_in_pending cc l ys ((a, b) # xs))")
-    case True
-    have "was_already_in_pending cc new_new_l ys (pending1 @ pending2 @ xs)"
-      using 2(2,5,6,7,8,9,10,11) waip_ys by auto
-    then show ?thesis 
-    proof(cases "(a', b') = (a, b)")
-      case True': True
-      have "was_already_in_pending cc new_new_l ([(a', b')] @ ys) (pending1 @ pending2 @ xs) =
-    (was_already_in_pending cc new_new_l [(a', b')] (pending1 @ pending2 @ xs) \<and>
-     was_already_in_pending cc new_new_l ys (pending1 @ pending2 @ xs))"
-        using 2(9,10,11) was_already_in_pending_append[of cc "[(a', b')]" ys new_new_l "pending1 @ pending2 @ xs"]
-        by simp
-      then show ?thesis using True' 2(5)  
-        using \<open>was_already_in_pending cc new_new_l ys (pending1 @ pending2 @ xs)\<close> by auto
-    next
-      case False
-      have "(a', b') \<in> set (pending1 @ pending2 @ xs)" 
-        using False True by auto
-      then show ?thesis 
-        by (simp add: "2.hyps"(1) \<open>was_already_in_pending cc new_new_l ys (pending1 @ pending2 @ xs)\<close> was_already_in_pending.psimps(2))
-    qed
-  next
-    case False
-    then have *: "(out1 \<union> out2) \<subseteq> additional_uf_labels_set l (pf_labels cc)
-              \<and> was_already_in_pending cc l (pend1 @ pend2 @ ys) ((a, b) # xs)"
-      using * by blast
-    moreover have "\<forall>(a, b)\<in>set (pend1 @ pend2 @ ys). a < nr_vars cc \<and> b < nr_vars cc"
-      "\<forall>(a, b)\<in>set (pend1 @ pend2 @ ys). are_congruent cc (a \<approx> b)" sorry
-    ultimately have pend_rec: "was_already_in_pending cc new_new_l (pend1 @ pend2 @ ys) (pending1 @ pending2 @ xs)"
-      using 2(11,5,6,7,8) 2(3)[OF c_def] defs by blast
-    have "additional_uf_labels_set l (pf_labels cc) \<subseteq> additional_uf_labels_set new_new_l (pf_labels cc)"
-      using 2(6,7,8) sorry
-    then show ?thesis using 2(1,4) was_already_in_pending.psimps(2) defs c_def 
-        pend_rec * unfolding Let_def
-      by auto
-  qed
-qed
-
-lemma equations_of_l_in_pending_invar_was_already_in_pending_ab:
-  assumes "cc_invar cc"
-    "\<forall> (a, b) \<in> set ((a, b) # xs) . a < nr_vars cc \<and> b < nr_vars cc"
-    "\<forall> (a, b) \<in> set ((a, b) # xs) . are_congruent cc (a \<approx> b)"
-    "c = lowest_common_ancestor (proof_forest cc) a b"
-    "(output1, new_l, pending1) = explain_along_path cc l a c"
-    "(output2, new_new_l, pending2) = explain_along_path cc new_l b c"
-    "equations_of_l_in_pending_invar cc l ((a, b) # xs)"
-    "explain_list_invar l (proof_forest cc)"
-  shows "was_already_in_pending cc new_new_l [(a, b)] (pending1 @ pending2 @ xs)"
-proof-
-  have dom: "was_already_in_pending_dom (cc, new_new_l, [(a, b)], (pending1 @ pending2 @ xs))"
-    sorry
-  obtain output12 pending12 output22 pending22 where 
-    defs: "(output12, pending12) = explain_along_path2 cc a c"
-    "(output22, pending22) = explain_along_path2 cc b c"
-    by (metis old.prod.exhaust)
-  then have "was_already_in_pending cc new_new_l [(a, b)] (pending1 @ pending2 @ xs)
-= (((a, b) \<in> set (pending1 @ pending2 @ xs) \<and> was_already_in_pending cc new_new_l [] (pending1 @ pending2 @ xs)) \<or> 
-          (output12 \<union> output22) \<subseteq> additional_uf_labels_set new_new_l (pf_labels cc)
-              \<and> was_already_in_pending cc new_new_l (pending12 @ pending22 @ []) (pending1 @ pending2 @ xs)
-        )"
-    using assms(4) was_already_in_pending.psimps(2)[OF dom] defs dom unfolding Let_def 
-    by auto
-  then have "was_already_in_pending cc new_new_l [(a, b)] (pending1 @ pending2 @ xs)
-= (((a, b) \<in> set (pending1 @ pending2 @ xs)) \<or> 
-          (output12 \<union> output22) \<subseteq> additional_uf_labels_set new_new_l (pf_labels cc)
-              \<and> was_already_in_pending cc new_new_l (pending12 @ pending22) (pending1 @ pending2 @ xs)
-        )"
-    using was_already_in_pending.domintros was_already_in_pending.psimps(1) 
-    by auto
-  have "(output12 \<union> output22) \<subseteq> additional_uf_labels_set new_new_l (pf_labels cc)"
-    sorry
-  have dom2: "was_already_in_pending_dom (cc, new_new_l, (pending12 @ pending22), (pending1 @ pending2 @ xs))"
-    sorry
-  then have "was_already_in_pending cc new_new_l (pending12 @ pending22) (pending1 @ pending2 @ xs)"
-  proof(induction "cc" "new_new_l" "(pending12 @ pending22)" "(pending1 @ pending2 @ xs)" 
-      arbitrary: pending12 pending22 rule: was_already_in_pending.pinduct)
-    case (1 cc l pend)
-    then show ?case 
-      using was_already_in_pending.psimps(1) 
-      by auto
-  next
-    case (2 cc new_new_l a' b' list pending12)
-    have IH: "was_already_in_pending cc new_new_l (tl (pending12 @ pending22)) (pending1 @ pending2 @ xs)"
-      using 2(2,4) by (metis append_Nil2 list.sel(3))
-    then show ?case 
-    proof(cases "(a', b') \<in> set (pending1 @ pending2 @ xs)")
+  show "was_already_in_pending3 cc new_new_l x\<^sub>1 x\<^sub>2 (pending1 @ pending2 @ xs)"
+    unfolding was_already_in_pending3_def
+  proof- 
+    define c where "c = lowest_common_ancestor (proof_forest cc) x\<^sub>1 x\<^sub>2"
+    obtain output12 pending12 output22 pending22 where 
+      rec: "(output12, pending12) = explain_along_path2 cc x\<^sub>1 c"
+      "(output22, pending22) = explain_along_path2 cc x\<^sub>2 c" 
+      by (metis old.prod.exhaust)
+    have "was_already_in_pending3 cc new_new_l a b (pending1 @ pending2 @ xs)"
+      using equations_of_l_in_pending_invar3_a_b assms by simp
+    have "(x\<^sub>1, x\<^sub>2) \<in> set (pending1 @ pending2 @ xs) \<or>
+    (output12 \<union> output22 \<subseteq> additional_uf_labels_set new_new_l (pf_labels cc) \<and>
+        set pending12 \<union> set pending22 \<subseteq> additional_uf_pairs_set new_new_l (pf_labels cc))"
+    proof(cases "l ! n = n")
       case True
+      then have "(x\<^sub>1, x\<^sub>2) \<in> set (pending1 @ pending2)" sorry
       then show ?thesis 
-        using assms(4) was_already_in_pending.psimps(2) defs IH unfolding Let_def 
-        by (metis "2.hyps"(1) "2.hyps"(4) list.sel(3))
+        by auto
     next
       case False
-      then show ?thesis sorry
+      then have a_b: "x \<in> additional_uf_pairs_set l (pf_labels cc)" using n same_length 
+        unfolding additional_uf_pairs_set_def by auto
+      then have 1: "was_already_in_pending3 cc l x\<^sub>1 x\<^sub>2 ((a, b) # xs)"
+        using assms(2,3,7) n same_length eq unfolding equations_of_l_in_pending_invar3_def  
+        by blast
+      then have 2: "((x\<^sub>1, x\<^sub>2) \<in> set ((a, b) # xs)) \<or> (output12 \<union> output22 \<subseteq> additional_uf_labels_set l (pf_labels cc) \<and>
+      set pending12 \<union> set pending22 \<subseteq> additional_uf_pairs_set l (pf_labels cc))"
+        unfolding was_already_in_pending3_def Let_def using rec c_def by force
+      have subset: "additional_uf_labels_set l (pf_labels cc) \<subseteq> additional_uf_labels_set new_new_l (pf_labels cc)"
+        "additional_uf_pairs_set l (pf_labels cc) \<subseteq> additional_uf_pairs_set new_new_l (pf_labels cc)"
+        sorry
+      have append: "cc_explain_aux2 cc ((a, b) # xs) = cc_explain_aux2 cc [(a, b)] \<union> cc_explain_aux2 cc xs"
+        using cc_explain_aux2_app[of cc "[(a, b)]" xs] assms(1,2) 
+        by auto
+      have 0: "was_already_in_pending3 cc new_new_l a b (pending1 @ pending2 @ xs)"
+        using equations_of_l_in_pending_invar3_a_b assms by blast
+      consider "(x\<^sub>1, x\<^sub>2) = (a, b)" | "(x\<^sub>1, x\<^sub>2) \<in> set xs" | "output12 \<union> output22 \<subseteq> additional_uf_labels_set l (pf_labels cc) \<and>
+      set pending12 \<union> set pending22 \<subseteq> additional_uf_pairs_set l (pf_labels cc)"
+        by (meson "2" set_ConsD)
+      then show ?thesis proof(cases)
+        case 1
+        then show ?thesis using 0 unfolding was_already_in_pending3_def Let_def 
+          using c_def local.rec(1) local.rec(2) by force
+      next
+        case 2
+        then show ?thesis 
+          by force
+      next
+        case 3
+        then show ?thesis using subset 
+          by (meson subset_trans)
+      qed
     qed
-  qed
-
-  then show ?thesis 
-    using \<open>output12 \<union> output22 \<subseteq> additional_uf_labels_set new_new_l (pf_labels cc)\<close> \<open>was_already_in_pending cc new_new_l [(a, b)] (pending1 @ pending2 @ xs) = ((a, b) \<in> set (pending1 @ pending2 @ xs) \<or> output12 \<union> output22 \<subseteq> additional_uf_labels_set new_new_l (pf_labels cc) \<and> was_already_in_pending cc new_new_l (pending12 @ pending22) (pending1 @ pending2 @ xs))\<close> by blast
-qed
-
-lemma equations_of_l_in_pending_invar_invar:
-  assumes "cc_invar cc"
-    "\<forall> (a, b) \<in> set ((a, b) # xs) . a < nr_vars cc \<and> b < nr_vars cc"
-    "\<forall> (a, b) \<in> set ((a, b) # xs) . are_congruent cc (a \<approx> b)"
-    "c = lowest_common_ancestor (proof_forest cc) a b"
-    "(output1, new_l, pending1) = explain_along_path cc l a c"
-    "(output2, new_new_l, pending2) = explain_along_path cc new_l b c"
-    "equations_of_l_in_pending_invar cc l ((a, b) # xs)"
-    "explain_list_invar l (proof_forest cc)"
-  shows 
-    "equations_of_l_in_pending_invar cc new_new_l (pending1 @ pending2 @ xs)"
-  unfolding equations_of_l_in_pending_invar_def
-proof(standard, standard, standard, standard, standard, standard, standard, standard, standard, standard)
-  fix n a\<^sub>1 a\<^sub>2 a' b\<^sub>1 b\<^sub>2 b'
-  assume n: "n < length new_new_l" "new_new_l ! n \<noteq> n" 
-    "pf_labels cc ! n = Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> a') (F b\<^sub>1 b\<^sub>2 \<approx> b'))"
-  have same_length: "length l = length new_new_l" using assms sorry
-  have dom: "was_already_in_pending_dom (cc, new_new_l, [(a\<^sub>1, a\<^sub>2), (b\<^sub>1, b\<^sub>2)], (pending1 @ pending2 @ xs))"
-    using was_already_in_pending_domain sorry
-  have 0: "was_already_in_pending cc new_new_l [(a, b)] (pending1 @ pending2 @ xs)"
-    sorry (*! TODO*)
-  have valid_eqs: "\<forall> (a, b) \<in> set [(a\<^sub>1, a\<^sub>2), (b\<^sub>1, b\<^sub>2)] . a < nr_vars cc \<and> b < nr_vars cc"
-    "\<forall> (a, b) \<in> set [(a\<^sub>1, a\<^sub>2), (b\<^sub>1, b\<^sub>2)] . are_congruent cc (a \<approx> b)" sorry
-  then show "was_already_in_pending cc new_new_l [(a\<^sub>1, a\<^sub>2), (b\<^sub>1, b\<^sub>2)]
-        (pending1 @ pending2 @ xs)"
-  proof(cases "l ! n = n")
-    case True
-    then have a_b: "(a\<^sub>1, a\<^sub>2) \<in> set (pending1 @ pending2 @ xs)
-\<and> (b\<^sub>1, b\<^sub>2) \<in> set (pending1 @ pending2 @ xs)" sorry (*TODO*)
-    have dom: "was_already_in_pending_dom (cc, new_new_l, [(b\<^sub>1, b\<^sub>2)], (pending1 @ pending2 @ xs))"
-      sorry
-    then have "was_already_in_pending cc new_new_l [(b\<^sub>1, b\<^sub>2)] (pending1 @ pending2 @ xs)"
-      using a_b was_already_in_pending.psimps(2)
-      using was_already_in_pending.domintros(1) was_already_in_pending.psimps(1) by force
-    then show ?thesis using valid_eqs a_b valid_eqs was_already_in_pending_simp1[OF assms(1) valid_eqs] 
-      by blast
-  next
-    case False
-    then have 1: "was_already_in_pending cc l [(a\<^sub>1, a\<^sub>2), (b\<^sub>1, b\<^sub>2)] ((a, b) # xs)"
-      using assms(2,3,7) n same_length unfolding equations_of_l_in_pending_invar_def  
-      by metis
-    then have "was_already_in_pending cc new_new_l [(a\<^sub>1, a\<^sub>2), (b\<^sub>1, b\<^sub>2)] ((a, b) # xs)"
-      using was_already_in_pending_larger_l' valid_eqs assms 1
-      by auto
-    then have 2: "was_already_in_pending cc new_new_l [(a\<^sub>1, a\<^sub>2), (b\<^sub>1, b\<^sub>2)] ((a, b) # pending1 @ pending2 @ xs)"
-      using was_already_in_pending_larger_pend'[OF assms(1) valid_eqs, of new_new_l "(a, b)" xs "pending1 @ pending2"]
-        valid_eqs assms by auto
-    show ?thesis 
-      using was_already_in_pending_remove_from_pend 1 0 assms valid_eqs dom by blast 
+    then show "(x\<^sub>1, x\<^sub>2) \<in> set (pending1 @ pending2 @ xs) \<or>
+    (let c = lowest_common_ancestor (proof_forest cc) x\<^sub>1 x\<^sub>2; (output1, pending1) = explain_along_path2 cc x\<^sub>1 c;
+         (output2, pending2) = explain_along_path2 cc x\<^sub>2 c
+     in output1 \<union> output2 \<subseteq> additional_uf_labels_set new_new_l (pf_labels cc) \<and>
+        set pending1 \<union> set pending2 \<subseteq> additional_uf_pairs_set new_new_l (pf_labels cc))" 
+      unfolding was_already_in_pending3_def Let_def 
+      using c_def local.rec(1) local.rec(2) by force
   qed
 qed
-
-
 
 subsection \<open>Equivalence proof of \<open>cc_explain2\<close> and \<open>cc_explain\<close>\<close>
 
-subsubsection \<open>Equivalence of \<open>explain_along_path\<close> and \<open>explain_along_path2\<close>\<close>
+subsubsection \<open>Lemmata about \<open>cc_explain_along_path\<close> and \<open>cc_explain_along_path2\<close>\<close>
+
+
+lemma additional_uf_labels_set_fun_upd_l:
+  assumes "k \<noteq> pf ! k" "k < length l"
+  shows "additional_uf_labels_set (l[k := pf ! k]) pfl =
+additional_uf_labels_set l pfl \<union> pe_to_set (pfl ! k)"
+proof
+  show "additional_uf_labels_set (l[k := pf ! k]) pfl
+    \<subseteq> additional_uf_labels_set l pfl \<union> pe_to_set (pfl ! k)"
+  proof
+    fix x assume "x \<in> additional_uf_labels_set (l[k := pf ! k]) pfl"
+    then obtain i where i: "x \<in> pe_to_set (pfl ! i)" 
+      "i < length (l[k := pf ! k])" "l[k := pf ! k] ! i \<noteq> i" 
+      unfolding additional_uf_labels_set_def by auto
+    then show "x \<in> additional_uf_labels_set l pfl \<union> pe_to_set (pfl ! k)"
+    proof(cases "l ! i = i")
+      case True
+      with i show ?thesis unfolding additional_uf_labels_set_def 
+        by (metis (no_types, lifting) Un_iff nth_list_update_neq)
+    next
+      case False
+      then show ?thesis unfolding additional_uf_labels_set_def 
+        using i by auto
+    qed
+  qed
+next
+  show "additional_uf_labels_set l pfl \<union> pe_to_set (pfl ! k)
+    \<subseteq> additional_uf_labels_set (l[k := pf ! k]) pfl"
+  proof
+    fix x assume "x \<in> additional_uf_labels_set l pfl \<union> pe_to_set (pfl ! k)"
+    then show "x \<in> additional_uf_labels_set (l[k := pf ! k]) pfl"
+    proof
+      assume "x \<in> additional_uf_labels_set l pfl"
+      then obtain i where i: "x \<in> pe_to_set (pfl ! i)" "i < length l \<and> l ! i \<noteq> i"
+        unfolding additional_uf_labels_set_def by blast
+      then have "l[k := pf ! k] ! i \<noteq> i" using assms 
+        by (metis nth_list_update_eq nth_list_update_neq)
+      then show ?thesis unfolding additional_uf_labels_set_def 
+        using i(1) i(2) by auto
+    next
+      assume "x \<in> pe_to_set (pfl ! k)"
+      have "l[k := pf ! k] ! k \<noteq> k" 
+        using assms by simp
+      then show ?thesis unfolding additional_uf_labels_set_def
+        using \<open>x \<in> pe_to_set (pfl ! k)\<close> assms(2) length_list_update mem_Collect_eq by fastforce
+    qed
+  qed
+qed
+
+lemma additional_uf_labels_set_explain_along_path:
+  assumes "cc_invar cc"
+    "explain_list_invar l (proof_forest cc)"
+    "path (proof_forest cc) c p a"
+    "explain_along_path cc l a c = (output, new_l, pend)"
+  shows "additional_uf_labels_set new_l (pf_labels cc) = 
+additional_uf_labels_set l (pf_labels cc) \<union> output"
+  using assms proof(induction rule: explain_along_path_induct)
+  case (One cc l a c p1 p2 x x1 x11 x12 "output" new_l pend)
+  have "additional_uf_labels_set (l[rep_of l a := x]) (pf_labels cc)
+= additional_uf_labels_set l (pf_labels cc) \<union> pe_to_set (pf_labels cc ! rep_of l a)"
+    by (metis (no_types, lifting) One.hyps(3,4,5,8,9) additional_uf_labels_set_fun_upd_l explain_list_invar_def path_nodes_lt_length_l path_root rep_of_iff rep_of_less_length_l)
+  moreover have "pe_to_set (pf_labels cc ! rep_of l a) = {x1}" 
+    by (simp add: One.hyps(10))
+  ultimately show ?case 
+    by (simp add: One.IH)
+next
+  case (Two cc l a c p1 p2 x x21 x22 x\<^sub>1 x\<^sub>2 x' y\<^sub>1 y\<^sub>2 y "output" new_l pend)
+  have "additional_uf_labels_set (l[rep_of l a := x]) (pf_labels cc)
+= additional_uf_labels_set l (pf_labels cc) \<union> pe_to_set (pf_labels cc ! rep_of l a)"
+    by (metis (no_types, lifting) Two.hyps(3,4,5,8,9) additional_uf_labels_set_fun_upd_l explain_list_invar_def path_nodes_lt_length_l path_root rep_of_iff rep_of_less_length_l)
+  moreover have "pe_to_set (pf_labels cc ! rep_of l a) = {F x\<^sub>1 x\<^sub>2 \<approx> x', F y\<^sub>1 y\<^sub>2 \<approx> y}" 
+    by (simp add: Two.hyps(10-12))
+  ultimately show ?case 
+    by (simp add: Two.IH)
+qed simp
 
 lemma explain_along_path_parent_eq:
   assumes "cc_invar cc" 
@@ -1181,6 +738,312 @@ next
   qed
 qed
 
+lemma explain_along_path_new_l_unchanged:
+  assumes "cc_invar cc"
+    "explain_list_invar l (proof_forest cc)" 
+    "path (proof_forest cc) c p a"
+    "explain_along_path cc l a c = (output, new_l, pend)"
+    "l ! k \<noteq> k" "k < length l"
+  shows "new_l ! k = l ! k" 
+  using assms proof(induction rule: explain_along_path_induct)
+  case (One cc l a c p1 p2 x x1 x11 x12 "output" new_l pend)
+  have "l[rep_of l a := x] ! k \<noteq> k" 
+    by (metis One.hyps(3,9) One.prems(1,2) explain_list_invar_def nth_list_update_eq nth_list_update_neq)
+  then show ?case 
+    using One.IH One.hyps(3,6) One.prems(1,2) explain_list_invar_def by auto
+next
+  case (Two cc l a c p1 p2 x x21 x22 x\<^sub>1 x\<^sub>2 x' y\<^sub>1 y\<^sub>2 y "output" new_l pend)
+  have "l[rep_of l a := x] ! k \<noteq> k" 
+    by (metis Two.hyps(3,9) Two.prems(1,2) explain_list_invar_def nth_list_update_eq nth_list_update_neq)
+  then show ?case 
+    using Two.IH Two.hyps(3,6) Two.prems(1,2) explain_list_invar_def by auto
+qed blast
+
+lemma explain_along_path_explain_along_path2_output_subset:
+  assumes "cc_invar cc"
+    "path (proof_forest cc) c p a"
+    "explain_along_path2 cc a c = (output2, pend2)"
+    "explain_list_invar l (proof_forest cc)" 
+    "explain_along_path cc l a c = (output, new_l, pend)"
+  shows "output2 \<subseteq> additional_uf_labels_set new_l (pf_labels cc)"
+  using assms proof(induction arbitrary: l "output" new_l pend rule: explain_along_path2_induct)
+  case (base cc a c p)
+  then show ?case 
+    by (simp add: explain_along_path_simp1)
+next
+  case (One cc a c p1 p2 x x1 x11 x12 "output2" pend2)
+  then show ?case 
+  proof(cases "a = rep_of l a")
+    case True
+    obtain o_rec l_rec p_rec where
+      rec: "explain_along_path cc (l[rep_of l a := x]) x c = (o_rec, l_rec, p_rec)"
+      using prod_cases3 by blast
+    have invar: "explain_list_invar (l[rep_of l a := x]) (proof_forest cc)" 
+      using explain_list_invar_step[OF One(14)] One(2,7) proof_forest_invar_def 
+      by (metis One.hyps(3) One.prems(1) True explain_list_invar_def path_nodes_lt_length_l)
+    have *: "rep_of l a \<noteq> rep_of l c" using explain_list_invar_def One True 
+      by (metis path_nodes_lt_length_l path_pf_same_rep path_root proof_forest_invar_def rep_of_root) 
+    have "output = {x1} \<union> o_rec" "new_l = l_rec"
+      using explain_along_path_simp2[OF *] One rec 
+        explain_along_path_domain[OF One(2,14,3)] True by auto
+    have IH: "output2 \<subseteq> additional_uf_labels_set l_rec (pf_labels cc)"
+      using One(13) invar rec by blast
+    have "length l_rec = length l" "l_rec ! a = x"
+      using rec explain_along_path_new_l_length 
+       apply (metis One.hyps(2,3) One.prems(1,2) \<open>new_l = l_rec\<close>)
+      using rec explain_along_path_new_l_unchanged 
+      by (smt (verit) One.hyps(2-7) One.prems(1) True explain_list_invar_def invar nth_list_update_eq path_nodes_lt_length_l path_root)
+    then have "x1 \<in> pe_to_set (pf_labels cc ! a)" "a < length l_rec" "l_rec ! a \<noteq> a"
+        apply (simp add: One.hyps(8))
+      using One.hyps(3) One.prems(1) \<open>length l_rec = length l\<close> explain_list_invar_def path_nodes_lt_length_l apply fastforce
+      using One.hyps(3,6,7) \<open>l_rec ! a = x\<close> path_root by auto
+    then have "{x1} \<subseteq> additional_uf_labels_set l_rec (pf_labels cc)"
+      unfolding additional_uf_labels_set_def by auto
+    then show ?thesis 
+      using IH \<open>new_l = l_rec\<close> by simp
+  next
+    case False
+    then have *: "x = l ! a" 
+      by (metis (no_types, lifting) One.hyps(3,7) One.prems(1) explain_list_invar_def path_nodes_lt_length_l rep_of_refl)
+    have "length new_l = length l" "new_l ! a = x"
+      using explain_along_path_new_l_length 
+       apply (metis One.hyps(2,3) One.prems(1,2))
+      using * One 
+      by (smt (verit, del_insts) False explain_along_path_new_l_unchanged length_explain_list_cc_list path_nodes_lt_length_l rep_of_refl same_length_invar_def)
+    then have "x1 \<in> pe_to_set (pf_labels cc ! a)" "a < length new_l" "new_l ! a \<noteq> a"
+        apply (simp add: One.hyps(8))
+      using One.hyps(3) One.prems(1) \<open>length new_l = length l\<close> explain_list_invar_def path_nodes_lt_length_l apply auto[1]
+      using "*" False \<open>new_l ! a = x\<close> rep_of_refl by auto
+    then have "x1 \<in> additional_uf_labels_set new_l (pf_labels cc)"
+      unfolding additional_uf_labels_set_def by blast
+    have "explain_along_path cc l x c = explain_along_path cc l a c"
+      using "*" One.hyps(2) One.hyps(3) One.prems(1) explain_along_path_parent_eq by presburger
+    then show ?thesis
+      using One.IH One.hyps(2,3) One.prems(1,2) explain_along_path_parent_eq 
+      by (metis \<open>x1 \<in> additional_uf_labels_set new_l (pf_labels cc)\<close> insert_is_Un insert_subset)
+  qed
+next
+  case (Two cc a c p1 p2 x x21 x22 x\<^sub>1 x\<^sub>2 x' y\<^sub>1 y\<^sub>2 y "output2" pend2)
+  then show ?case 
+  proof(cases "a = rep_of l a")
+    case True
+    obtain o_rec l_rec p_rec where
+      rec: "explain_along_path cc (l[rep_of l a := x]) x c = (o_rec, l_rec, p_rec)"
+      using prod_cases3 by blast
+    have invar: "explain_list_invar (l[rep_of l a := x]) (proof_forest cc)" 
+      using explain_list_invar_step[OF Two(19)] Two(2,7) proof_forest_invar_def 
+      by (metis Two.hyps(3) Two.prems(1) True explain_list_invar_def path_nodes_lt_length_l)
+    have *: "rep_of l a \<noteq> rep_of l c" using explain_list_invar_def Two True 
+      by (metis path_nodes_lt_length_l path_pf_same_rep path_root proof_forest_invar_def rep_of_root) 
+    have "output = {x21, x22} \<union> o_rec" "new_l = l_rec"
+      using explain_along_path_simp3[OF *] Two rec 
+        explain_along_path_domain[OF Two(2,19,3)] True by auto
+    have IH: "output2 \<subseteq> additional_uf_labels_set l_rec (pf_labels cc)"
+      using Two(18) invar rec by blast
+    have "length l_rec = length l" "l_rec ! a = x"
+      using rec explain_along_path_new_l_length 
+       apply (metis Two.hyps(2,3) Two.prems(1,2) \<open>new_l = l_rec\<close>)
+      using rec explain_along_path_new_l_unchanged 
+      by (smt (verit) Two.hyps(2-7) Two.prems(1) True explain_list_invar_def invar nth_list_update_eq path_nodes_lt_length_l path_root)
+    then have "{x21, x22} \<subseteq> pe_to_set (pf_labels cc ! a)" "a < length l_rec" "l_rec ! a \<noteq> a"
+        apply (simp add: Two.hyps(8))
+      using Two.hyps(3) Two.prems(1) \<open>length l_rec = length l\<close> explain_list_invar_def path_nodes_lt_length_l apply fastforce
+      using Two.hyps(3,6,7) \<open>l_rec ! a = x\<close> path_root by auto
+    then have "{x21, x22} \<subseteq> additional_uf_labels_set l_rec (pf_labels cc)"
+      unfolding additional_uf_labels_set_def by auto
+    then show ?thesis 
+      using IH \<open>new_l = l_rec\<close> Two(9,10) by simp
+  next
+    case False
+    then have *: "x = l ! a" 
+      by (metis (no_types, lifting) Two.hyps(3,7) Two.prems(1) explain_list_invar_def path_nodes_lt_length_l rep_of_refl)
+    have "length new_l = length l" "new_l ! a = x"
+      using explain_along_path_new_l_length 
+       apply (metis Two.hyps(2,3) Two.prems(1,2))
+      using * Two 
+      by (smt (verit, del_insts) False explain_along_path_new_l_unchanged length_explain_list_cc_list path_nodes_lt_length_l rep_of_refl same_length_invar_def)
+    then have "{x21, x22} \<subseteq> pe_to_set (pf_labels cc ! a)" "a < length new_l" "new_l ! a \<noteq> a"
+        apply (simp add: Two.hyps(8))
+      using Two.hyps(3) Two.prems(1) \<open>length new_l = length l\<close> explain_list_invar_def path_nodes_lt_length_l apply auto[1]
+      using "*" False \<open>new_l ! a = x\<close> rep_of_refl by auto
+    then have "{x21, x22} \<subseteq> additional_uf_labels_set new_l (pf_labels cc)"
+      unfolding additional_uf_labels_set_def by blast
+    have "explain_along_path cc l x c = explain_along_path cc l a c"
+      using "*" Two.hyps(2,3) Two.prems(1) explain_along_path_parent_eq by presburger
+    then show ?thesis
+      using Two.IH Two.hyps(2,3) Two.prems(1,2) explain_along_path_parent_eq Two(9,10)
+      by (metis Un_least \<open>{x21, x22} \<subseteq> additional_uf_labels_set new_l (pf_labels cc)\<close>)
+  qed
+qed
+
+lemma explain_along_path_explain_along_path2_pending_subset:
+  assumes "cc_invar cc"
+    "path (proof_forest cc) c p a"
+    "explain_along_path2 cc a c = (output2, pend2)"
+    "explain_list_invar l (proof_forest cc)" 
+    "explain_along_path cc l a c = (output, new_l, pend)"
+  shows "set pend2 \<subseteq> additional_uf_pairs_set new_l (pf_labels cc)"
+  using assms proof(induction arbitrary: l "output" new_l pend rule: explain_along_path2_induct)
+  case (base cc a c p)
+  then show ?case 
+    by (simp add: explain_along_path_simp1)
+next
+  case (One cc a c p1 p2 x x1 x11 x12 "output2" pend2)
+  then show ?case 
+  proof(cases "a = rep_of l a")
+    case True
+    obtain o_rec l_rec p_rec where
+      rec: "explain_along_path cc (l[rep_of l a := x]) x c = (o_rec, l_rec, p_rec)"
+      using prod_cases3 by blast
+    have invar: "explain_list_invar (l[rep_of l a := x]) (proof_forest cc)" 
+      using explain_list_invar_step[OF One(14)] One(2,7) proof_forest_invar_def 
+      by (metis One.hyps(3) One.prems(1) True explain_list_invar_def path_nodes_lt_length_l)
+    have *: "rep_of l a \<noteq> rep_of l c" using explain_list_invar_def One True 
+      by (metis path_nodes_lt_length_l path_pf_same_rep path_root proof_forest_invar_def rep_of_root) 
+    have "new_l = l_rec"
+      using explain_along_path_simp2[OF *] One rec 
+        explain_along_path_domain[OF One(2,14,3)] True by auto
+    have IH: "set pend2 \<subseteq> additional_uf_pairs_set l_rec (pf_labels cc)"
+      using One(13) invar rec by blast
+    show ?thesis 
+      using IH \<open>new_l = l_rec\<close> by simp
+  next
+    case False
+    then have *: "x = l ! a" 
+      by (metis (no_types, lifting) One.hyps(3,7) One.prems(1) explain_list_invar_def path_nodes_lt_length_l rep_of_refl)
+    then have "explain_along_path cc l x c = explain_along_path cc l a c"
+      using One.hyps(2) One.hyps(3) One.prems(1) explain_along_path_parent_eq by presburger
+    then show ?thesis
+      using One.IH One.hyps(2,3) One.prems(1,2) explain_along_path_parent_eq 
+      by metis
+  qed
+next
+  case (Two cc a c p1 p2 x x21 x22 x\<^sub>1 x\<^sub>2 x' y\<^sub>1 y\<^sub>2 y "output2" pend2)
+  then show ?case 
+  proof(cases "a = rep_of l a")
+    case True
+    obtain o_rec l_rec p_rec where
+      rec: "explain_along_path cc (l[rep_of l a := x]) x c = (o_rec, l_rec, p_rec)"
+      using prod_cases3 by blast
+    have invar: "explain_list_invar (l[rep_of l a := x]) (proof_forest cc)" 
+      using explain_list_invar_step[OF Two(19)] Two(2,7) proof_forest_invar_def 
+      by (metis Two.hyps(3) Two.prems(1) True explain_list_invar_def path_nodes_lt_length_l)
+    have *: "rep_of l a \<noteq> rep_of l c" using explain_list_invar_def Two True 
+      by (metis path_nodes_lt_length_l path_pf_same_rep path_root proof_forest_invar_def rep_of_root) 
+    have "new_l = l_rec" "pend = [(x\<^sub>1, y\<^sub>1), (x\<^sub>2, y\<^sub>2)] @ p_rec"
+      using explain_along_path_simp3[OF *] Two rec 
+        explain_along_path_domain[OF Two(2,19,3)] True by auto
+    have IH: "set pend2 \<subseteq> additional_uf_pairs_set l_rec (pf_labels cc)"
+      using Two(18) invar rec by blast
+    have "length l_rec = length l" "l_rec ! a = x" "{(x\<^sub>1, y\<^sub>1), (x\<^sub>2, y\<^sub>2)} \<subseteq> pending_pairs (pf_labels cc ! a)"
+      using rec explain_along_path_new_l_length 
+       apply (metis Two.hyps(2,3) Two.prems(1,2) \<open>new_l = l_rec\<close>)
+      using rec explain_along_path_new_l_unchanged 
+       apply (smt (verit) Two.hyps(2-7) Two.prems(1) True explain_list_invar_def invar nth_list_update_eq path_nodes_lt_length_l path_root)
+      by (simp add: Two.hyps(8-10))
+    then have "{(x\<^sub>1, y\<^sub>1), (x\<^sub>2, y\<^sub>2)} \<subseteq> additional_uf_pairs_set l_rec (pf_labels cc)"
+      unfolding additional_uf_pairs_set_def 
+      by (smt (verit, del_insts) Sup_upper2 True Two.hyps(3) Two.hyps(6) Two.hyps(7) Two.hyps(8) \<open>new_l = l_rec\<close> explain_list_invar_def insert_Collect invar length_list_update mem_Collect_eq path_no_root path_nodes_lt_length_l singleton_conv)
+    then show ?thesis 
+      using IH \<open>new_l = l_rec\<close> by simp
+  next
+    case False
+    then have *: "x = l ! a" 
+      by (metis (no_types, lifting) Two.hyps(3,7) Two.prems(1) explain_list_invar_def path_nodes_lt_length_l rep_of_refl)
+    have "length new_l = length l" "new_l ! a = x"
+      using explain_along_path_new_l_length 
+       apply (metis Two.hyps(2,3) Two.prems(1,2))
+      using * Two 
+      by (smt (verit, del_insts) False explain_along_path_new_l_unchanged length_explain_list_cc_list path_nodes_lt_length_l rep_of_refl same_length_invar_def)
+    then have "{(x\<^sub>1, y\<^sub>1), (x\<^sub>2, y\<^sub>2)} \<subseteq> pending_pairs (pf_labels cc ! a)" "a < length new_l" "new_l ! a \<noteq> a"
+        apply (simp add: Two.hyps(8-10))
+      using Two.hyps(3) Two.prems(1) \<open>length new_l = length l\<close> explain_list_invar_def path_nodes_lt_length_l apply auto[1]
+      using "*" False \<open>new_l ! a = x\<close> rep_of_refl by auto
+    then have "{(x\<^sub>1, y\<^sub>1), (x\<^sub>2, y\<^sub>2)} \<subseteq> additional_uf_pairs_set new_l (pf_labels cc)"
+      unfolding additional_uf_pairs_set_def by blast
+    have "explain_along_path cc l x c = explain_along_path cc l a c"
+      using "*" Two.hyps(2,3) Two.prems(1) explain_along_path_parent_eq by presburger
+    then show ?thesis
+      using Two.IH Two.hyps(2,3) Two.prems(1,2) explain_along_path_parent_eq Two(9,10)
+      using \<open>{(x\<^sub>1, y\<^sub>1), (x\<^sub>2, y\<^sub>2)} \<subseteq> additional_uf_pairs_set new_l (pf_labels cc)\<close> by auto
+  qed
+qed
+
+lemma explain_along_path_explain_along_path2_output_supset:
+  assumes "cc_invar cc"
+    "path (proof_forest cc) c p a"
+    "explain_along_path2 cc a c = (output2, pend2)"
+    "explain_list_invar l (proof_forest cc)" 
+    "explain_along_path cc l a c = (output, new_l, pend)"
+  shows "output2 \<supseteq> output"
+  using assms proof(induction arbitrary: l "output" new_l pend rule: explain_along_path2_induct)
+  case (base cc a c p)
+  then show ?case 
+    by (simp add: explain_along_path_simp1)
+next
+  case (One cc a c p1 p2 x x1 x11 x12 "output2" pend2)
+  then show ?case 
+  proof(cases "a = rep_of l a")
+    case True
+    obtain o_rec l_rec p_rec where
+      rec: "explain_along_path cc (l[rep_of l a := x]) x c = (o_rec, l_rec, p_rec)"
+      using prod_cases3 by blast
+    have invar: "explain_list_invar (l[rep_of l a := x]) (proof_forest cc)" 
+      using explain_list_invar_step[OF One(14)] One(2,7) proof_forest_invar_def 
+      by (metis One.hyps(3) One.prems(1) True explain_list_invar_def path_nodes_lt_length_l)
+    have *: "rep_of l a \<noteq> rep_of l c" using explain_list_invar_def One True 
+      by (metis path_nodes_lt_length_l path_pf_same_rep path_root proof_forest_invar_def rep_of_root) 
+    have "output = {x1} \<union> o_rec" 
+      using explain_along_path_simp2[OF *] One rec 
+        explain_along_path_domain[OF One(2,14,3)] True by simp
+    have IH: "output2 \<supseteq> o_rec"
+      using One(13) invar rec by blast
+    show ?thesis 
+      using IH \<open>output = {x1} \<union> o_rec\<close> by auto
+  next
+    case False
+    then have "x = l ! a" 
+      by (metis (no_types, lifting) One.hyps(3,7) One.prems(1) explain_list_invar_def path_nodes_lt_length_l rep_of_refl)
+    then have "explain_along_path cc l x c = explain_along_path cc l a c"
+      using One.hyps(2) One.hyps(3) One.prems(1) explain_along_path_parent_eq by presburger
+    then show ?thesis
+      using One.IH One.hyps(2,3) One.prems(1,2) explain_along_path_parent_eq 
+      by (metis Un_insert_left insert_iff subsetI subset_trans sup_bot_left)
+  qed
+next
+  case (Two cc a c p1 p2 x x21 x22 x\<^sub>1 x\<^sub>2 x' y\<^sub>1 y\<^sub>2 y "output2" pend2)
+  then show ?case 
+  proof(cases "a = rep_of l a")
+    case True
+    obtain o_rec l_rec p_rec where
+      rec: "explain_along_path cc (l[rep_of l a := x]) x c = (o_rec, l_rec, p_rec)"
+      using prod_cases3 by blast
+    have invar: "explain_list_invar (l[rep_of l a := x]) (proof_forest cc)" 
+      using explain_list_invar_step[OF Two(19)] Two(2,7) proof_forest_invar_def 
+      by (metis Two.hyps(3) Two.prems(1) True explain_list_invar_def path_nodes_lt_length_l)
+    have *: "rep_of l a \<noteq> rep_of l c" using explain_list_invar_def Two True 
+      by (metis path_nodes_lt_length_l path_pf_same_rep path_root proof_forest_invar_def rep_of_root) 
+    have "output = {x21, x22} \<union> o_rec"
+      using explain_along_path_simp3[OF *] Two rec 
+        explain_along_path_domain[OF Two(2,19,3)] True by simp
+    have IH: "output2 \<supseteq> o_rec"
+      using Two(18) invar rec by blast
+    then show ?thesis 
+      using IH \<open>output = {x21, x22} \<union> o_rec\<close> Two(9,10) by blast
+  next
+    case False
+    then have "x = l ! a" 
+      by (metis (no_types, lifting) Two.hyps(3,7) Two.prems(1) explain_list_invar_def path_nodes_lt_length_l rep_of_refl)
+    then have "explain_along_path cc l x c = explain_along_path cc l a c"
+      using Two.hyps(2,3) Two.prems(1) explain_along_path_parent_eq by presburger
+    then show ?thesis
+      using Two.IH Two.hyps(2,3) Two.prems(1,2) explain_along_path_parent_eq Two(9,10)
+      by (metis le_supI2)
+  qed
+qed
+
+subsubsection \<open>Equivalence of \<open>explain_along_path\<close> and \<open>explain_along_path2\<close>\<close>
+
 thm was_already_in_pending.pinduct
 lemma cc_explain_aux_cc_explain_aux2_equivalence:
   assumes "was_already_in_pending_dom (cc, l, xs2, xs)"
@@ -1188,12 +1051,13 @@ lemma cc_explain_aux_cc_explain_aux2_equivalence:
     "\<forall> (a, b) \<in> set xs2 . a < nr_vars cc \<and> b < nr_vars cc"
     "\<forall> (a, b) \<in> set xs2 . are_congruent cc (a \<approx> b)"
     "\<forall> (a, b) \<in> set xs . a < nr_vars cc \<and> b < nr_vars cc"
+    "\<forall> (a, b) \<in> set xs . are_congruent cc (a \<approx> b)"
     "explain_list_invar l (proof_forest cc)" 
+    "equations_of_l_in_pending_invar3 cc l xs" 
     "set xs2 \<subseteq> set xs \<union> additional_uf_pairs_set l (pf_labels cc)"
     "subseq xs xs2"
   shows "cc_explain_aux2 cc xs2 \<subseteq>
-cc_explain_aux cc l xs \<union> additional_uf_labels_set l (pf_labels cc)
-\<union> \<Union>(cc_explain_aux2 cc ` (\<lambda> x . [x]) ` (additional_uf_pairs_set l (pf_labels cc)))"
+cc_explain_aux cc l xs \<union> additional_uf_labels_set l (pf_labels cc)"
   using assms proof(induction arbitrary: xs l rule: was_already_in_pending.pinduct)
   case (1 cc l pend)
   then show ?case by (simp add: cc_explain_aux2_simp1)
@@ -1201,12 +1065,17 @@ next
   case (2 cc l a b xs2 xs)
   define c where "c = lowest_common_ancestor (proof_forest cc) a b"
   obtain output12 output22 pending12 pending22 where 
-    defs: "(output12, pending12) = explain_along_path2 cc a c"
-    "(output22, pending22) = explain_along_path2 cc b c"
+    defs: "explain_along_path2 cc a c = (output12, pending12)"
+    "explain_along_path2 cc b c = (output22, pending22)"
     by (metis old.prod.exhaust)
-  have are_congruent: 
+  obtain p1 p2 where path: "path (proof_forest cc) c p1 a"
+"path (proof_forest cc) c p2 b"
+    using c_def lowest_common_ancestor_correct 2(4,5,6) proof_forest_invar_def 
+same_length_invar_def are_congruent_rep_of by fastforce
+  then have are_congruent: 
     "\<forall>a\<in>set (pending12 @ pending12 @ xs). case a of (a, b) \<Rightarrow> are_congruent cc (a \<approx> b)"
-    sorry
+    using explain_along_path2_pending' 2(8) 2(4) defs
+    by fastforce
   have dom: "cc_explain_aux2_dom (cc, (a, b) # xs2)" using cc_explain_aux2_domain 
     by (simp add: "2.prems"(1) "2.prems"(2))
   then have rec': "cc_explain_aux2 cc ((a, b) # xs2) =
@@ -1216,25 +1085,59 @@ output12 \<union> output22 \<union> cc_explain_aux2 cc (pending12 @ pending22 @ 
   proof(cases "xs = (a, b) # tl xs")
     case True
       (* The current pair that we consider is both in xs and in xs2 *)
-    from c_def explain_along_path_lowest_common_ancestor[OF 2(4) _ _ _ c_def] 2(4,5,6) 
-    obtain p1 p2 where path: "path (proof_forest cc) c p1 a"
-      "path (proof_forest cc) c p2 b" 
-      by auto
     obtain output1 new_l pending1 output2 new_new_l pending2 where rec: 
       "explain_along_path cc l a c = (output1, new_l, pending1)"
       "explain_along_path cc new_l b c = (output2, new_new_l, pending2)"
       by (meson prod_cases3)
     have "cc_explain_aux_dom (cc, l, ((a, b) # tl xs))" 
-      using cc_explain_aux_domain[OF 2(4,8)] 2(7) True by simp
+      using cc_explain_aux_domain[OF 2(4,9)] 2(7) True by simp
     then have cc_explain_aux: "cc_explain_aux cc l ((a, b) # tl xs) = output1 \<union> output2
 \<union> cc_explain_aux cc new_new_l (pending1 @ pending2 @ tl xs)" 
       using cc_explain_aux_simp2 2(1,7,8) rec "2.prems"(3) c_def case_prodD list.set_intros(1) by auto
-    have supset: "output12 \<supseteq> output1" "output22 \<supseteq> output2" sorry
-    have add_uf_new_l: "additional_uf_labels_set new_new_l (pf_labels cc)
-= additional_uf_labels_set l (pf_labels cc) \<union> output1 \<union> output2" sorry
+    have eli: "explain_list_invar new_l (proof_forest cc)" using explain_list_invar_explain_along_path' 
+      using "2.prems"(1) "2.prems"(6) explain_along_path_domain local.rec(1) path(1) by blast
+have *: "\<forall> (a, b) \<in> set pending12 . a < nr_vars cc \<and> b < nr_vars cc"
+"\<forall> (a, b) \<in> set pending22 . a < nr_vars cc \<and> b < nr_vars cc"
+"\<forall> (a, b) \<in> set pending12 . are_congruent cc (a \<approx> b)"
+"\<forall> (a, b) \<in> set pending22 . are_congruent cc (a \<approx> b)"
+"\<forall> (a, b) \<in> set pending1 . a < nr_vars cc \<and> b < nr_vars cc"
+"\<forall> (a, b) \<in> set pending2 . a < nr_vars cc \<and> b < nr_vars cc"
+"\<forall> (a, b) \<in> set pending1 . are_congruent cc (a \<approx> b)"
+"\<forall> (a, b) \<in> set pending2 . are_congruent cc (a \<approx> b)"
+        using 2(4) explain_along_path2_pending_in_bounds defs path explain_along_path2_pending_are_congruent
+explain_along_path_pending_in_bounds 
+             apply blast+
+        using explain_along_path_pending_in_bounds path 2(4,9) 
+         apply (simp add: local.rec eli)
+        using explain_along_path_pending_in_bounds path 2(4,9) 
+        using case_prodI2 eli local.rec(2) snd_conv apply simp
+        using explain_along_path_pending_are_congruent  path 2(4,9)  
+        using local.rec(1) apply presburger
+using explain_along_path_pending_are_congruent  path 2(4,9) eli local.rec(2) by blast 
+      then have in_bounds: "\<forall> (a, b) \<in> set (pending12 @ pending22 @ xs2) . a < nr_vars cc \<and> b < nr_vars cc"
+        "\<forall> (a, b) \<in> set (pending12 @ pending22 @ xs2) . are_congruent cc (a \<approx> b)"
+        "\<forall> (a, b) \<in> set (pending1 @ pending2 @ tl xs) . a < nr_vars cc \<and> b < nr_vars cc" 
+        "\<forall> (a, b) \<in> set (pending1 @ pending2 @ tl xs) . are_congruent cc (a \<approx> b)" 
+        "explain_list_invar new_new_l (proof_forest cc)" 
+        using 2(5,6) apply auto[2]
+        using * 2(7,8) apply (metis UnE in_set_tlD set_union_code)
+        using * 2(7,8) apply (metis UnE in_set_tlD set_union_code)
+        using eli explain_list_invar_explain_along_path' 
+        using "2.prems"(1) explain_along_path_domain local.rec(2) path(2) by blast
+      from eli have supset: "output12 \<supseteq> output1" "output22 \<supseteq> output2" 
+      using explain_along_path_explain_along_path2_output_supset defs path 2 rec 
+      by metis+
+    have add_uf_new_l': "additional_uf_labels_set new_l (pf_labels cc)
+= additional_uf_labels_set l (pf_labels cc) \<union> output1" 
+      "additional_uf_labels_set new_new_l (pf_labels cc)
+= additional_uf_labels_set new_l (pf_labels cc) \<union> output2"
+      using additional_uf_labels_set_explain_along_path  
+      using "2.prems"(1) "2.prems"(6) local.rec path eli by auto
+    then have add_uf_new_l: "additional_uf_labels_set new_new_l (pf_labels cc)
+= additional_uf_labels_set l (pf_labels cc) \<union> output1 \<union> output2" 
+      by simp
     have *: "output12 \<union> output22
-    \<subseteq> cc_explain_aux cc l xs \<union> additional_uf_labels_set l (pf_labels cc) \<union>
-       \<Union> (cc_explain_aux2 cc ` (\<lambda>x. [x]) ` additional_uf_pairs_set l (pf_labels cc))" 
+    \<subseteq> cc_explain_aux cc l xs \<union> additional_uf_labels_set l (pf_labels cc)" 
     proof-
       (* The output of explain2 is bigger than the output of explain, but
 all the equations that are in explain2 are also present in new_new_l *)
@@ -1242,70 +1145,91 @@ all the equations that are in explain2 are also present in new_new_l *)
         "output22 \<subseteq> output2 \<union> additional_uf_labels_set new_l (pf_labels cc)" 
         "output1 \<union> additional_uf_labels_set l (pf_labels cc) = 
 additional_uf_labels_set new_l (pf_labels cc)" 
-        sorry
+        using add_uf_new_l' explain_along_path_explain_along_path2_output_subset[OF 2(4) path(1) _ 2(9)] rec defs path 
+          apply blast
+        using add_uf_new_l' explain_along_path_explain_along_path2_output_subset[OF 2(4) path(2) _ eli] rec defs path 
+         apply blast
+        using add_uf_new_l' by blast
       then show ?thesis 
         using cc_explain_aux supset add_uf_new_l True by auto
     qed
     have "cc_explain_aux2 cc (pending12 @ pending22 @ xs2)
-\<subseteq> cc_explain_aux cc l xs \<union> additional_uf_labels_set l (pf_labels cc) \<union>
-       \<Union> (cc_explain_aux2 cc ` (\<lambda>x. [x]) ` additional_uf_pairs_set l (pf_labels cc))"
+\<subseteq> cc_explain_aux cc l xs \<union> additional_uf_labels_set l (pf_labels cc)"
       (* The pending list of explain2 is longer than the pending list of explain.
 We can use the induction hypothesis to show the thesis. *)
     proof-
-      have in_bounds: "\<forall> (a, b) \<in> set (pending12 @ pending22 @ xs2) . a < nr_vars cc \<and> b < nr_vars cc"
-        "\<forall> (a, b) \<in> set (pending12 @ pending22 @ xs2) . are_congruent cc (a \<approx> b)"
-        "\<forall> (a, b) \<in> set (pending1 @ pending2 @ tl xs) . a < nr_vars cc \<and> b < nr_vars cc" 
-        "explain_list_invar new_new_l (proof_forest cc)" sorry
-      have "set (pending12 @ pending22 @ xs2)
+      have invar_eofip: "equations_of_l_in_pending_invar3 cc new_new_l (pending1 @ pending2 @ tl xs)"
+        using equations_of_l_in_pending_invar3_invar c_def rec "2.prems" True by metis
+(*TODO: What if (a, b) is in xs2 but not in tl xs ! !*)
+      then show ?thesis
+      proof(cases "(a, b) \<in> set (tl xs)")
+        case True': True
+        have "set xs = set (tl xs) \<union> {(a, b)}"
+"set ((a, b) # xs2) = set xs2 \<union> {(a,b)}" using "2.prems"(8) True 
+           apply (metis Un_insert_right list.simps(15) sup_bot_right)
+          by auto
+        then have "set xs2 \<subseteq> set (tl xs) \<union> additional_uf_pairs_set l (pf_labels cc)" 
+          using "2.prems"(8) True True' by blast
+have aups_n_l: "additional_uf_pairs_set new_l (pf_labels cc) = 
+additional_uf_pairs_set l (pf_labels cc) \<union> set pending1" sorry
+        have aups_n_n_l: "additional_uf_pairs_set new_new_l (pf_labels cc) = 
+additional_uf_pairs_set l (pf_labels cc) \<union> set pending1 \<union> set pending2"
+          sorry
+
+        have pending_subset: "set pending12 \<subseteq> additional_uf_pairs_set new_l (pf_labels cc)"
+"set pending22 \<subseteq> additional_uf_pairs_set new_new_l (pf_labels cc)"
+          using explain_along_path_explain_along_path2_pending_subset[OF 2(4) path(1) defs(1)] 
+          using "2.prems"(6) rec(1) apply blast
+          using explain_along_path_explain_along_path2_pending_subset[OF 2(4) path(2) defs(2)] 
+          using eli rec(2) by blast
+        have pending_subseq: "subseq pending1 pending12" "subseq pending2 pending22" "subseq (tl xs) xs2"
+          using explain_along_path_explain_along_path2_pending_subseq 2(4) path(1) defs(1) "2.prems"(6) rec(1) 
+            apply blast
+          using explain_along_path_explain_along_path2_pending_subseq 2(4) path(2) defs(2) eli rec(2) 
+           apply blast
+          using 2(12) by (metis True subseq_Cons2')
+        have "set xs2 \<subseteq> set (tl xs) \<union> additional_uf_pairs_set l (pf_labels cc)" 
+          using True 2(11) by (simp add: \<open>set xs2 \<subseteq> set (tl xs) \<union> additional_uf_pairs_set l (pf_labels cc)\<close>)
+        then have "set (pending12 @ pending22 @ xs2)
     \<subseteq> set (pending1 @ pending2 @ tl xs) \<union> additional_uf_pairs_set new_new_l (pf_labels cc)" 
-        "subseq (pending1 @ pending2 @ tl xs) (pending12 @ pending22 @ xs2)" sorry
-      then have IH: "cc_explain_aux2 cc (pending12 @ pending22 @ xs2)
+        "subseq (pending1 @ pending2 @ tl xs) (pending12 @ pending22 @ xs2)" 
+          using pending_subset aups_n_l aups_n_n_l apply auto[1]
+          using pending_subseq by (simp add: list_emb_append_mono)
+        then have IH: "cc_explain_aux2 cc (pending12 @ pending22 @ xs2)
 \<subseteq> cc_explain_aux cc new_new_l (pending1 @ pending2 @ tl xs) \<union> 
-additional_uf_labels_set new_new_l (pf_labels cc) \<union> 
-\<Union> (cc_explain_aux2 cc ` (\<lambda>x. [x]) ` additional_uf_pairs_set new_new_l (pf_labels cc))"
-        using 2(3)[OF c_def defs(1) _ defs(2) _ 2(4) in_bounds]
+additional_uf_labels_set new_new_l (pf_labels cc)"
+        using 2(3) c_def defs 2(4) in_bounds invar_eofip 
         by metis
+      then show ?thesis 
+        using IH True add_uf_new_l cc_explain_aux by auto
+      next
+        case False
+        define xs2' where "xs2' = removeAll (a, b) xs2"
+        have "cc_explain_aux2 cc ((a, b) # xs2') = cc_explain_aux2 cc ((a, b) # xs2)"
+          sorry
+        have "subseq xs xs2'" using False "2.prems"(9) xs2'_def sorry
+have in_bounds': "\<forall> (a, b) \<in> set (pending12 @ pending22 @ xs2') . a < nr_vars cc \<and> b < nr_vars cc"
+        "\<forall> (a, b) \<in> set (pending12 @ pending22 @ xs2') . are_congruent cc (a \<approx> b)" sorry
+        then have "set (pending12 @ pending22 @ xs2')
+    \<subseteq> set (pending1 @ pending2 @ tl xs) \<union> additional_uf_pairs_set new_new_l (pf_labels cc)" 
+        "subseq (pending1 @ pending2 @ tl xs) (pending12 @ pending22 @ xs2')" 
+          using "2.prems"(8) sorry
+        then have IH: "cc_explain_aux2 cc (pending12 @ pending22 @ xs2')
+\<subseteq> cc_explain_aux cc new_new_l (pending1 @ pending2 @ tl xs) \<union> 
+additional_uf_labels_set new_new_l (pf_labels cc)"
+          using 2(3)[OF ] c_def defs 2(4) in_bounds(3-) invar_eofip in_bounds' 
+          sorry
       have "additional_uf_pairs_set new_new_l (pf_labels cc) = 
 additional_uf_pairs_set l (pf_labels cc) \<union> set pending1 \<union> set pending2"
         sorry
-      have cc_explain_aux2_union: "\<Union>(cc_explain_aux2 cc ` (\<lambda>x. [x]) ` (set pending1 \<union> set pending2))
-= cc_explain_aux2 cc (pending1 @ pending2)" 
-        "\<Union> (cc_explain_aux2 cc ` (\<lambda>x. [x]) ` additional_uf_pairs_set new_new_l (pf_labels cc))
-= \<Union>(cc_explain_aux2 cc ` (\<lambda>x. [x]) ` additional_uf_pairs_set l (pf_labels cc)) \<union> 
-\<Union>(cc_explain_aux2 cc ` (\<lambda>x. [x]) ` (set pending1 \<union> set pending2))" 
-        sorry
-      have "\<Union>(cc_explain_aux2 cc ` (\<lambda>x. [x]) ` (set pending1 \<union> set pending2))
-\<subseteq> cc_explain_aux2 cc (pending12 @ pending22 @ xs2)" sorry
-      have "cc_invar cc"
-    "\<forall> (a, b) \<in> set (pending1 @ pending2) . a < nr_vars cc \<and> b < nr_vars cc" 
-         "\<forall> (a, b) \<in> set (pending1 @ pending2) . are_congruent cc (a \<approx> b)" sorry
-      then have "cc_explain_aux2 cc (pending1 @ pending2) \<subseteq> 
-cc_explain_aux cc l xs \<union> additional_uf_labels_set l (pf_labels cc) \<union>
-       \<Union> (cc_explain_aux2 cc ` (\<lambda>x. [x]) ` additional_uf_pairs_set l (pf_labels cc))"
-        using "2.prems"(3-) proof(induction cc "pending1 @ pending2" 
-arbitrary: pending1 pending2 rule: cc_explain_aux2_induct)
-      case (base cc)
-      then show ?case 
-        using cc_explain_aux2.psimps by auto
-    next
-      case (congruent cc a' b' pending12 c' output12' pending12' output22' pending22')
-      have IH: "cc_explain_aux2 cc (pending12' @ pending22' @ pending12)
-    \<subseteq> cc_explain_aux cc l xs \<union> additional_uf_labels_set l (pf_labels cc) \<union>
-       \<Union> (cc_explain_aux2 cc ` (\<lambda>x. [x]) ` additional_uf_pairs_set l (pf_labels cc))"
-        sorry
-      have "output12' \<union> output22' \<subseteq> cc_explain_aux cc l xs \<union> additional_uf_labels_set l (pf_labels cc) \<union>
-       \<Union> (cc_explain_aux2 cc ` (\<lambda>x. [x]) ` additional_uf_pairs_set l (pf_labels cc))" sorry (* TODOOO*)
-      then show ?case sorry
-    next
-      case (not_congruent cc a' b' pending12)
-      then show ?case 
-        by (metis case_prod_conv list.set_intros(1))
+      then show ?thesis 
+        using IH True add_uf_new_l cc_explain_aux sorry
+      qed
+
+
+
     qed
-      then show ?thesis using IH cc_explain_aux True add_uf_new_l cc_explain_aux2_union 
-        by auto
-    qed
-    then show ?thesis 
-      by (metis Un_subset_iff * rec')
+    then show ?thesis using defs c_def rec' "*" by blast
   next
     case False
       (* The current pair that we consider is only in xs2, and not in xs.
@@ -1317,60 +1241,70 @@ that are present in explain2 and not in explain were already in the pending list
 sometime before this point.
 *)
     then have subset: "set xs2 \<subseteq> set xs \<union> additional_uf_pairs_set l (pf_labels cc)"
-      using 2(9) by auto
+      using 2(11) by auto
     then have union: "cc_explain_aux2 cc ((a, b) # xs2) =
 cc_explain_aux2 cc [(a, b)] \<union> cc_explain_aux2 cc xs2"
       using cc_explain_aux2_app[ of cc "[(a, b)]" xs2]
       using "2.prems"(1,2) Cons_eq_appendI in_set_conv_decomp_first list.sel(3) by auto
-    have subseq: "subseq xs xs2" using "2.prems"(7) 
+    have subseq: "subseq xs xs2" using "2.prems"(9) 
       by (metis False list.collapse list_emb.simps subseq_Cons2_neq)
-    have *: "cc_explain_aux2 cc [(a, b)] \<subseteq> 
-      cc_explain_aux cc l xs \<union> additional_uf_labels_set l (pf_labels cc) \<union>
-       \<Union> (cc_explain_aux2 cc ` (\<lambda>x. [x]) ` additional_uf_pairs_set l (pf_labels cc))"
+    have *: "cc_explain_aux2 cc ((a, b) # xs2) \<subseteq> 
+      cc_explain_aux cc l xs \<union> additional_uf_labels_set l (pf_labels cc)"
     proof-
-      have "cc_explain_aux2 cc [(a, b)] \<subseteq>
-   cc_explain_aux2 cc xs2 \<union> additional_uf_labels_set l (pf_labels cc) \<union>
-\<Union> (cc_explain_aux2 cc ` (\<lambda>x. [x]) ` additional_uf_pairs_set l (pf_labels cc))"
-      proof-
-        show ?thesis
-        proof(cases "(a, b) \<in> set xs")
-          (* (a,b) is also present in the remaining list xs2 *)
-          case True
-          then have "(a, b) \<in> set xs2" 
-            by (meson subseq subseq_order.trans subseq_singleton_left)
-          have "cc_explain_aux2 cc [(a, b)] \<subseteq> cc_explain_aux2 cc xs2"
-            sorry (* prove by induction on xs, instead of recursive calls use "cc_explain_aux2 (a,b)#xs = 
-cc_explain_aux2 (a,b) \<union> cc_explain_aux2 xs*)
-          then show ?thesis 
-            using "2.prems"(7) union by auto
-        next
-          case False
-            (* (a, b) is in the pairs set. We can use the invariant to prove that (a, b) \<in> explain2 xs*)
-            (*or show that we can use here new_new_l instead of l, the one derived ba eap with the first element of
+      show ?thesis
+      proof(cases "(a, b) \<in> set xs")
+        (* (a,b) is also present in the remaining list xs2 *)
+        case True
+        then have "(a, b) \<in> set xs2" 
+          by (meson subseq subseq_order.trans subseq_singleton_left)
+        then have set_eq: "set ((a, b) # xs2) = set xs2" 
+          by auto
+        have "cc_explain_aux2 cc ((a, b) # xs2) = \<Union> {cc_explain_aux2 cc [x] |x. x \<in> set ((a, b) # xs2)}"
+          using cc_explain_aux2_union 2(4,5) 
+          by blast
+        also have "... = \<Union> {cc_explain_aux2 cc [x] |x. x \<in> set xs2}"
+          using cc_explain_aux2_union 2(4,5) set_eq by auto
+        also have "... = cc_explain_aux2 cc xs2"
+          using cc_explain_aux2_union 2(4,5) by auto
+        finally show ?thesis 
+          using 2(2)[OF 2(4)] 
+          using "2.prems"(2-7) Un_iff union subset set_subset_Cons subseq by auto 
+      next
+        case False
+          (* (a, b) is in the pairs set. We can use the invariant to prove that (a, b) \<in> explain2 xs*)
+          (*or show that we can use here new_new_l instead of l, the one derived ba eap with the first element of
               xs. then use IH somehow idk or not*)
-            (* make l bigger so i can show that its in there, like explain2 (pairs) \<union> l for the right hand side of equality \<subseteq>*)
-          then have "(a, b) \<in> additional_uf_pairs_set l (pf_labels cc)"
-            using "2.prems"(6) by force
-          then have *: "cc_explain_aux2 cc [(a, b)] \<subseteq>
- \<Union>(cc_explain_aux2 cc ` (\<lambda>x. [x]) ` additional_uf_pairs_set l (pf_labels cc))"
-            by blast
-          have "set xs \<subseteq> set xs2" using subseq 
-            by (meson subseq_order.trans subseq_singleton_left subsetI)
-          then have "cc_explain_aux2 cc xs \<subseteq> cc_explain_aux2 cc xs2"
-            sorry
-          then show ?thesis 
-            using  * by auto
-        qed
+          (* make l bigger so i can show that its in there, like explain2 (pairs) \<union> l for the right hand side of equality \<subseteq>*)
+        then have "(a, b) \<in> additional_uf_pairs_set l (pf_labels cc)"
+          using "2.prems"(8) by force
+        with "2.prems"(7) have invariant: "output12 \<union> output22 \<subseteq> additional_uf_labels_set l (pf_labels cc) \<and>
+         set pending12 \<union> set pending22 \<subseteq> additional_uf_pairs_set l (pf_labels cc)" 
+          unfolding equations_of_l_in_pending_invar3_def was_already_in_pending3_def Let_def
+          using False defs c_def by force
+        then have subset: "set (pending12 @ pending22 @ xs2) \<subseteq> set xs \<union> additional_uf_pairs_set l (pf_labels cc)" 
+          using subset by auto
+        have subseq_xs: "subseq xs (pending12 @ pending22 @ xs2)" 
+          by (simp add: subseq subseq_drop_many)
+have *: "\<forall> (a, b) \<in> set pending12 . a < nr_vars cc \<and> b < nr_vars cc"
+"\<forall> (a, b) \<in> set pending22 . a < nr_vars cc \<and> b < nr_vars cc"
+"\<forall> (a, b) \<in> set pending12 . are_congruent cc (a \<approx> b)"
+"\<forall> (a, b) \<in> set pending22 . are_congruent cc (a \<approx> b)"
+        using 2(4) explain_along_path2_pending_in_bounds defs path explain_along_path2_pending_are_congruent
+explain_along_path_pending_in_bounds 
+        by blast+
+      then have in_bounds: "\<forall> (a, b) \<in> set (pending12 @ pending22 @ xs2) . a < nr_vars cc \<and> b < nr_vars cc"
+        "\<forall> (a, b) \<in> set (pending12 @ pending22 @ xs2) . are_congruent cc (a \<approx> b)"
+        using 2(5,6) by auto
+        have IH: "cc_explain_aux2 cc (pending12 @ pending22 @ xs2) 
+\<subseteq> cc_explain_aux cc l xs \<union> additional_uf_labels_set l (pf_labels cc)" using 2(3)[OF c_def _ _ _ _ 2(4) in_bounds] 
+defs "2.prems" 
+          using subset subseq_xs by metis
+        then show ?thesis 
+          using invariant rec' by auto
       qed
-      then show ?thesis using 2(2)[OF 2(4)] 
-        using "2.prems"(2-7) Un_iff union subset set_subset_Cons subseq by auto 
     qed
-    have "cc_explain_aux2 cc xs2 \<subseteq> cc_explain_aux cc l xs \<union> additional_uf_labels_set l (pf_labels cc) 
-\<union> \<Union> (cc_explain_aux2 cc ` (\<lambda>x. [x]) ` additional_uf_pairs_set l (pf_labels cc))" 
-      using 2(2)[OF 2(4) _ _ 2(7,8)] 
-      using "2.prems"(2-7) Un_iff union subset set_subset_Cons subseq by simp
     then show ?thesis 
-      using * union by auto
+      using "2.prems"(2-7) Un_iff  set_subset_Cons by blast
   qed
 qed
 

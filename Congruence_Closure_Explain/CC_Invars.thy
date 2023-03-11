@@ -3187,6 +3187,24 @@ lemma input_unchanged_step:
   "input (propagate_step l u t pe pf pfl ip a b eq) = ip"
   by (simp add: input_unchanged_loop)
 
+lemma cc_list_unchanged_loop:
+  "cc_list (propagate_loop a b cc) = cc_list cc"
+  apply(induction a b cc rule: propagate_loop.induct)
+  by auto
+
+lemma cc_list_unchanged_step:
+  "cc_list (propagate_step l u t pe pf pfl ip a b eq) = ufa_union l a b"
+  by (simp add: cc_list_unchanged_loop)
+
+lemma proof_forest_unchanged_loop:
+  "proof_forest (propagate_loop a b cc) = proof_forest cc"
+  apply(induction a b cc rule: propagate_loop.induct)
+  by auto
+
+lemma proof_forest_unchanged_step:
+  "proof_forest (propagate_step l u t pe pf pfl ip a b eq) = add_edge pf a b"
+  by (simp add: proof_forest_unchanged_loop)
+
 lemma use_list_invar_step: 
   assumes "ufa_invar l" "a < length l" "b < length l" 
     "use_list_invar \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, pf_labels = pfl, input = ip\<rparr>"
