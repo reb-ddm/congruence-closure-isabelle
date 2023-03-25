@@ -342,7 +342,77 @@ next
     by auto
 qed
 
+section \<open>Induction rules\<close>
 
-section \<open>Invariant that the timestamps decrease with each step.\<close>
+thm propagate_t.pinduct
+lemma propagate_t_induct[consumes 1]:
+  assumes "propagate_t_dom a0"
+"\<And>l u t pf pfl ip k ti  .
+propagate_t_dom \<lparr>cc_list = l, use_list = u, lookup = t, pending = [], proof_forest = pf,
+ pf_labels = pfl, input = ip, time = k, timestamps = ti\<rparr> \<Longrightarrow>  
+P \<lparr>cc_list = l, use_list = u, lookup = t, pending = [], proof_forest = pf,
+ pf_labels = pfl, input = ip, time = k, timestamps = ti\<rparr>"
+"(\<And>l u t pe pf pfl ip k ti a b eq.
+propagate_t_dom \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf,
+ pf_labels = pfl, input = ip, time = k, timestamps = ti\<rparr> \<Longrightarrow>  
+a = left eq \<Longrightarrow> b = right eq \<Longrightarrow>
+rep_of l a = rep_of l b \<Longrightarrow>
+P \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf,
+ pf_labels = pfl, input = ip, time = k, timestamps = ti\<rparr> \<Longrightarrow>
+P (\<lparr>cc_list = l, use_list = u, lookup = t, pending = eq # pe, proof_forest = pf, pf_labels = pfl, 
+input = ip, time = k, timestamps = ti\<rparr>))"
+"(\<And>l u t pe pf pfl ip k ti a b eq. 
+propagate_t_dom \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), proof_forest = pf, 
+pf_labels = pfl, input = ip, time = k, timestamps = ti\<rparr> \<Longrightarrow>  
+a = left eq \<Longrightarrow> b = right eq \<Longrightarrow>
+rep_of l a \<noteq> rep_of l b \<Longrightarrow>
+P (propagate_step_t l u t pe pf pfl ip a b eq k ti)
+\<Longrightarrow> P \<lparr>cc_list = l, use_list = u, lookup = t, pending = (eq # pe), 
+proof_forest = pf, pf_labels = pfl, 
+input = ip, time = k, timestamps = ti\<rparr>)"
+shows "P a0"
+  using assms proof(induction a0 rule: propagate_t.pinduct)
+  case (1 cc_t)
+  then show ?case proof(cases "pending cc_t")
+    case Nil
+    then show ?thesis 
+      using 1 
+      by (metis (full_types) congruence_closure_t.surjective old.unit.exhaust)
+  next
+    case (Cons eq list)
+    obtain l u t pe pf pfl ip k ti
+        where cc_t: "cc_t = \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, 
+input = ip, time = k, timestamps = ti\<rparr>" 
+      using congruence_closure_t.cases by blast
+    then show ?thesis
+    proof(cases "rep_of (cc_list cc_t) (left eq) = rep_of (cc_list cc_t) (right eq)")
+      case True
+      have "P \<lparr>cc_list = l, use_list = u, lookup = t, pending = list, proof_forest = pf, pf_labels = pfl, 
+input = ip, time = k, timestamps = ti\<rparr>" 
+        using 1(2) "1.prems" True Cons unfolding cc_t congruence_closure.select_convs congruence_closure_t.select_convs 
+        by blast
+      then show ?thesis using 1(1,5) cc_t True Cons by force
+    next
+      case False
+      have "P (propagate_step_t l u t list pf pfl ip (left eq) (right eq) eq k ti)" 
+        using 1(3) "1.prems" False Cons unfolding cc_t congruence_closure.select_convs congruence_closure_t.select_convs 
+        by blast
+      then show ?thesis using 1(1,6) cc_t False Cons by simp
+    qed
+  qed
+qed
+
+thm merge_t.induct
+lemma merge_t_induct:
+  assumes "(\<And>l u t pe pf pfl ip k ti a b. 
+P \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, proof_forest = pf, pf_labels = pfl, 
+input = ip, time = k, timestamps = ti\<rparr> (a \<approx> b))"
+"(\<And>l u t pe pf pfl ip k ti a\<^sub>1 a\<^sub>2 a. P \<lparr>cc_list = l, use_list = u, lookup = t, pending = pe, 
+proof_forest = pf, pf_labels = pfl, 
+input = ip, time = k, timestamps = ti\<rparr> (F a\<^sub>1 a\<^sub>2 \<approx> a))"
+shows "P a0 a1"
+  using assms merge_t.induct congruence_closure_t.cases by metis
+
+
 
 end

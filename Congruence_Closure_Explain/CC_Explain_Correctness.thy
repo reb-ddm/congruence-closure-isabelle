@@ -103,7 +103,7 @@ pf_labels = pfl,  input = ip\<rparr>"
         "using "1.prems" unfolding pf_labels_invar_def congruence_closure.select_convs
       by (meson pRAC path_nodes_lt_length_l)
     from "1.prems" have explain_list_invar: "explain_list_invar (l[rep_of l a := pf ! rep_of l a]) pf" 
-      by (metis explain_list_invar_union invar(2) pRAC pRAC' path_nodes_lt_length_l rep_of_a_and_parent_rep_neq)
+      by (metis explain_list_invar_union invar(2) pRAC' path_nodes_lt_length_l)
     have rep_neq: "rep_of l a \<noteq> rep_of l (pf ! rep_of l a)"
       using pRAC "1.prems" False rep_of_a_and_parent_rep_neq invar by blast
     then have valid: "(pf ! rep_of l a) < length pf" "ufa_invar (l[rep_of l a := (pf ! rep_of l a)])"
@@ -324,7 +324,7 @@ proof-
         by (meson pRAC path_nodes_lt_length_l)
       from "1.prems" invar have explain_list_invar: "explain_list_invar (l[rep_of l a := pf ! rep_of l a]) (proof_forest cc)" 
         unfolding cc congruence_closure.select_convs 
-        by (metis (no_types, lifting) explain_list_invar_def explain_list_invar_union pRAC(1) pRAC' path_nodes_lt_length_l rep_of_a_and_parent_rep_neq)
+        by (metis (no_types, lifting) explain_list_invar_def explain_list_invar_union pRAC' path_nodes_lt_length_l)
       have rep_neq: "rep_of l a \<noteq> rep_of l (pf ! rep_of l a)"
         using pRAC "1.prems" False rep_of_a_and_parent_rep_neq unfolding cc congruence_closure.select_convs 
         using invar by blast
