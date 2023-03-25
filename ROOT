@@ -14,8 +14,16 @@ session Congruence_Closure = HOL +
     CC_Definition
     CC_Helper_Functions
     CC_Invars
+    CC_Termination
     CC_Correctness
     CC_Explain
-    CC_Explain_Correctness
+    CC_Explain_Helper_Lemmata
+    CC_Definition2
+    CC_Explain2_Definition
+  theories [quick_and_dirty] 
+    CC_Explain2_Termination 
+  theories
+    CC_Explain2_Correctness
+    CC_Explain_Explain2_Equivalence
   document_files
     "root.tex"

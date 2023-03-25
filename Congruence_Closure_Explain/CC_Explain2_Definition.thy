@@ -1,4 +1,4 @@
-theory CC_Explain2
+theory CC_Explain2_Definition
   imports CC_Definition2 "HOL-Library.Multiset_Order"
 begin 
 
@@ -262,6 +262,10 @@ fun pending_pairs :: "pending_equation option \<Rightarrow> (nat * nat) set"
   | "pending_pairs (Some (One a)) = {}"
   | "pending_pairs (Some (Two (F a\<^sub>1 a\<^sub>2 \<approx> a') (F b\<^sub>1 b\<^sub>2 \<approx> b'))) = {(a\<^sub>1, b\<^sub>1), (a\<^sub>2, b\<^sub>2)}"
   | "pending_pairs (Some (Two a b)) = {}"
+
+
+definition additional_uf_labels_set where
+ "additional_uf_labels_set l pfl \<equiv> \<Union>{pe_to_set (pfl ! a) |a. a < length l \<and> l ! a \<noteq> a}"
 
 definition additional_uf_pairs_set where
   "additional_uf_pairs_set l pfl \<equiv> \<Union>{pending_pairs (pfl ! a) |a. a < length l \<and> l ! a \<noteq> a}"
@@ -1022,7 +1026,7 @@ proof-
     then show ?case proof(cases "a = c")
       case True
       then have "pend = []" 
-        using "1.prems"(2) CC_Explain2.explain_along_path2_simp1 by fastforce
+        using "1.prems"(2) explain_along_path2_simp1 by fastforce
       then show ?thesis by simp
     next
       case False
@@ -1143,7 +1147,7 @@ proof-
     then show ?case proof(cases "a = c")
       case True
       then have "pend = []" 
-        using "1.prems"(2) CC_Explain2.explain_along_path2_simp1 by fastforce
+        using "1.prems"(2) explain_along_path2_simp1 by fastforce
       then show ?thesis by simp
     next
       case False
@@ -1207,7 +1211,7 @@ proof-
     then show ?case proof(cases "a = c")
       case True
       then have "pend = []" 
-        using "1.prems"(2) CC_Explain2.explain_along_path2_simp1 by fastforce
+        using "1.prems"(2) explain_along_path2_simp1 by fastforce
       then show ?thesis by simp
     next
       case False

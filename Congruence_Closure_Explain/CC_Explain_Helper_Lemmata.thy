@@ -1,6 +1,58 @@
-theory CC_Explain_Correctness_TODO
-  imports CC_Explain_Correctness
+theory CC_Explain_Helper_Lemmata
+  imports CC_Explain
 begin 
+
+section \<open>Conversion of the pending list to a set\<close>
+text \<open>This function is needed in order to interpret the pending list of the explain
+operation as a set of equations.\<close>
+fun pending_set_explain :: "(nat * nat) list \<Rightarrow> equation set"
+  where
+    "pending_set_explain pend = set (map (\<lambda>(a, b) . (a \<approx> b)) pend)"
+
+lemma pending_set_explain_Cons:
+  "pending_set_explain ((a, b) # pend) = {(a \<approx> b)} \<union> pending_set_explain pend"
+  by auto
+
+lemma explain_along_path_lowest_common_ancestor:
+  assumes "cc_invar cc"
+"a < nr_vars cc"
+"b < nr_vars cc"
+"are_congruent cc (a \<approx> b)"
+"c = lowest_common_ancestor (proof_forest cc) a b"
+obtains p1 p2 where "path (proof_forest cc) c p1 a" 
+      "path (proof_forest cc) c p2 b"
+proof-
+  assume *: "(\<And>p1 p2.
+        path (proof_forest cc) c p1 a \<Longrightarrow>
+        path (proof_forest cc) c p2 b \<Longrightarrow> thesis)"
+  have 1: "ufa_invar (proof_forest cc)" 
+    using assms proof_forest_invar_def by blast
+  moreover have 2: "a < length (proof_forest cc)"
+"b < length (proof_forest cc)"
+    using assms same_length_invar_def by auto
+  moreover have 3: "rep_of (proof_forest cc) a = rep_of (proof_forest cc) b"
+    using are_congruent_rep_of assms 
+    by blast
+  ultimately show thesis
+      using * assms(5) lowest_common_ancestor_correct 
+      by presburger
+qed
+
+text \<open>These functions are needed in order to interpret the additional union find as the set
+of labels on the corresponding edges in the proof forest.\<close>
+
+fun pe_to_set :: "pending_equation option \<Rightarrow> equation set"
+  where
+    "pe_to_set None = {}"
+  | "pe_to_set (Some (One a')) = {a'}"
+  | "pe_to_set (Some (Two a' b')) = {a', b'}"
+
+fun pending_set' :: "pending_equation list \<Rightarrow> equation set"
+  where
+    "pending_set' [] = {}"
+  | "pending_set' ((One a') # xs) = {a'} \<union> pending_set' xs"
+  | "pending_set' ((Two a' b') # xs) = {a', b'} \<union> pending_set' xs"
+
 
 section \<open>Lemmata about invariants\<close>
 
@@ -31,16 +83,6 @@ next
   then show ?thesis 
     by (metis \<open>path l lca p2 b\<close> \<open>path pf lca p1 a\<close> \<open>path pf lca p2 b\<close> assms(1) assms(4) path_unique paths_iff)
 qed
-
-lemma cc_explain_correctness_invar':
-  assumes "cc_explain_correctness_invar cc"
-    "explain_list_invar l (proof_forest cc)"
-    "(\<forall> (a, b) \<in> set eqs . a < nr_vars cc \<and> b < nr_vars cc)"
-    "(a, b) \<in> set eqs"
-    "are_congruent cc (a \<approx> b)"
-  shows "(a \<approx> b) \<in> Congruence_Closure (cc_explain_aux cc l eqs 
-\<union> additional_uf_labels_set l (pf_labels cc))"
-  using assms unfolding cc_explain_correctness_invar_def by blast
 
 lemma length_explain_list_cc_list:
   assumes "cc_invar cc"
@@ -811,7 +853,6 @@ proof-
   then show ?thesis 
     by (metis "5")
 qed
-
 
 lemma add_label_simp2:
   assumes "ufa_invar pf" "e < length pf" "e' < length pf" "rep_of pf e \<noteq> rep_of pf e'"

@@ -1,8 +1,6 @@
-theory CC_Explain_Invar2
+theory CC_Explain_Explain2_Equivalence
   imports CC_Explain2_Correctness
-
 begin
-
 
 subsection \<open>Lemma about \<open>cc_explain2\<close> and append and subset\<close>
 

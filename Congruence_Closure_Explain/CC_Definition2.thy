@@ -1,6 +1,6 @@
 chapter \<open>Congruence Closure Algorithm with Explain Operation\<close>
 theory CC_Definition2
-  imports CC_Explain_Correctness_TODO
+  imports CC_Explain_Helper_Lemmata
 begin 
 
 text \<open>We extend the congruence closure data structure with timestamps for the edges,
