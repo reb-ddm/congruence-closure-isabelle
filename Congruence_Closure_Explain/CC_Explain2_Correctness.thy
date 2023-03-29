@@ -144,8 +144,6 @@ proof-
     by (metis congruence_closure.select_convs(5))
 qed
 
-
-thm cc_explain_aux2_domain
 lemma cc_explain_aux2_correctness:
   assumes "cc_invar_t cc_t"
     "\<forall>(a, b)\<in>set xs. a < length (cc_list cc_t) \<and> b < length (cc_list cc_t)"
