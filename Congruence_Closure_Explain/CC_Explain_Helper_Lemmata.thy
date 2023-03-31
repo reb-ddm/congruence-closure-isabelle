@@ -2,7 +2,7 @@ theory CC_Explain_Helper_Lemmata
   imports CC_Explain
 begin 
 
-section \<open>Conversion of the pending list to a set\<close>
+subsection \<open>Conversion of the pending list to a set\<close>
 text \<open>This function is needed in order to interpret the pending list of the explain
 operation as a set of equations.\<close>
 fun pending_set_explain :: "(nat * nat) list \<Rightarrow> equation set"
@@ -53,8 +53,7 @@ fun pending_set' :: "pending_equation list \<Rightarrow> equation set"
   | "pending_set' ((One a') # xs) = {a'} \<union> pending_set' xs"
   | "pending_set' ((Two a' b') # xs) = {a', b'} \<union> pending_set' xs"
 
-
-section \<open>Lemmata about invariants\<close>
+subsection \<open>Lemmata about invariants\<close>
 
 lemma path_pf_same_rep:
   assumes "path pf a p b"
@@ -116,7 +115,7 @@ proof-
   qed
 qed
 
-section \<open>Lemmata about are_congruent\<close>
+subsection \<open>Lemmata about are_congruent\<close>
 
 lemma are_congruent_step:
   assumes "cc_invar cc"
@@ -146,7 +145,7 @@ proof-
     by (simp add: \<open>rep_of cc_l a = rep_of cc_l b\<close> cc)
 qed
 
-section \<open>Lemmata about lowest_common_ancestor\<close>
+subsection \<open>Lemmata about lowest_common_ancestor\<close>
 
 lemma lowest_common_ancestor_root:
   assumes "ufa_invar l" "i < length l" "l ! i = i" "k < length l"
@@ -304,7 +303,7 @@ proof-
   qed
 qed
 
-section \<open>Helper lemmata about \<open>explain_along_path\<close>\<close>
+subsection \<open>Helper lemmata about \<open>explain_along_path\<close>\<close>
 
 lemma are_congruent_implies_proof_forest_rep_of_eq:
   assumes  "cc_invar cc"
@@ -503,7 +502,7 @@ explain_along_path_domain[OF assms(1-3)] explain_list_invar_explain_along_path'[
     by presburger
 qed
 
-section \<open>Induction rule for \<open>explain_along_path\<close>.\<close>
+subsection \<open>Induction rule for \<open>explain_along_path\<close>.\<close>
 
 thm explain_along_path.pinduct
 
@@ -685,7 +684,7 @@ proof-
     using assms(8-) by simp
 qed
 
-section \<open>Induction rule for \<open>cc_explain_aux\<close>.\<close>
+subsection \<open>Induction rule for \<open>cc_explain_aux\<close>.\<close>
 
 thm cc_explain_aux.pinduct
 thm cc_explain_aux_domain

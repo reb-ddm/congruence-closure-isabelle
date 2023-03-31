@@ -13,6 +13,7 @@ session Congruence_Closure = HOL +
     Explain_Correctness
     CC_Definition
     CC_Helper_Functions
+    CC_Abstraction
     CC_Invars
     CC_Termination
     CC_Correctness

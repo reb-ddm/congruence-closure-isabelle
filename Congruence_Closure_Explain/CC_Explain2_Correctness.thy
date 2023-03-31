@@ -2,8 +2,6 @@ theory CC_Explain2_Correctness
   imports CC_Explain2_Termination
 begin 
 
-
-
 section \<open>Correctness proof of \<open>cc_explain2\<close>\<close>
 
 lemma explain_along_path2_correctness:

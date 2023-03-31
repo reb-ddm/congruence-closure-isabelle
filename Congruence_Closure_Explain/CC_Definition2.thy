@@ -413,6 +413,4 @@ input = ip, time = k, timestamps = ti\<rparr> (F a\<^sub>1 a\<^sub>2 \<approx> a
 shows "P a0 a1"
   using assms merge_t.induct congruence_closure_t.cases by metis
 
-
-
 end

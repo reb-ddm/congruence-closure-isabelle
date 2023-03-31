@@ -1,0 +1,22 @@
+\RequirePackage[l2tabu,orthodox]{nag}
+
+
+%\documentclass[headsepline,footsepline,footinclude=false,fontsize=11pt,paper=a4,listof=totoc,bibliography=totoc,BCOR=12mm,DIV=12]{scrbook} % two-sided
+\documentclass[headsepline,footsepline,footinclude=false,oneside,fontsize=11pt,paper=a4,listof=totoc,bibliography=totoc]{scrbook} % one-sided
+
+\input{settings}
+
+\theoremstyle{definition}
+\newtheorem{exmp}{Example}
+\newtheorem*{definition}{Definition}
+
+\begin{document}
+
+% Set page numbering to avoid "destination with the same identifier has been already used" warning for cover page.
+% (see https://en.wikibooks.org/wiki/LaTeX/Hyperlinks#Problems_with_Links_and_Pages).
+
+\input{chapters/01_introduction}
+
+\printbibliography{}
+
+\end{document}

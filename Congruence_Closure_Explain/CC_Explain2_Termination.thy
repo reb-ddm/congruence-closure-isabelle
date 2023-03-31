@@ -5,6 +5,7 @@ begin
 
 section \<open>Termination of \<open>cc_explain2\<close>\<close>
 
+subsection \<open>Invariant definition for \<open>timestamps\<close>\<close>
 function (domintros) path_to_c :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat list"
   where
     "path_to_c pf a c = (if a = c then [] else (path_to_c pf (pf ! a) c) @ [a])"
@@ -102,7 +103,9 @@ abbreviation cc_invar_t
     "cc_invar_t cc_t \<equiv> cc_invar (congruence_closure.truncate cc_t) \<and> timestamps_invar cc_t
 \<and> time_invar cc_t"
 
-subsection \<open>Proof that all timestamps are smaller than \<open>time cc_t\<close>\<close>
+subsection \<open>Proof of invariants\<close>
+
+text \<open>Proof that all timestamps are smaller than \<open>time cc_t\<close>\<close>
 
 lemma add_timestamp_new_labels:
   assumes "ufa_invar pf" "a < length pf" "b < length pf" "length l = length pf" "length ti = length l"
@@ -732,8 +735,6 @@ proof-
       by (metis \<open>path (add_edge l a b) (rep_of (add_edge l a b) x) (p3 @ [lowest_common_ancestor l x y] @ tl p1) x\<close> \<open>path (add_edge l a b) (rep_of (add_edge l a b) y) (p3 @ [lowest_common_ancestor l x y] @ tl p2) y\<close> invar(1) invar(2) invar(3))
   next
     case True
-    then have "x = lowest_common_ancestor l x y"
-      using \<open>path_to_root (add_edge l a b) x = p3 @ [lowest_common_ancestor l x y] @ tl p1\<close> path_length_1 paths'(1) paths2(1) by force
     have "prefix (p3 @ [lowest_common_ancestor l x y]) (path_to_root (add_edge l a b) x)"
       "prefix (p3 @ [lowest_common_ancestor l x y]) (path_to_root (add_edge l a b) y)" 
       by (auto simp add: eq ptr_add_edge)
@@ -1544,6 +1545,8 @@ lemma equivalent_assumptions2:
   unfolding assms(3) congruence_closure.truncate_def congruence_closure.select_convs 
   by auto
 
+subsection \<open>Termination of \<open>cc_explain2\<close>\<close>
+
 lemma cc_explain_aux2_domain:
   assumes "cc_invar_t cc_t"
     "\<forall> (a, b) \<in> set xs . a < length (cc_list cc_t) \<and> b < length (cc_list cc_t)"
@@ -1608,7 +1611,7 @@ lemma cc_explain_aux2_domain:
   qed  
 qed
 
-subsubsection \<open>Induction rule on \<open>cc_explain2\<close>\<close>
+subsection \<open>Induction rule on \<open>cc_explain2\<close>\<close>
 
 lemma cc_explain_aux2_induct[consumes 4, case_names base congruent]:
   assumes "cc_invar_t cc_t"

@@ -109,7 +109,7 @@ proof-
     by blast
 qed
 
-subsection \<open>Invariant of elements in the additional union find\<close>
+subsection \<open>Invariant of elements in the additional union find and pending\<close>
 
 text \<open>Invariant of \<open>explain_along_path\<close> that states that the recursive calls of explain are 
 present in the total output\<close>

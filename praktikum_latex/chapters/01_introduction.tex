@@ -1,0 +1,56 @@
+% !TeX root = ../main.tex
+% Add the above to each chapter to make compiling the PDF easier in some editors.
+
+\chapter{Praktikum - Spezifikation und Verifikation}\label{chapter:praktikum}
+
+\section{Introduction}
+
+The goal of this practical course was to prove the correctness of the \lstinline|cc_explain| algorithm, which was defined in my Bachelor's thesis \cite{rebi}.
+This function takes as input two elements of the congruence closure and it returns the labels of the proof forest that explain why the two elements are congruent.
+The \lstinline|cc_explain| function uses an additional union-find that stores which edges in the proof forest have already been examined by the function.
+Because of the additional union-find, it was difficult to use the induction hypothesis in order to directly prove the correctness of the function.
+
+Therefore, I proved it by defining the auxiliary function \lstinline|cc_explain2| [\lstinline|CC_Explain2_ Definition.thy|], which is identical to \lstinline|cc_explain|, except that it does not have an additional union-find. I proved the correctness and termination of \lstinline|cc_explain2| and the equivalence of \lstinline|cc_explain| and  \lstinline|cc_explain2|. The termination proof is based on an invariant, which still needs to be proven. See Subsection \ref{subsection:invariants}.
+
+\section{Termination of CC\_Explain2}
+
+The proof of termination for \lstinline|cc_explain| was based on the presence of the additional union-find, therefore it was necessary to find a different argument for the termination of \lstinline|cc_explain2|.
+Based on an idea by Corbineau \cite{congruenceclosure-coq}, I added a timestamp for each edge in the proof forest, that shows in which order the edges were added to the proof forest [\lstinline|CC_Definition2.thy|].
+I extended the \lstinline|congruence_closure| record with a list that contains the timestamps and the current timestamp [\lstinline|time|].
+Then I extended the congruence closure algorithm, so that it adds the corresponding timestamps to the edges and proved its equivalence to the original congruence closure algorithm [\lstinline|merge_merge_t_equivalence|].
+
+\subsection{Invariants}\label{subsection:invariants}
+
+I defined two invariants of the congruence closure algorithm, about the validity of the two new fields of the \lstinline|congruence_closure_t| record. The \lstinline|time_invar| defines that all timestamps in the proof forest are between 0 and the current timestamp (non-inclusive).
+
+The invariant \lstinline|timestamps_invar| still needs to be proven. [\lstinline|CC_Explain2_Termination.thy|]. The only point in the congruence closure where the timestamps are modified, is in \lstinline|propagate_step_t|. It needs to be shown that the \lstinline|timestamps_invar| holds after \lstinline|add_edge| was applied to the proof forest, \lstinline|add_label| was applied to the labels list of the proof forest and \lstinline|add_timestamp| was applied to the timestamps list [\lstinline|timestamps_invar_step|]. From this, it follows that \lstinline|timestamps_invar| is an invariant of \lstinline|merge_t| [\lstinline|timestamps_invar_merge_t|]. In theory, it should be true, because  the edges on the path between two elements stay the same and only one edge is added with a timestamp that is larger than all the current timestamps in the proof forest. It is a bit complicated to prove, because the \lstinline|add_label| function reverses the direction of some edges, therefore the \lstinline|lowest_common_ancestor| of some elements might change. For more information about the \lstinline|add_label| function, see \cite{rebi}.
+
+\subsection{Termination}
+
+Using these invariants, I proved that the multiset of the timestamps in the pending list decreases in each recursive call of \lstinline|cc_explain2| [\lstinline|recursive_calls_mset_less|].
+Using induction on the multiset of the timestamps of the pending list, I proved the termination of \lstinline|cc_explain2| [\lstinline|cc_explain_aux2_domain|].
+
+\section{Correctness of Explain2}
+
+Given that \lstinline|cc_explain2| does not have an additional union-find, it was possible to directly prove its correctness using the termination proof, the induction on \lstinline|cc_explain2| and the invariant of the congruence closure algorithms defined for my bachelor's thesis \cite{rebi}. [\lstinline|cc_explain_aux2_correctness|]
+
+\section{Equivalence of Explain and Explain2}
+
+In order to prove the equivalence of \lstinline|cc_explain| and \lstinline|cc_explain2|, it needs to be shown that it is redundant to reconsider edges that have already been considered.
+To express that, I defined an invariant of \lstinline|cc_explain| [\lstinline|equations_of_l_in_pending_invar|].
+
+I defined the \lstinline|additional_uf_labels_set| of the additional union find, which is the set of labels of the edges that are present in the additional union-find. This set coincides with the output of the \lstinline|cc_explain| function. Additionally, the \lstinline|additional_uf_pairs_set| is the set of pairs $(a_1, b_1)$ and $(a_2, b_2)$ for each edge in the additional union-find that is labeled with $F(a_1, a_2) = a$ and $F(b_1, b_2) = b$.
+
+The invariant states that all pairs in the \lstinline|additional_uf_pairs_set| are either in pending or have been in pending previously and have already been considered by the function, which means that the output of \lstinline|explain_along_path2| is in the \lstinline|additional_uf_labels_set| and the pending list is in the \lstinline|additional_uf_pairs_set|.
+
+With this invariant, it was possible to prove the equivalence of \lstinline|cc_explain| and \lstinline|cc_explain2|. I proved a generalized statement, using the induction rule on the timestamps of \lstinline|xs2|:
+
+\begin{lstlisting}
+lemma cc_explain_aux_cc_explain_aux2_equivalence:
+assumes "set xs2 ⊆ set xs ∪ additional_uf_pairs_set"
+        "subseq xs xs2"
+shows "cc_explain_aux2 cc xs2 ⊆
+cc_explain_aux cc l xs ∪ additional_uf_labels_set"
+\end{lstlisting}
+
+where \lstinline|l| is the additional union-find. This way, we could use the induction hypothesis even though the pending list of \lstinline|cc_explain2| may contain more elements than the one of \lstinline|cc_explain|. We can show that the additional elements in \lstinline|xs2| that are not in \lstinline|xs| are redundant by using the invariant.

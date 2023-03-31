@@ -59,7 +59,7 @@ lemma explain_along_path2_simp3:
   using explain_along_path2.psimps unfolding Let_def
   by (metis (no_types, lifting) assms case_prod_conv option.sel pending_equation.simps(6) equation.simps(6))
 
-function (domintros) cc_explain_aux2:: "congruence_closure \<Rightarrow> (nat * nat) list \<Rightarrow> equation set"
+function (domintros) cc_explain_aux2 :: "congruence_closure \<Rightarrow> (nat * nat) list \<Rightarrow> equation set"
   where
     "cc_explain_aux2 cc [] = {}"
   | "cc_explain_aux2 cc ((a, b) # xs) =
